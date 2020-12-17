@@ -1,16 +1,14 @@
 grammar MxStar;
 
-program: (funcDef | classDef | varDef | varDefAssign)* EOF;
+program: (funcDef | classDef | varDef)* EOF;
 
-funcDef: typeName? Identifier '(' typeArgList? ')' suite;
+funcDef: typeName? ('['']')* Identifier '(' typeArgList? ')' suite;
 
 classDef: Class Identifier '{' (varDef | funcDef)*'};';
 
 Class: 'class';
 
-varDef: typeName ('['']')* (Identifier ',')* Identifier ';';
-
-varDefAssign: typeName ('['']')* Identifier '=' expression ';';
+varDef: typeName ('['']')* (Identifier ('=' expression)? ',')* Identifier ('=' expression)? ';';
 
 typeArgList: typeName ('['']')* Identifier (',' typeName ('['']')* Identifier)*;
 
@@ -18,7 +16,7 @@ typeName: Bool | Int | Void | String | Identifier;
 
 suite: '{' statement* '}';
 
-statement: suite | varDef | varDefAssign | controlStmt | compoundStmt | expression ';' | ';';
+statement: suite | varDef | controlStmt | compoundStmt | expression ';' | ';';
 
 atom: Identifier trailer?;
 
@@ -74,7 +72,7 @@ whileStmt: While '(' expression ')' (suite | statement);
 
 While: 'while';
 
-forStmt: For '(' init = expression? ';' cond = expression? ';' incr = expression? ')' (suite | statement);
+forStmt: For '(' initExpr = expression? ';' condExpr = expression? ';' incrExpr = expression? ')' (suite | statement);
 
 For: 'for';
 
