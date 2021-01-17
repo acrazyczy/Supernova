@@ -8,9 +8,11 @@ classDef: Class Identifier '{' (varDef | funcDef)*'};';
 
 Class: 'class';
 
-varDef: typeName ('['']')* (Identifier ('=' expression)? ',')* Identifier ('=' expression)? ';';
+varType: typeName ('['']')*;
 
-typeArgList: typeName ('['']')* Identifier (',' typeName ('['']')* Identifier)*;
+varDef: varType Identifier ((',' Identifier)+ | ('=' expression))? ';';
+
+typeArgList: varType Identifier (',' varType Identifier)*;
 
 typeName: Bool | Int | Void | String | Identifier;
 
