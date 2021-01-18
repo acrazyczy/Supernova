@@ -8,5 +8,8 @@ public class funcCallExprNode extends exprStmtNode {
 	public String funcName;
 	public ArrayList<exprStmtNode> argList = null;
 
-	public funcCallExprNode(position pos) {super(pos);}
+	public funcCallExprNode(position pos, String funcName) {
+		super(pos);
+		this.funcName = funcName;
+	}
 }

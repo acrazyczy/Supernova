@@ -2,7 +2,7 @@ grammar MxStar;
 
 program: (funcDef | classDef | varDef)* EOF;
 
-funcDef: typeName? ('['']')* Identifier '(' typeArgList? ')' suite;
+funcDef: varType? Identifier '(' typeArgList? ')' suite;
 
 classDef: Class Identifier '{' (varDef | funcDef)*'};';
 
@@ -64,17 +64,17 @@ Continue: 'continue';
 
 compoundStmt: ifStmt | whileStmt | forStmt;
 
-ifStmt: If '(' expression ')' (suite | statement) (Else (suite | statement))?;
+ifStmt: If '(' expression ')' trueStmt = statement (Else falseStmt = statement)?;
 
 If: 'if';
 
 Else: 'else';
 
-whileStmt: While '(' expression ')' (suite | statement);
+whileStmt: While '(' expression ')' statement;
 
 While: 'while';
 
-forStmt: For '(' initExpr = expression? ';' condExpr = expression? ';' incrExpr = expression? ')' (suite | statement);
+forStmt: For '(' initExpr = expression? ';' condExpr = expression? ';' incrExpr = expression? ')' statement;
 
 For: 'for';
 
@@ -107,8 +107,7 @@ False: 'false';
 Null: 'null';
 
 generator: typeName ('[' expression ']')+ ('[' ']')* #arrayGenerator
-	| Identifier '('')' #classGenerator
-	| Identifier #classGenerator;
+	| atom #classGenerator;
 
 WhiteSpace: [ \t]+ -> skip;
 

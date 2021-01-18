@@ -4,7 +4,11 @@ import Util.position;
 
 public class whileStmtNode extends stmtNode {
 	public exprStmtNode cond;
-	public suiteStmtNode suite;
+	public stmtNode stmt;
 
-	public whileStmtNode(position pos) {super(pos);}
+	public whileStmtNode(position pos, exprStmtNode cond, stmtNode stmt) {
+		super(pos);
+		this.cond = cond;
+		this.stmt = stmt;
+	}
 }

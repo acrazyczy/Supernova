@@ -9,5 +9,8 @@ public class varDefStmtNode extends stmtNode {
 	public ArrayList<String> names = new ArrayList<>();
 	public exprStmtNode init = null;
 
-	public varDefStmtNode(position pos) {super(pos);}
+	public varDefStmtNode(position pos, typeNode varType) {
+		super(pos);
+		this.varType = varType;
+	}
 }

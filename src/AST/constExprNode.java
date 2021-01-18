@@ -3,5 +3,10 @@ package AST;
 import Util.position;
 
 public class constExprNode extends exprStmtNode {
-	public constExprNode(position pos) {super(pos);}
+	public String value;
+
+	public constExprNode(position pos, String value) {
+		super(pos);
+		this.value = value;
+	}
 }
