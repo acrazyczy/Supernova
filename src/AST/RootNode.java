@@ -4,9 +4,9 @@ import Util.position;
 import java.util.ArrayList;
 
 public class RootNode extends ASTNode {
-	public ArrayList<funcDefNode> funcDefs = new ArrayList<>();
-	public ArrayList<classDefNode> classDefs = new ArrayList<>();
-	public ArrayList<varDefStmtNode> varDefs = new ArrayList<>();
+	public ArrayList<funcDefNode> funcDefs = null;
+	public ArrayList<classDefNode> classDefs = null;
+	public ArrayList<varDefStmtNode> varDefs = null;
 
 	public RootNode(position pos) {super(pos);}
 

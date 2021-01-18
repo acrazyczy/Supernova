@@ -3,7 +3,7 @@ package AST;
 import Util.position;
 
 public class forStmtNode extends stmtNode {
-	public forStmtNode(position pos) {super(pos);}
+	public exprStmtNode init = null, cond = null, incr = null;
 
-	public exprStmtNode init, cond, incr;
+	public forStmtNode(position pos) {super(pos);}
 }
