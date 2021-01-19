@@ -4,7 +4,7 @@ import Util.position;
 
 public class binaryExprNode extends exprStmtNode {
 	public enum opType {
-		Plus, Minus, Mul, Div, Mod, Lsh, Rsh, And, Or, Xor, Not;
+		Plus, Minus, Mul, Div, Mod, Lsh, Rsh, And, Or, Xor;
 	}
 
 	public exprStmtNode lhs, rhs;
