@@ -107,7 +107,7 @@ False: 'false';
 Null: 'null';
 
 generator: typeName ('[' expression ']')+ ('[' ']')* #arrayGenerator
-	| atom #classGenerator;
+	| typeName ('('')')? #classGenerator;
 
 WhiteSpace: [ \t]+ -> skip;
 

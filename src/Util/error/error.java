@@ -12,5 +12,5 @@ abstract public class error extends RuntimeException {
 	}
 
 	@Override
-	public String toString() {return message + ": " + pos.toString();}
+	public String toString() {return message + " @ " + pos.toString();}
 }

@@ -6,6 +6,7 @@ public interface ASTVisitor {
 	void visit(binaryExprNode it);
 	void visit(breakStmtNode it);
 	void visit(classDefNode it);
+	void visit(classLiteralNode it);
 	void visit(cmpExprNode it);
 	void visit(constExprNode it);
 	void visit(continueStmtNode it);

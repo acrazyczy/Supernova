@@ -46,4 +46,5 @@ public class symbolCollector implements ASTVisitor {
 	@Override public void visit(funcCallExprNode it) {}
 	@Override public void visit(memberAccessExprNode it) {}
 	@Override public void visit(subscriptionExprNode it) {}
+	@Override public void visit(classLiteralNode it) {}
 }

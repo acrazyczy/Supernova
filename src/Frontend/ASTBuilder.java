@@ -116,7 +116,7 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 
 	@Override
 	public ASTNode visitClassGenerator(MxStarParser.ClassGeneratorContext ctx) {
-		return new funcCallExprNode(new position(ctx), ctx.atom().Identifier().getText());
+		return new classLiteralNode(new position(ctx), (typeNode) visit(ctx.typeName()));
 	}
 
 	@Override
@@ -202,7 +202,7 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 			(exprStmtNode) visit(ctx.expression(0)),
 			(exprStmtNode) visit(ctx.expression(1))
 		);
-		logicExpr.op = ctx.op.getText() == "&&" ? logicExprNode.opType.And : logicExprNode.opType.Or;
+		logicExpr.op = ctx.op.getText().equals("&&") ? logicExprNode.opType.And : logicExprNode.opType.Or;
 		return logicExpr;
 	}
 
@@ -280,7 +280,7 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 	@Override
 	public ASTNode visitSuffixExpr(MxStarParser.SuffixExprContext ctx) {
 		unaryExprNode unaryExpr = new unaryExprNode(new position(ctx), (exprStmtNode) visit(ctx.expression()));
-		unaryExpr.op = ctx.op.getText() == "++" ? unaryExprNode.opType.SufIncr : unaryExprNode.opType.SufDecr;
+		unaryExpr.op = ctx.op.getText().equals("++") ? unaryExprNode.opType.SufIncr : unaryExprNode.opType.SufDecr;
 		return unaryExpr;
 	}
 
