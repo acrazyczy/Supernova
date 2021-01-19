@@ -3,7 +3,7 @@ package AST;
 import Util.Type.Type;
 import Util.position;
 
-public class exprStmtNode extends stmtNode {
+abstract public class exprStmtNode extends stmtNode {
 	public Type resultType;
 
 	public exprStmtNode(position pos) {super(pos);}

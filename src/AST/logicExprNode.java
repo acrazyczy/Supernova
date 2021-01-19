@@ -15,4 +15,7 @@ public class logicExprNode extends exprStmtNode {
 		this.lhs = lhs;
 		this.rhs = rhs;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

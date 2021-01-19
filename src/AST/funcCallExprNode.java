@@ -12,4 +12,7 @@ public class funcCallExprNode extends exprStmtNode {
 		super(pos);
 		this.funcName = funcName;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

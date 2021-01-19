@@ -10,4 +10,7 @@ public class forStmtNode extends stmtNode {
 		super(pos);
 		this.stmt = stmt;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

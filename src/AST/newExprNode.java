@@ -9,4 +9,7 @@ public class newExprNode extends exprStmtNode {
 		super(pos);
 		this.expr = expr;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

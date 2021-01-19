@@ -14,4 +14,12 @@ public class unaryExprNode extends exprStmtNode {
 		super(pos);
 		this.expr = expr;
 	}
+
+	@Override
+	public boolean isAssignable() {
+		return op == opType.PreIncr || op == opType.PreDecr;
+	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

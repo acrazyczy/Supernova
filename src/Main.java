@@ -1,4 +1,8 @@
+import AST.rootNode;
 import Frontend.ASTBuilder;
+import Frontend.classGenerator;
+import Frontend.semanticChecker;
+import Frontend.symbolCollector;
 import Util.error.error;
 import Util.Scope.globalScope;
 import Util.MxStarErrorListener;
@@ -18,7 +22,7 @@ public class Main {
 		InputStream input = new FileInputStream(name);
 
 		try {
-			RootNode ASTRoot;
+			rootNode ASTRoot;
 			globalScope gScope = new globalScope(null);
 
 			MxStarLexer lexer = new MxStarLexer(CharStreams.fromStream(input));
@@ -29,9 +33,10 @@ public class Main {
 			parser.addErrorListener(new MxStarErrorListener());
 			ParseTree parseTreeRoot = parser.program();
 			ASTBuilder astBuilder = new ASTBuilder(gScope);
-			ASTRoot = (RootNode)astBuilder.visit(parseTreeRoot);
-			new SymbolCollector(gScope).visit(ASTRoot);
-			new SemanticChecker(gScope).visit(ASTRoot);
+			ASTRoot = (rootNode)astBuilder.visit(parseTreeRoot);
+			new symbolCollector(gScope).visit(ASTRoot);
+			new classGenerator(gScope).visit(ASTRoot);
+			new semanticChecker(gScope).visit(ASTRoot);
 		} catch (error er) {
 			System.err.println(er.toString());
 			throw new RuntimeException();

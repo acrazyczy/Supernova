@@ -13,4 +13,7 @@ public class arrayLiteralNode extends exprStmtNode {
 		super(pos);
 		this.type = type;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

@@ -13,4 +13,7 @@ public class subscriptionExprNode extends exprStmtNode {
 
 	@Override
 	public boolean isAssignable() {return lhs.isAssignable();}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

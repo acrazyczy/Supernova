@@ -12,4 +12,7 @@ public class varExprNode extends exprStmtNode {
 
 	@Override
 	public boolean isAssignable() {return true;}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

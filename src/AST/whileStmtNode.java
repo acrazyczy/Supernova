@@ -11,4 +11,7 @@ public class whileStmtNode extends stmtNode {
 		this.cond = cond;
 		this.stmt = stmt;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }

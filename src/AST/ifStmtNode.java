@@ -11,4 +11,7 @@ public class ifStmtNode extends stmtNode {
 		this.cond = cond;
 		this.trueNode = trueNode;
 	}
+
+	@Override
+	public void accept(ASTVisitor visitor) {visitor.visit(this);}
 }
