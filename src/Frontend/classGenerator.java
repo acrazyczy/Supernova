@@ -68,8 +68,8 @@ public class classGenerator implements ASTVisitor {
 				throw new semanticError("name of member variables cannot be the same as its class.", it.pos);
 			currentClass.memberVariables.put(varName, varType);
 		}
-		if (it.init != null)
-			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);
+//		if (it.init != null)
+//			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);
 	}
 
 	@Override public void visit(programUnitNode it) {}
