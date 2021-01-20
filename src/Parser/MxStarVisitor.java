@@ -240,6 +240,13 @@ public interface MxStarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitLogicConstant(MxStarParser.LogicConstantContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code invalidArrayGenerator}
+	 * labeled alternative in {@link MxStarParser#generator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code arrayGenerator}
 	 * labeled alternative in {@link MxStarParser#generator}.
 	 * @param ctx the parse tree

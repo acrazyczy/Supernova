@@ -448,6 +448,18 @@ public class MxStarBaseListener implements MxStarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterArrayGenerator(MxStarParser.ArrayGeneratorContext ctx) { }
 	/**
 	 * {@inheritDoc}

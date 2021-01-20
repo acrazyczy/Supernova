@@ -394,6 +394,18 @@ public interface MxStarListener extends ParseTreeListener {
 	 */
 	void exitLogicConstant(MxStarParser.LogicConstantContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code invalidArrayGenerator}
+	 * labeled alternative in {@link MxStarParser#generator}.
+	 * @param ctx the parse tree
+	 */
+	void enterInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code invalidArrayGenerator}
+	 * labeled alternative in {@link MxStarParser#generator}.
+	 * @param ctx the parse tree
+	 */
+	void exitInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code arrayGenerator}
 	 * labeled alternative in {@link MxStarParser#generator}.
 	 * @param ctx the parse tree

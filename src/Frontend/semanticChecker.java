@@ -67,6 +67,7 @@ public class semanticChecker implements ASTVisitor {
 				new ArrayList<>(){{add(gScope.getTypeFromName("int", it.pos));}}
 			), it.pos
 		);
+		it.funcDefs.forEach(fd -> gScope.defineMethod(fd.name, typeCalculator.functionTypeGenerator(gScope, fd), fd.pos));
 		it.varDefs.forEach(vd -> vd.accept(this));
 		it.classDefs.forEach(cd -> cd.accept(this));
 		it.funcDefs.forEach(fd -> fd.accept(this));
@@ -79,11 +80,11 @@ public class semanticChecker implements ASTVisitor {
 		it.cond.accept(this);
 		if (!typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
 			throw new semanticError("type not match. It should be bool.", it.cond.pos);
-		currentScope = currentScope instanceof loopScope ? new loopScope(currentScope) : new Scope(currentScope);
+		currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
 		it.trueNode.accept(this);
-		currentScope.parentScope();
+		currentScope = currentScope.parentScope();
 		if (it.falseNode != null) {
-			currentScope = currentScope instanceof loopScope ? new loopScope(currentScope) : new Scope(currentScope);
+			currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
 			it.falseNode.accept(this);
 			currentScope.parentScope();
 		}
@@ -110,16 +111,15 @@ public class semanticChecker implements ASTVisitor {
 				throw new semanticError("type not match. It should be bool.", it.cond.pos);
 		}
 		if (it.incr != null) it.incr.accept(this);
-		currentScope = new loopScope(currentScope);
-		it.stmt.accept(this);
-		currentScope = currentScope.parentScope();
+		if (it.stmt != null) {
+			currentScope = new loopScope(currentScope);
+			it.stmt.accept(this);
+			currentScope = currentScope.parentScope();
+		}
 	}
 
 	@Override
 	public void visit(funcDefNode it) {
-		if (currentScope.containMethod(it.name, false))
-			throw new semanticError("redefinition of method " + it.name + ".", it.pos);
-		currentScope.defineMethod(it.name, typeCalculator.functionTypeGenerator(gScope, it), it.pos);
 		currentScope = new functionScope(currentScope);
 		for (int i = it.paraName.size() - 1;i >= 0;-- i)
 			currentScope.defineVariable(it.paraName.get(i), typeCalculator.calcType(gScope, it.paraType.get(i)), it.pos);
@@ -184,8 +184,8 @@ public class semanticChecker implements ASTVisitor {
 
 	@Override
 	public void visit(suiteStmtNode it) {
-		currentScope = currentScope instanceof loopScope ? new loopScope(currentScope) : new Scope(currentScope);
-		it.stmts.forEach(stmt -> stmt.accept(this));
+		currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
+		it.stmts.forEach(stmt -> {if (stmt != null) stmt.accept(this);});
 		currentScope = currentScope.parentScope();
 	}
 
@@ -214,9 +214,11 @@ public class semanticChecker implements ASTVisitor {
 		it.cond.accept(this);
 		if (!typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
 			throw new semanticError("type not match. It should be bool.", it.cond.pos);
-		currentScope = new loopScope(currentScope);
-		it.stmt.accept(this);
-		currentScope = currentScope.parentScope();
+		if (it.stmt != null) {
+			currentScope = new loopScope(currentScope);
+			it.stmt.accept(this);
+			currentScope = currentScope.parentScope();
+		}
 	}
 
 	@Override
@@ -247,11 +249,14 @@ public class semanticChecker implements ASTVisitor {
 	public void visit(returnStmtNode it) {
 		if (currentReturnType == null)
 			throw new semanticError("return statement should be inside of a function body.", it.pos);
-		if (typeCalculator.isEqualType(currentReturnType, gScope.getTypeFromName("void", it.pos)) && it.returnExpr != null)
-			throw new semanticError("void function should not return any value.", it.pos);
-		it.returnExpr.accept(this);
-		if (!typeCalculator.isEqualType(currentReturnType, it.returnExpr.resultType))
-			throw new semanticError("return type not match.", it.pos);
+		if (typeCalculator.isEqualType(currentReturnType, gScope.getTypeFromName("void", it.pos))) {
+			if (it.returnExpr != null) throw new semanticError("void function should not return any value.", it.pos);
+		} else if (it.returnExpr == null) throw new semanticError("return without return value.", it.pos);
+		else {
+			it.returnExpr.accept(this);
+			if (!typeCalculator.isEqualType(currentReturnType, it.returnExpr.resultType))
+				throw new semanticError("return type not match.", it.pos);
+		}
 	}
 
 	@Override
@@ -270,7 +275,14 @@ public class semanticChecker implements ASTVisitor {
 	}
 
 	@Override
-	public void visit(arrayLiteralNode it) {it.resultType = new arrayType(typeCalculator.calcType(gScope, it.type), it.totalDim);}
+	public void visit(arrayLiteralNode it) {
+		for (exprStmtNode stmt: it.dims) {
+			stmt.accept(this);
+			if (!typeCalculator.isEqualType(stmt.resultType, gScope.getTypeFromName("int", it.pos)))
+				throw new semanticError("expected int type for array size.", it.pos);
+		}
+		it.resultType = new arrayType(typeCalculator.calcType(gScope, it.type), it.totalDim);
+	}
 
 	@Override
 	public void visit(continueStmtNode it) {

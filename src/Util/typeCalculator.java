@@ -11,11 +11,14 @@ import java.util.ArrayList;
 
 public class typeCalculator {
 	static public Type calcType(globalScope gScope, typeNode it) {
+		if (it == null) return gScope.getTypeFromName("void", null);
 		Type baseType = gScope.getTypeFromName(it.typeName, it.pos);
 		return it.dim >= 1 ? new arrayType(baseType, it.dim) : baseType;
 	}
 
 	static public boolean isEqualType(Type lhs, Type rhs) {
+		if (lhs == null) return !rhs.is_bool && !rhs.is_int;
+		if (rhs == null) return !lhs.is_bool && !lhs.is_int;
 		if (lhs instanceof arrayType) {
 			if (!(rhs instanceof arrayType)) return false;
 			return ((arrayType) lhs).dim == ((arrayType) rhs).dim && isEqualType(((arrayType) lhs).elementType, ((arrayType) rhs).elementType);

@@ -4,7 +4,7 @@ program: (funcDef | classDef | varDef)* EOF;
 
 funcDef: varType? Identifier '(' typeArgList? ')' suite;
 
-classDef: Class Identifier '{' (varDef | funcDef)*'};';
+classDef: Class Identifier '{' (varDef | funcDef)*'}'';';
 
 Class: 'class';
 
@@ -18,7 +18,7 @@ typeName: Bool | Int | Void | String | Identifier;
 
 suite: '{' statement* '}';
 
-statement: suite | varDef | controlStmt | compoundStmt | expression ';' | ';';
+statement: suite | varDef | controlStmt | compoundStmt | expression? ';';
 
 atom: Identifier trailer?;
 
@@ -106,12 +106,11 @@ False: 'false';
 
 Null: 'null';
 
-generator: typeName ('[' expression ']')+ ('[' ']')* #arrayGenerator
+generator: typeName ('[' expression ']')* ('['']')+ ('[' expression ']')+ #invalidArrayGenerator
+	| typeName ('[' expression ']')+ ('[' ']')* #arrayGenerator
 	| typeName ('('')')? #classGenerator;
 
-WhiteSpace: [ \t]+ -> skip;
-
-NewLine: ('\r''\n'?|'\n') -> skip;
+WhiteSpace: [ \t\n\r]+ -> skip;
 
 BlockComment: '/*' .*? '*/' -> skip;
 

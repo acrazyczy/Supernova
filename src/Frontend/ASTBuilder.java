@@ -4,6 +4,7 @@ import AST.*;
 import Parser.MxStarBaseVisitor;
 import Parser.MxStarParser;
 import Util.Scope.globalScope;
+import Util.error.semanticError;
 import Util.position;
 
 import java.util.ArrayList;
@@ -134,7 +135,7 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 		if (ctx.logicConstant() != null) constExpr.type = "bool";
 		else if (ctx.IntegerConstant() != null) constExpr.type = "int";
 		else if (ctx.StringConstant() != null) constExpr.type = "string";
-		else constExpr.type = "null";
+		else constExpr.type = null;
 		return constExpr;
 	}
 
@@ -312,6 +313,11 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 	public ASTNode visitTypeArgList(MxStarParser.TypeArgListContext ctx) {
 		return super.visitTypeArgList(ctx);
 	}*/
+
+	@Override
+	public ASTNode visitInvalidArrayGenerator(MxStarParser.InvalidArrayGeneratorContext ctx) {
+		throw new semanticError("invalid new expression.", new position(ctx));
+	}
 
 	@Override
 	public ASTNode visitTypeName(MxStarParser.TypeNameContext ctx) {

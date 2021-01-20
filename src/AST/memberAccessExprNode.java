@@ -12,7 +12,7 @@ public class memberAccessExprNode extends exprStmtNode {
 	}
 
 	@Override
-	public boolean isAssignable() {return lhs.isAssignable();}
+	public boolean isAssignable() {return rhs.isAssignable();}
 
 	@Override
 	public void accept(ASTVisitor visitor) {visitor.visit(this);}
