@@ -80,9 +80,11 @@ public class semanticChecker implements ASTVisitor {
 		it.cond.accept(this);
 		if (!typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
 			throw new semanticError("type not match. It should be bool.", it.cond.pos);
-		currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
-		it.trueNode.accept(this);
-		currentScope = currentScope.parentScope();
+		if (it.trueNode != null) {
+			currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
+			it.trueNode.accept(this);
+			currentScope = currentScope.parentScope();
+		}
 		if (it.falseNode != null) {
 			currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
 			it.falseNode.accept(this);
@@ -238,7 +240,7 @@ public class semanticChecker implements ASTVisitor {
 		it.rhs.accept(this);
 		if (!typeCalculator.isEqualType(it.lhs.resultType, it.rhs.resultType))
 			throw new semanticError("type not match.", it.pos);
-		if (typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("bool", it.pos)))
+		if (!it.lhs.resultType.is_int && !it.lhs.resultType.is_string)
 			throw new semanticError("expected int or string type for calculation.", it.pos);
 		if (typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos)) && it.op != binaryExprNode.opType.Plus)
 			throw new semanticError("MxStar does not support arithmetic for string except addition.", it.pos);
@@ -262,6 +264,8 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(varDefStmtNode it) {
 		Type type = typeCalculator.calcType(gScope, it.varType);
+		if (type.is_void || (type instanceof arrayType) && ((arrayType) type).elementType.is_void)
+			throw new semanticError("variable type cannot be void.", it.varType.pos);
 		if (it.init != null) {
 			it.init.accept(this);
 			if (!typeCalculator.isEqualType(type, it.init.resultType))
@@ -281,7 +285,10 @@ public class semanticChecker implements ASTVisitor {
 			if (!typeCalculator.isEqualType(stmt.resultType, gScope.getTypeFromName("int", it.pos)))
 				throw new semanticError("expected int type for array size.", it.pos);
 		}
-		it.resultType = new arrayType(typeCalculator.calcType(gScope, it.type), it.totalDim);
+		Type baseType = typeCalculator.calcType(gScope, it.type);
+		if (typeCalculator.isEqualType(baseType, gScope.getTypeFromName("void", it.pos)))
+			throw new semanticError("void type cannot be used as base type of an array.", it.pos);
+		it.resultType = new arrayType(baseType, it.totalDim);
 	}
 
 	@Override
@@ -362,5 +369,9 @@ public class semanticChecker implements ASTVisitor {
 	}
 
 	@Override
-	public void visit(classLiteralNode it) {it.resultType = typeCalculator.calcType(gScope, it.type);}
+	public void visit(classLiteralNode it) {
+		it.resultType = typeCalculator.calcType(gScope, it.type);
+		if (it.resultType.is_bool || it.resultType.is_int || it.resultType.is_void)
+			throw new semanticError("type cannot be used in new expression.", it.pos);
+	}
 }
