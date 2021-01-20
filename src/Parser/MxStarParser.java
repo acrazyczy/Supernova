@@ -1,6 +1,5 @@
-// Generated from MxStar.g4 by ANTLR 4.7.2
+// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9
 package Parser;
-
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
@@ -12,7 +11,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class MxStarParser extends Parser {
-	static { RuntimeMetaData.checkVersion("4.7.2", RuntimeMetaData.VERSION); }
+	static { RuntimeMetaData.checkVersion("4.9", RuntimeMetaData.VERSION); }
 
 	protected static final DFA[] _decisionToDFA;
 	protected static final PredictionContextCache _sharedContextCache =
@@ -120,6 +119,7 @@ public class MxStarParser extends Parser {
 		super(input);
 		_interp = new ParserATNSimulator(this,_ATN,_decisionToDFA,_sharedContextCache);
 	}
+
 	public static class ProgramContext extends ParserRuleContext {
 		public TerminalNode EOF() { return getToken(MxStarParser.EOF, 0); }
 		public List<FuncDefContext> funcDef() {

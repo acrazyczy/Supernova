@@ -3,10 +3,9 @@ package AST;
 import Util.position;
 
 public class assignExprNode extends exprStmtNode {
-	public varExprNode var;
-	public exprStmtNode value;
+	public exprStmtNode var, value;
 
-	public assignExprNode(position pos, varExprNode var, exprStmtNode value) {
+	public assignExprNode(position pos, exprStmtNode var, exprStmtNode value) {
 		super(pos);
 		this.var = var;
 		this.value = value;

@@ -1,6 +1,5 @@
-// Generated from MxStar.g4 by ANTLR 4.7.2
+// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9
 package Parser;
-
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

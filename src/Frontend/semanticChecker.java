@@ -21,10 +21,53 @@ public class semanticChecker implements ASTVisitor {
 	private Type currentReturnType = null;
 	private globalScope gScope;
 
-	public semanticChecker(globalScope gScope) {this.gScope = gScope;}
+	public semanticChecker(globalScope gScope) {this.currentScope = this.gScope = gScope;}
 
 	@Override
 	public void visit(rootNode it) {
+		gScope.defineMethod("print",
+			new functionType(
+				gScope.getTypeFromName("void", it.pos),
+				new ArrayList<>(){{add(gScope.getTypeFromName("string", it.pos));}}
+			), it.pos
+		);
+		gScope.defineMethod("println",
+			new functionType(
+				gScope.getTypeFromName("void", it.pos),
+				new ArrayList(){{add(gScope.getTypeFromName("string", it.pos));}}
+			), it.pos
+		);
+		gScope.defineMethod("printInt",
+			new functionType(
+				gScope.getTypeFromName("void", it.pos),
+				new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
+			), it.pos
+		);
+		gScope.defineMethod("printlnInt",
+			new functionType(
+				gScope.getTypeFromName("void", it.pos),
+				new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
+			), it.pos
+		);
+		gScope.defineMethod("getString",
+			new functionType(
+				gScope.getTypeFromName("string", it.pos),
+				new ArrayList<>()
+			), it.pos
+		);
+		gScope.defineMethod("getInt",
+			new functionType(
+				gScope.getTypeFromName("int", it.pos),
+				new ArrayList<>()
+			), it.pos
+		);
+		gScope.defineMethod("toString",
+			new functionType(
+				gScope.getTypeFromName("string", it.pos),
+				new ArrayList<>(){{add(gScope.getTypeFromName("int", it.pos));}}
+			), it.pos
+		);
+		it.varDefs.forEach(vd -> vd.accept(this));
 		it.classDefs.forEach(cd -> cd.accept(this));
 		it.funcDefs.forEach(fd -> fd.accept(this));
 	}
@@ -34,7 +77,7 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(ifStmtNode it) {
 		it.cond.accept(this);
-		if (typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
+		if (!typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
 			throw new semanticError("type not match. It should be bool.", it.cond.pos);
 		currentScope = currentScope instanceof loopScope ? new loopScope(currentScope) : new Scope(currentScope);
 		it.trueNode.accept(this);
@@ -74,7 +117,7 @@ public class semanticChecker implements ASTVisitor {
 
 	@Override
 	public void visit(funcDefNode it) {
-		if (currentScope.containMethod(it.name))
+		if (currentScope.containMethod(it.name, false))
 			throw new semanticError("redefinition of method " + it.name + ".", it.pos);
 		currentScope.defineMethod(it.name, typeCalculator.functionTypeGenerator(gScope, it), it.pos);
 		currentScope = new functionScope(currentScope);
@@ -87,13 +130,16 @@ public class semanticChecker implements ASTVisitor {
 	}
 
 	@Override
-	public void visit(newExprNode it) {it.resultType = it.expr.resultType;}
+	public void visit(newExprNode it) {
+		it.expr.accept(this);
+		it.resultType = it.expr.resultType;
+	}
 
 	@Override
 	public void visit(varExprNode it) {
-		if (!currentScope.containVariable(it.varName))
+		if (!currentScope.containVariable(it.varName, true))
 			throw new semanticError("variable " + it.varName + " not defined.", it.pos);
-		it.resultType = currentScope.getVariableType(it.varName);
+		it.resultType = currentScope.getVariableType(it.varName, true);
 	}
 
 	@Override
@@ -217,7 +263,7 @@ public class semanticChecker implements ASTVisitor {
 				throw new semanticError("type not match.", it.init.pos);
 		}
 		for (String name: it.names) {
-			if (currentScope.containVariable(name))
+			if (currentScope.containVariable(name, false))
 				throw new semanticError("redefinition of variable " + name + ".", it.pos);
 			currentScope.defineVariable(name, type, it.pos);
 		}
@@ -234,9 +280,9 @@ public class semanticChecker implements ASTVisitor {
 
 	@Override
 	public void visit(funcCallExprNode it) {
-		if (!currentScope.containMethod(it.funcName))
+		if (!currentScope.containMethod(it.funcName, true))
 			throw new semanticError("method " + it.funcName + " not defined.", it.pos);
-		functionType type = (functionType) currentScope.getMethodType(it.funcName);
+		functionType type = (functionType) currentScope.getMethodType(it.funcName, true);
 		if (it.argList.size() != type.paraType.size())
 			throw new semanticError("number of parameters not match.", it.pos);
 		for (int i = it.argList.size() - 1;i >= 0;-- i) {
@@ -257,46 +303,33 @@ public class semanticChecker implements ASTVisitor {
 		} else if (it.lhs.resultType instanceof arrayType) {
 			currentScope.defineMethod("size", new functionType(gScope.getTypeFromName("int", it.pos), new ArrayList<>()),it.pos);
 		} else if (typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos))) {
-			currentScope.defineMethod("print",
-				new functionType(
-					gScope.getTypeFromName("void", it.pos),
-					new ArrayList<>(){{add(gScope.getTypeFromName("string", it.pos));}}
-				), it.pos
-			);
-			currentScope.defineMethod("println",
-				new functionType(
-					gScope.getTypeFromName("void", it.pos),
-					new ArrayList(){{add(gScope.getTypeFromName("string", it.pos));}}
-				), it.pos
-			);
-			currentScope.defineMethod("printInt",
-				new functionType(
-					gScope.getTypeFromName("void", it.pos),
-					new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
-				), it.pos
-			);
-			currentScope.defineMethod("printlnInt",
-				new functionType(
-					gScope.getTypeFromName("void", it.pos),
-					new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
-				), it.pos
-			);
-			currentScope.defineMethod("getString",
-				new functionType(
-					gScope.getTypeFromName("string", it.pos),
-					new ArrayList<>()
-				), it.pos
-			);
-			currentScope.defineMethod("getInt",
+			currentScope.defineMethod("length",
 				new functionType(
 					gScope.getTypeFromName("int", it.pos),
 					new ArrayList<>()
 				), it.pos
 			);
-			currentScope.defineMethod("toString",
+			currentScope.defineMethod("substring",
 				new functionType(
 					gScope.getTypeFromName("string", it.pos),
-					new ArrayList<>(){{add(gScope.getTypeFromName("int", it.pos));}}
+					new ArrayList(){
+						{
+							add(gScope.getTypeFromName("int", it.pos));
+							add(gScope.getTypeFromName("int", it.pos));
+						}
+					}
+				), it.pos
+			);
+			currentScope.defineMethod("parseInt",
+				new functionType(
+					gScope.getTypeFromName("int", it.pos),
+					new ArrayList()
+				), it.pos
+			);
+			currentScope.defineMethod("ord",
+				new functionType(
+					gScope.getTypeFromName("int", it.pos),
+					new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
 				), it.pos
 			);
 		}

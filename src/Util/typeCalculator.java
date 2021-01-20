@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class typeCalculator {
 	static public Type calcType(globalScope gScope, typeNode it) {
 		Type baseType = gScope.getTypeFromName(it.typeName, it.pos);
-		return it.dim > 1 ? new arrayType(baseType, it.dim) : baseType;
+		return it.dim >= 1 ? new arrayType(baseType, it.dim) : baseType;
 	}
 
 	static public boolean isEqualType(Type lhs, Type rhs) {

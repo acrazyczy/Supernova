@@ -24,27 +24,27 @@ public class Scope {
 		meths.put(name, t);
 	}
 
-	public boolean containVariable(String name) {
+	public boolean containVariable(String name, boolean lookUpon) {
 		if (vars.containsKey(name)) return true;
-		else if (parentScope != null) return parentScope.containVariable(name);
+		else if (parentScope != null && lookUpon) return parentScope.containVariable(name, true);
 		else return false;
 	}
 
-	public boolean containMethod(String name) {
+	public boolean containMethod(String name, boolean lookUpon) {
 		if (meths.containsKey(name)) return true;
-		else if (parentScope != null) return parentScope.containMethod(name);
+		else if (parentScope != null && lookUpon) return parentScope.containMethod(name, true);
 		else return false;
 	}
 
-	public Type getVariableType(String name) {
+	public Type getVariableType(String name, boolean lookUpon) {
 		if (vars.containsKey(name)) return vars.get(name);
-		else if (parentScope != null) return parentScope.getVariableType(name);
+		else if (parentScope != null && lookUpon) return parentScope.getVariableType(name, true);
 		else return null;
 	}
 
-	public Type getMethodType(String name) {
+	public Type getMethodType(String name, boolean lookUpon) {
 		if (meths.containsKey(name)) return meths.get(name);
-		else if (parentScope != null) return parentScope.getMethodType(name);
+		else if (parentScope != null && lookUpon) return parentScope.getMethodType(name, true);
 		else return null;
 	}
 }

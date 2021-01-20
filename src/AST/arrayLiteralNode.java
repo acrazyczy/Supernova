@@ -9,7 +9,7 @@ public class arrayLiteralNode extends exprStmtNode {
 	public ArrayList<exprStmtNode> dims = new ArrayList<>();
 	public int totalDim;
 
-	public arrayLiteralNode(position pos, typeNode t) {
+	public arrayLiteralNode(position pos, typeNode type) {
 		super(pos);
 		this.type = type;
 	}
