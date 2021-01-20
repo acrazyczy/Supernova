@@ -88,7 +88,7 @@ public class semanticChecker implements ASTVisitor {
 		if (it.falseNode != null) {
 			currentScope = (currentScope instanceof loopScope) ? new loopScope(currentScope) : new Scope(currentScope);
 			it.falseNode.accept(this);
-			currentScope.parentScope();
+			currentScope = currentScope.parentScope();
 		}
 	}
 
