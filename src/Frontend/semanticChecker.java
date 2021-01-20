@@ -67,13 +67,20 @@ public class semanticChecker implements ASTVisitor {
 				new ArrayList<>(){{add(gScope.getTypeFromName("int", it.pos));}}
 			), it.pos
 		);
-		it.funcDefs.forEach(fd -> gScope.defineMethod(fd.name, typeCalculator.functionTypeGenerator(gScope, fd), fd.pos));
-		it.varDefs.forEach(vd -> vd.accept(this));
-		it.classDefs.forEach(cd -> cd.accept(this));
-		it.funcDefs.forEach(fd -> fd.accept(this));
+		it.units.forEach(unit -> {if (unit.funcDef != null) gScope.registerMethod(gScope, unit.funcDef);});
+		if (!gScope.containMethod("main", true))
+			throw new semanticError("no main function.", it.pos);
+		it.units.forEach(unit -> unit.accept(this));
 	}
 
 	@Override public void visit(typeNode it) {}
+
+	@Override
+	public void visit(programUnitNode it) {
+		if (it.funcDef != null) it.funcDef.accept(this);
+		if (it.classDef != null) it.classDef.accept(this);
+		if (it.varDef != null) it.varDef.accept(this);
+	}
 
 	@Override
 	public void visit(ifStmtNode it) {
@@ -151,7 +158,7 @@ public class semanticChecker implements ASTVisitor {
 		currentScope = new Scope(currentScope);
 		currentClass.memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
 		currentClass.memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));
-		it.methodDefs.forEach(md -> md.accept(this));
+		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
 		currentScope = currentScope.parentScope();
 		currentClassName = null;
 		currentClass = null;
@@ -275,6 +282,7 @@ public class semanticChecker implements ASTVisitor {
 			if (currentScope.containVariable(name, false))
 				throw new semanticError("redefinition of variable " + name + ".", it.pos);
 			currentScope.defineVariable(name, type, it.pos);
+			if (currentClass != null) currentClass.memberVariables.put(name, type);
 		}
 	}
 

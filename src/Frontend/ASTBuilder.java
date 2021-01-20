@@ -114,8 +114,7 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 	@Override
 	public ASTNode visitClassDef(MxStarParser.ClassDefContext ctx) {
 		classDefNode classDef = new classDefNode(new position(ctx), ctx.Identifier().getText());
-		ctx.funcDef().forEach(fd -> classDef.methodDefs.add((funcDefNode) visit(fd)));
-		ctx.varDef().forEach(vd -> classDef.varDefs.add((varDefStmtNode) visit(vd)));
+		ctx.programUnit().forEach(unit -> classDef.units.add((programUnitNode) visit(unit)));
 		return classDef;
 	}
 
@@ -240,10 +239,17 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 	@Override
 	public ASTNode visitProgram(MxStarParser.ProgramContext ctx) {
 		rootNode root = new rootNode(new position(ctx));
-		ctx.classDef().forEach(cd -> root.classDefs.add((classDefNode) visit(cd)));
-		ctx.funcDef().forEach(fd -> root.funcDefs.add((funcDefNode) visit(fd)));
-		ctx.varDef().forEach(vd -> root.varDefs.add((varDefStmtNode) visit(vd)));
+		ctx.programUnit().forEach(unit -> root.units.add((programUnitNode) visit(unit)));
 		return root;
+	}
+
+	@Override
+	public ASTNode visitProgramUnit(MxStarParser.ProgramUnitContext ctx) {
+		programUnitNode programUnit = new programUnitNode(new position(ctx));
+		if (ctx.varDef() != null) programUnit.varDef = (varDefStmtNode) visit(ctx.varDef());
+		if (ctx.classDef() != null) programUnit.classDef = (classDefNode) visit(ctx.classDef());
+		if (ctx.funcDef() != null) programUnit.funcDef = (funcDefNode) visit(ctx.funcDef());
+		return programUnit;
 	}
 
 	@Override

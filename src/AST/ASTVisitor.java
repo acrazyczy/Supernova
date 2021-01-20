@@ -17,6 +17,7 @@ public interface ASTVisitor {
 	void visit(logicExprNode it);
 	void visit(memberAccessExprNode it);
 	void visit(newExprNode it);
+	void visit(programUnitNode it);
 	void visit(returnStmtNode it);
 	void visit(rootNode it);
 	void visit(subscriptionExprNode it);

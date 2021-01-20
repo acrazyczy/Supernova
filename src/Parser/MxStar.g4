@@ -1,10 +1,12 @@
 grammar MxStar;
 
-program: (funcDef | classDef | varDef)* EOF;
+program: programUnit* EOF;
+
+programUnit: funcDef | classDef | varDef;
 
 funcDef: varType? Identifier '(' typeArgList? ')' suite;
 
-classDef: Class Identifier '{' (varDef | funcDef)*'}'';';
+classDef: Class Identifier '{' programUnit* '}'';';
 
 Class: 'class';
 

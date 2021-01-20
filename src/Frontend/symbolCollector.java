@@ -17,13 +17,14 @@ public class symbolCollector implements ASTVisitor {
 		gScope.addType("int", new Type("int"), it.pos);
 		gScope.addType("string", new Type("string"), it.pos);
 		gScope.addType("void", new Type("void"), it.pos);
-		it.classDefs.forEach(cd -> cd.accept(this));
+		it.units.forEach(unit -> {if (unit.classDef != null) unit.classDef.accept(this);});
 	}
 
 	@Override
 	public void visit(classDefNode it) {gScope.addType(it.name, new classType(), it.pos);}
 
 	@Override public void visit(typeNode it) {}
+	@Override public void visit(programUnitNode it) {}
 	@Override public void visit(ifStmtNode it) {}
 	@Override public void visit(cmpExprNode it) {}
 	@Override public void visit(forStmtNode it) {}

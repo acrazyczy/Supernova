@@ -21,7 +21,7 @@ public class classGenerator implements ASTVisitor {
 	public classGenerator(globalScope gScope) {this.gScope = gScope;}
 
 	@Override
-	public void visit(rootNode it) {it.classDefs.forEach(cd -> cd.accept(this));}
+	public void visit(rootNode it) {it.units.forEach(unit -> {if (unit.classDef != null) unit.classDef.accept(this);});}
 
 	@Override
 	public void visit(funcDefNode it) {
@@ -44,9 +44,12 @@ public class classGenerator implements ASTVisitor {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentClassName = it.name;
 		currentClass.memberVariables = new HashMap<>();
-		it.varDefs.forEach(vd -> vd.accept(this));
 		currentClass.memberMethods = new HashMap<>();
-		it.methodDefs.forEach(md -> md.accept(this));
+		it.units.forEach(unit -> {
+			if (unit.classDef != null) throw new semanticError("Mxstar does not support subclass.", unit.classDef.pos);
+			if (unit.varDef != null) unit.varDef.accept(this);
+			if (unit.funcDef != null) unit.funcDef.accept(this);
+		});
 		if (!containConstructor) {
 			functionType defaultConstructor = new functionType(gScope.getTypeFromName("void", it.pos), new ArrayList<>());
 			currentClass.memberMethods.put(it.name, defaultConstructor);
@@ -69,6 +72,7 @@ public class classGenerator implements ASTVisitor {
 			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);
 	}
 
+	@Override public void visit(programUnitNode it) {}
 	@Override public void visit(arrayLiteralNode it) {}
 	@Override public void visit(continueStmtNode it) {}
 	@Override public void visit(funcCallExprNode it) {}
