@@ -30,7 +30,7 @@ public class classGenerator implements ASTVisitor {
 				throw new semanticError("return type of " + it.name + " undeclared.", it.pos);
 			if (!it.paraName.isEmpty())
 				throw new semanticError("MxStar does not support constructor with parameters.", it.pos);
-			functionType defaultConstructor = new functionType(new Type("void"), new ArrayList<>());
+			functionType defaultConstructor = new functionType(gScope.getTypeFromName("void", it.pos), new ArrayList<>());
 			currentClass.memberMethods.put(currentClassName, defaultConstructor);
 		} else {
 			if (it.name.equals(currentClassName))
@@ -48,7 +48,7 @@ public class classGenerator implements ASTVisitor {
 		currentClass.memberMethods = new HashMap<>();
 		it.methodDefs.forEach(md -> md.accept(this));
 		if (!containConstructor) {
-			functionType defaultConstructor = new functionType(new Type("void"), new ArrayList<>());
+			functionType defaultConstructor = new functionType(gScope.getTypeFromName("void", it.pos), new ArrayList<>());
 			currentClass.memberMethods.put(it.name, defaultConstructor);
 		} else containConstructor = false;
 		currentClass = null;

@@ -16,7 +16,11 @@ public class typeCalculator {
 	}
 
 	static public boolean isEqualType(Type lhs, Type rhs) {
-		return true;
+		if (lhs instanceof arrayType) {
+			if (!(rhs instanceof arrayType)) return false;
+			return ((arrayType) lhs).dim == ((arrayType) rhs).dim && isEqualType(((arrayType) lhs).elementType, ((arrayType) rhs).elementType);
+		} else if (rhs instanceof arrayType) return false;
+		return lhs == rhs;
 	}
 
 	static public functionType functionTypeGenerator(globalScope gScope, funcDefNode it) {
