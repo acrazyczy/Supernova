@@ -6,17 +6,14 @@ import java.util.StringJoiner;
 
 public class LLVMStructureType extends LLVMAggregateType {
 	private ArrayList<LLVMFirstClassType> types;
+	String name;
+	int size;
 
 	@Override
-	public int size() {
-		//to do
-		return 0;
-	}
+	public int size() {return size;}
 
 	@Override
 	public String toString() {
-		StringJoiner ret =new StringJoiner(", ","<{ "," }>");
-		types.forEach(type -> ret.add(type.toString()));
-		return ret.toString();
+		return "%struct." + name;
 	}
 }
