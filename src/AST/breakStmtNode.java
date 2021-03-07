@@ -3,6 +3,8 @@ package AST;
 import Util.position;
 
 public class breakStmtNode extends stmtNode {
+	public stmtNode loopNode;
+
 	public breakStmtNode(position pos) {super(pos);}
 
 	@Override

@@ -1,7 +1,6 @@
 package LLVMIR;
 
 import LLVMIR.Instruction.br;
-import LLVMIR.Instruction.jump;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Instruction.terminalStmt;
 import Util.error.internalError;
@@ -28,10 +27,10 @@ public class basicBlock {
 		ArrayList<basicBlock> ret = new ArrayList<>();
 		if (tailStmt instanceof br) {
 			ret.add(((br) tailStmt).trueBranch);
-			ret.add(((br) tailStmt).falseBranch);
-		} else if (tailStmt instanceof jump) {
-			ret.add(((jump) tailStmt).destination);
+			if (((br) tailStmt).falseBranch != null) ret.add(((br) tailStmt).falseBranch);
 		}
 		return ret;
 	}
+
+	public boolean hasTerminalStmt() {return tailStmt != null;}
 }

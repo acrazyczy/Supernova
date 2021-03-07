@@ -121,7 +121,7 @@ public class semanticChecker implements ASTVisitor {
 		}
 		if (it.incr != null) it.incr.accept(this);
 		if (it.stmt != null) {
-			currentScope = new loopScope(currentScope);
+			currentScope = new loopScope(currentScope, it);
 			it.stmt.accept(this);
 			currentScope = currentScope.parentScope();
 		}
@@ -175,6 +175,7 @@ public class semanticChecker implements ASTVisitor {
 	public void visit(breakStmtNode it) {
 		if (!(currentScope instanceof loopScope))
 			throw new semanticError("break statement should be inside of a loop body.", it.pos);
+		it.loopNode = ((loopScope) currentScope).loopNode;
 	}
 
 	@Override
@@ -224,7 +225,7 @@ public class semanticChecker implements ASTVisitor {
 		if (!typeCalculator.isEqualType(it.cond.resultType, gScope.getTypeFromName("bool", it.pos)))
 			throw new semanticError("type not match. It should be bool.", it.cond.pos);
 		if (it.stmt != null) {
-			currentScope = new loopScope(currentScope);
+			currentScope = new loopScope(currentScope, it);
 			it.stmt.accept(this);
 			currentScope = currentScope.parentScope();
 		}
@@ -303,6 +304,7 @@ public class semanticChecker implements ASTVisitor {
 	public void visit(continueStmtNode it) {
 		if (!(currentScope instanceof loopScope))
 			throw new semanticError("continue statement should be inside of a loop body.", it.pos);
+		it.loopNode = ((loopScope) currentScope).loopNode;
 	}
 
 	@Override

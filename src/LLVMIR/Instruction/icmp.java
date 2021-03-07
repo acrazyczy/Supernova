@@ -9,13 +9,11 @@ public class icmp extends statement {
 	}
 
 	private condCode cond;
-	private LLVMType type;
 	private entity op1, op2;
 
-	public icmp(condCode cond, LLVMType type, entity op1, entity op2) {
-		super();
+	public icmp(condCode cond, entity op1, entity op2, entity dest) {
+		super(dest);
 		this.cond = cond;
-		this.type = type;
 		this.op1 = op1;
 		this.op2 = op2;
 	}
