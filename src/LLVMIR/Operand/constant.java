@@ -1,5 +1,7 @@
 package LLVMIR.Operand;
 
+import LLVMIR.TypeSystem.LLVMSingleValueType;
+
 public abstract class constant extends entity {
-	public constant() {}
+	public constant(LLVMSingleValueType type) {super(type);}
 }

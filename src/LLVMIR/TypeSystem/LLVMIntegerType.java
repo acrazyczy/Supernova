@@ -1,6 +1,6 @@
 package LLVMIR.TypeSystem;
 
-public class LLVMIntegerType extends LLVMFirstClassType {
+public class LLVMIntegerType extends LLVMSingleValueType {
 	private int width;
 
 	public LLVMIntegerType(int width) {

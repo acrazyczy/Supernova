@@ -1,11 +1,12 @@
 package LLVMIR.Operand;
 
+import LLVMIR.TypeSystem.LLVMIntegerType;
+
 public class integerConstant extends constant {
-	private int width, val;
+	private int val;
 
 	public integerConstant(int width, int val) {
-		super();
-		this.width = width;
+		super(new LLVMIntegerType(width));
 		this.val = val;
 	}
 }

@@ -2,13 +2,8 @@ package Backend;
 
 import AST.*;
 import LLVMIR.Instruction.*;
-import LLVMIR.Operand.integerConstant;
-import LLVMIR.Operand.register;
-import LLVMIR.Operand.voidConstant;
-import LLVMIR.TypeSystem.LLVMAggregateType;
-import LLVMIR.TypeSystem.LLVMFirstClassType;
-import LLVMIR.TypeSystem.LLVMIntegerType;
-import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.Operand.*;
+import LLVMIR.TypeSystem.*;
 import LLVMIR.basicBlock;
 import LLVMIR.entry;
 import LLVMIR.function;
@@ -62,19 +57,28 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(varDefStmtNode it) {
 		Type semanticType = typeCalculator.calcType(gScope, it.varType);
-		register value = new register();
-		if (semanticType.is_int) currentBlock.push_back(new alloca(new LLVMIntegerType(32), value));
-		else if (semanticType.is_bool) currentBlock.push_back(new alloca(new LLVMIntegerType(1), value));
-		else if (semanticType.is_string) currentBlock.push_back(new alloca(new LLVMPointerType(new LLVMIntegerType(8)), value));
+		register value = null;
+		if (semanticType.is_int) {
+			value = new register(new LLVMIntegerType(32));
+			currentBlock.push_back(new alloca(value));
+		} else if (semanticType.is_bool) {
+			value = new register(new LLVMIntegerType(1));
+			currentBlock.push_back(new alloca(value));
+		} else if (semanticType.is_string) {
+			value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
+			currentBlock.push_back(new alloca(value));
+		}
 		else if (semanticType instanceof arrayType) {
 			// to do: get mapped type
 			LLVMAggregateType mappedType = null;
-			currentBlock.push_back(new alloca(new LLVMPointerType(mappedType), value));
+			value = new register(new LLVMPointerType(mappedType));
+			currentBlock.push_back(new alloca(value));
 
 		} else {
 			// to do: get mapped type
 			LLVMAggregateType mappedType = null;
-			currentBlock.push_back(new alloca(new LLVMPointerType(mappedType), value));
+			value = new register(new LLVMPointerType(mappedType));
+			currentBlock.push_back(new alloca(value));
 		}
 	}
 
@@ -132,6 +136,10 @@ public class IRBuilder implements ASTVisitor {
 		it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 		currentBlock = dest;
+
+		programEntry.basicBlocks.add(cond);
+		programEntry.basicBlocks.add(body);
+		programEntry.basicBlocks.add(dest);
 	}
 
 	@Override
@@ -195,7 +203,27 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(constExprNode it) {
+		entity value = null;
+		if (it.val != null) value = it.val;
+		if (it.type == null) {
 
+		} else if (it.type.equals("int")) {
+			if (value == null) value = new integerConstant(32, Integer.parseInt(it.value));
+			else {
+				currentBlock.push_back(new alloca(value));
+				currentBlock.push_back(new store(new integerConstant(32, Integer.parseInt(it.value)), value));
+			}
+		} else if (it.type.equals("bool")) {
+			if (value == null) value = new booleanConstant(it.value.equals("true") ? 1 : 0);
+			else {
+				currentBlock.push_back(new alloca(value));
+				currentBlock.push_back(new store(new booleanConstant(it.value.equals("true") ? 1 : 0), value));
+			}
+		} else {
+			assert it.type.equals("string");
+			// to do: process string constant
+		}
+		it.val = value;
 	}
 
 	@Override
@@ -251,6 +279,11 @@ public class IRBuilder implements ASTVisitor {
 		it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
 		currentBlock = dest;
+
+		programEntry.basicBlocks.add(cond);
+		programEntry.basicBlocks.add(body);
+		programEntry.basicBlocks.add(incr);
+		programEntry.basicBlocks.add(dest);
 	}
 
 	@Override
@@ -260,7 +293,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register();
+			value = new register(new LLVMIntegerType(1));
 			it.val = value;
 		}
 		icmp.condCode condCode = null;
