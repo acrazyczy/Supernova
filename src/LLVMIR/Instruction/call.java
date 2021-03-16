@@ -14,4 +14,10 @@ public class call extends statement {
 		this.callee = callee;
 		this.parameters = parameters;
 	}
+
+	public call(function callee, ArrayList<entity> parameters, entity dest) {
+		super(dest);
+		this.callee = callee;
+		this.parameters = parameters;
+	}
 }

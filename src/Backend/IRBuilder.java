@@ -11,8 +11,11 @@ import Util.Scope.Scope;
 import Util.Scope.globalScope;
 import Util.Type.Type;
 import Util.Type.arrayType;
+import Util.Type.classType;
 import Util.typeCalculator;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class IRBuilder implements ASTVisitor {
@@ -35,12 +38,40 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(memberAccessExprNode it) {
+		it.lhs.accept(this);
+		register value = null;
+		if (it.val != null) value = (register) it.val;
+		if (it.rhs instanceof funcCallExprNode) {
 
+		} else {
+			assert it.rhs instanceof varExprNode;
+			classType mappedType = null;// to do: get class type of it.lhs
+			ArrayList<entity> idxes = new ArrayList<>();
+			idxes.add(new integerConstant(32, 0));
+			idxes.add(new integerConstant(32, mappedType.memberVariablesIndex.get(((varExprNode) it.rhs).varName)));
+			LLVMSingleValueType pointeeType = null;// to do: get llvm type of member variables
+			entity ptr = new register(new LLVMPointerType(pointeeType));
+			currentBlock.push_back(new getelementptr(it.lhs.val, idxes, ptr));
+			if (value == null) value = new register(pointeeType);
+			currentBlock.push_back(new load(ptr, value));
+		}
+		it.val = value;
 	}
 
 	@Override
 	public void visit(funcCallExprNode it) {
-
+		// to do: get function block
+		function func = null;
+		ArrayList<entity> parameters = new ArrayList<>();
+		it.argList.forEach(argv -> {argv.accept(this);parameters.add(argv.val);});
+		if (func.returnType == null) currentBlock.push_back(new call(func, parameters));
+		else {
+			register value;
+			if (it.val != null) value = (register) it.val;
+			else value = new register(func.returnType);
+			currentBlock.push_back(new call(func, parameters, value));
+			// to do: support member methods
+		}
 	}
 
 	@Override
@@ -98,7 +129,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register();
+			value = new register(new LLVMIntegerType(32));
 			it.val = value;
 		}
 		binary.instCode instCode = null;
@@ -154,7 +185,7 @@ public class IRBuilder implements ASTVisitor {
 			register value;
 			if (it.val != null) value = (register) it.val;
 			else {
-				value = new register();
+				value = new register(it.op == unaryExprNode.opType.LogicNot ? new LLVMIntegerType(1) : new LLVMIntegerType(32));
 				it.val = value;
 			}
 			if (it.op == unaryExprNode.opType.Plus)
@@ -167,8 +198,7 @@ public class IRBuilder implements ASTVisitor {
 					assert it.falseBranch != null;
 					currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
 				}
-			}
-			else if (it.op == unaryExprNode.opType.BitwiseNot)
+			} else if (it.op == unaryExprNode.opType.BitwiseNot)
 				currentBlock.push_back(new binary(binary.instCode.xor, new integerConstant(32, -1), it.expr.val, value));
 			else if (it.op == unaryExprNode.opType.SufIncr) {
 				currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 0), it.expr.val, value));
@@ -190,7 +220,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register();
+			value = new register(new LLVMIntegerType(1));
 			it.val = value;
 		}
 		binary.instCode instCode = it.op == logicExprNode.opType.And ? binary.instCode.and : binary.instCode.or;
@@ -340,5 +370,27 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(rootNode it) {
 
+	}
+
+	@Override
+	public void visit(subscriptionExprNode it) {
+		it.lhs.accept(this);
+		it.rhs.accept(this);
+		register value;
+		if (it.val != null) value = (register) it.val;
+		else {
+			value = new register(((LLVMPointerType)it.lhs.val.type).pointeeType);
+			it.val = value;
+		}
+		register ptr = new register(it.lhs.val.type);
+		currentBlock.push_back(new getelementptr(it.lhs.val, new ArrayList<entity>(Arrays.asList(it.rhs.val)) , ptr));
+		currentBlock.push_back(new load(ptr, value));
+	}
+
+	@Override
+	public void visit(programUnitNode it) {
+		if (it.classDef != null) it.classDef.accept(this);
+		if (it.varDef != null) it.varDef.accept(this);
+		if (it.funcDef != null) it.funcDef.accept(this);
 	}
 }

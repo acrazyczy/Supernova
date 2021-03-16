@@ -283,7 +283,7 @@ public class semanticChecker implements ASTVisitor {
 			if (currentScope.containVariable(name, false))
 				throw new semanticError("redefinition of variable " + name + ".", it.pos);
 			currentScope.defineVariable(name, type, it.pos);
-			if (currentClass != null) currentClass.memberVariables.put(name, type);
+			assert currentClass == null;
 		}
 	}
 

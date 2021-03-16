@@ -44,6 +44,7 @@ public class classGenerator implements ASTVisitor {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentClassName = it.name;
 		currentClass.memberVariables = new HashMap<>();
+		currentClass.memberVariablesIndex = new HashMap<>();
 		currentClass.memberMethods = new HashMap<>();
 		it.units.forEach(unit -> {
 			if (unit.classDef != null) throw new semanticError("Mxstar does not support subclass.", unit.classDef.pos);
@@ -67,6 +68,8 @@ public class classGenerator implements ASTVisitor {
 			if (varName.equals(currentClassName))
 				throw new semanticError("name of member variables cannot be the same as its class.", it.pos);
 			currentClass.memberVariables.put(varName, varType);
+			currentClass.memberVariablesIndex.put(varName, currentClass.memberVariablesCounter);
+			++ currentClass.memberVariablesCounter;
 		}
 //		if (it.init != null)
 //			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);
