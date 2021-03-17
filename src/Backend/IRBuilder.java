@@ -33,7 +33,15 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(classLiteralNode it) {
-
+		LLVMAggregateType baseType = null;// to do: get base type
+		register classSize = new register(new LLVMIntegerType(32));
+		currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, baseType.size()), new integerConstant(32, 3), classSize));
+		register value = null;
+		if (it.val != null) value = (register) it.val;
+		else value = new register(new LLVMPointerType(baseType));
+		function mallocFunc = null;// to do: get malloc function
+		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Arrays.asList(classSize)) , value));
+		it.val = value;
 	}
 
 	@Override
@@ -82,7 +90,26 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(arrayLiteralNode it) {
-
+		// to do: get base type
+		LLVMFirstClassType baseType = null;
+		for (int i = it.totalDim - it.dims.size();i >= 1;-- i) baseType = new LLVMPointerType(baseType);
+		function mallocFunc = null;
+		// to do: get malloc function
+		LLVMSingleValueType ptr = (LLVMSingleValueType) baseType;
+		register value = null;
+		assert it.dims.size() >= 1;
+		for (int i = it.dims.size() - 1;i >= 0;-- i) {
+			exprStmtNode idxNode = it.dims.get(i);
+			idxNode.accept(this);
+			if (i != 0 || it.val == null) value = new register(new LLVMPointerType(ptr));
+			else value = (register) it.val;
+			register arraySize = new register(new LLVMIntegerType(32));
+			currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, ptr.size()) , new integerConstant(32, 3), arraySize));
+			currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
+			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Arrays.asList(arraySize)), value));
+			ptr = new LLVMPointerType(ptr);
+		}
+		it.val = value;
 	}
 
 	@Override
@@ -93,7 +120,7 @@ public class IRBuilder implements ASTVisitor {
 			value = new register(new LLVMIntegerType(32));
 			currentBlock.push_back(new alloca(value));
 		} else if (semanticType.is_bool) {
-			value = new register(new LLVMIntegerType(1));
+			value = new register(new LLVMIntegerType(8));
 			currentBlock.push_back(new alloca(value));
 		} else if (semanticType.is_string) {
 			value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
@@ -185,7 +212,7 @@ public class IRBuilder implements ASTVisitor {
 			register value;
 			if (it.val != null) value = (register) it.val;
 			else {
-				value = new register(it.op == unaryExprNode.opType.LogicNot ? new LLVMIntegerType(1) : new LLVMIntegerType(32));
+				value = new register(it.op == unaryExprNode.opType.LogicNot ? new LLVMIntegerType(8) : new LLVMIntegerType(32));
 				it.val = value;
 			}
 			if (it.op == unaryExprNode.opType.Plus)
@@ -193,7 +220,7 @@ public class IRBuilder implements ASTVisitor {
 			else if (it.op == unaryExprNode.opType.Minus)
 				currentBlock.push_back(new binary(binary.instCode.sub, new integerConstant(32, 0), it.expr.val, value));
 			else if (it.op == unaryExprNode.opType.LogicNot) {
-				currentBlock.push_back(new binary(binary.instCode.xor, new integerConstant(1, 1), it.expr.val, value));
+				currentBlock.push_back(new binary(binary.instCode.xor, new booleanConstant(1), it.expr.val, value));
 				if (it.trueBranch != null) {
 					assert it.falseBranch != null;
 					currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
@@ -220,7 +247,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register(new LLVMIntegerType(1));
+			value = new register(new LLVMIntegerType(8));
 			it.val = value;
 		}
 		binary.instCode instCode = it.op == logicExprNode.opType.And ? binary.instCode.and : binary.instCode.or;
@@ -279,7 +306,13 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(newExprNode it) {
-
+		register value = null;
+		if (it.val != null) value = (register) it.val;
+		it.expr.val = value;
+		it.expr.accept(this);
+		assert it.expr instanceof arrayLiteralNode || it.expr instanceof classLiteralNode;
+		if (value == null) value = (register) it.expr.val;
+		it.val = value;
 	}
 
 	@Override
@@ -323,7 +356,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register(new LLVMIntegerType(1));
+			value = new register(new LLVMIntegerType(8));
 			it.val = value;
 		}
 		icmp.condCode condCode = null;
@@ -362,10 +395,10 @@ public class IRBuilder implements ASTVisitor {
 		programEntry.basicBlocks.add(destination);
 	}
 
-	@Override
+	/*@Override
 	public void visit(typeNode it) {
 
-	}
+	}*/
 
 	@Override
 	public void visit(rootNode it) {
@@ -379,7 +412,7 @@ public class IRBuilder implements ASTVisitor {
 		register value;
 		if (it.val != null) value = (register) it.val;
 		else {
-			value = new register(((LLVMPointerType)it.lhs.val.type).pointeeType);
+			value = new register((LLVMSingleValueType) ((LLVMPointerType)it.lhs.val.type).pointeeType);
 			it.val = value;
 		}
 		register ptr = new register(it.lhs.val.type);

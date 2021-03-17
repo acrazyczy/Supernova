@@ -1,9 +1,9 @@
 package LLVMIR.TypeSystem;
 
 public class LLVMPointerType extends LLVMSingleValueType {
-	public LLVMSingleValueType pointeeType;
+	public LLVMFirstClassType pointeeType;
 
-	public LLVMPointerType(LLVMSingleValueType pointeeType) {
+	public LLVMPointerType(LLVMFirstClassType pointeeType) {
 		super();
 		this.pointeeType = pointeeType;
 	}
