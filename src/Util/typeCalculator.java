@@ -2,9 +2,13 @@ package Util;
 
 import AST.funcDefNode;
 import AST.typeNode;
+import LLVMIR.TypeSystem.LLVMIntegerType;
+import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.TypeSystem.LLVMSingleValueType;
 import Util.Scope.globalScope;
 import Util.Type.Type;
 import Util.Type.arrayType;
+import Util.Type.classType;
 import Util.Type.functionType;
 
 import java.util.ArrayList;
@@ -30,5 +34,18 @@ public class typeCalculator {
 		ArrayList<Type> paraType = new ArrayList<>();
 		it.paraType.forEach(t -> paraType.add(calcType(gScope, t)));
 		return new functionType(calcType(gScope, it.returnType), paraType);
+	}
+
+	static public LLVMSingleValueType calcLLVMSingleValueType(globalScope gScope, Type type) {
+		if (type instanceof classType) {
+			return new LLVMPointerType(gScope.getLLVMTypeFromType(type));
+		} else if (type instanceof arrayType) {
+			return new LLVMPointerType(calcLLVMSingleValueType(gScope, ((arrayType) type).elementType));
+		} else if (type.is_string || type.is_bool) {
+			return new LLVMIntegerType(8);
+		} else {
+			assert type.is_int;
+			return new LLVMIntegerType(32);
+		}
 	}
 }

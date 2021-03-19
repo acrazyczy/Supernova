@@ -2,6 +2,8 @@
 package Frontend;
 
 import AST.*;
+import LLVMIR.TypeSystem.LLVMSingleValueType;
+import LLVMIR.TypeSystem.LLVMStructureType;
 import Util.Scope.globalScope;
 import Util.Type.Type;
 import Util.typeCalculator;
@@ -15,6 +17,7 @@ import java.util.HashMap;
 public class classGenerator implements ASTVisitor {
 	private globalScope gScope;
 	private classType currentClass = null;
+	private LLVMStructureType currentLLVMClass = null;
 	private String currentClassName = null;
 	private boolean containConstructor = false;
 
@@ -42,6 +45,7 @@ public class classGenerator implements ASTVisitor {
 	@Override
 	public void visit(classDefNode it) {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
+		currentLLVMClass = (LLVMStructureType) gScope.getLLVMTypeFromType(currentClass);
 		currentClassName = it.name;
 		currentClass.memberVariables = new HashMap<>();
 		currentClass.memberVariablesIndex = new HashMap<>();
@@ -62,6 +66,7 @@ public class classGenerator implements ASTVisitor {
 	@Override
 	public void visit(varDefStmtNode it) {
 		Type varType = typeCalculator.calcType(gScope, it.varType);
+		LLVMSingleValueType varLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, varType);
 		for (String varName: it.names) {
 			if (currentClass.memberVariables.containsKey(varName))
 				throw new semanticError("redefinition of member " + varName + ".", it.pos);
@@ -70,6 +75,7 @@ public class classGenerator implements ASTVisitor {
 			currentClass.memberVariables.put(varName, varType);
 			currentClass.memberVariablesIndex.put(varName, currentClass.memberVariablesCounter);
 			++ currentClass.memberVariablesCounter;
+			currentLLVMClass.registerMember(varLLVMType);
 		}
 //		if (it.init != null)
 //			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);

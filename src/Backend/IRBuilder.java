@@ -16,6 +16,7 @@ import Util.typeCalculator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class IRBuilder implements ASTVisitor {
@@ -40,7 +41,7 @@ public class IRBuilder implements ASTVisitor {
 		if (it.val != null) value = (register) it.val;
 		else value = new register(new LLVMPointerType(baseType));
 		function mallocFunc = null;// to do: get malloc function
-		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Arrays.asList(classSize)) , value));
+		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
 		it.val = value;
 	}
 
@@ -53,14 +54,15 @@ public class IRBuilder implements ASTVisitor {
 
 		} else {
 			assert it.rhs instanceof varExprNode;
-			classType mappedType = null;// to do: get class type of it.lhs
+			classType structType = (classType) it.lhs.resultType;
 			ArrayList<entity> idxes = new ArrayList<>();
 			idxes.add(new integerConstant(32, 0));
-			idxes.add(new integerConstant(32, mappedType.memberVariablesIndex.get(((varExprNode) it.rhs).varName)));
-			LLVMSingleValueType pointeeType = null;// to do: get llvm type of member variables
-			entity ptr = new register(new LLVMPointerType(pointeeType));
+			idxes.add(new integerConstant(32, structType.memberVariablesIndex.get(((varExprNode) it.rhs).varName)));
+			Type memberType = structType.memberVariables.get(((varExprNode) it.rhs).varName);
+			LLVMSingleValueType memberLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, memberType);
+			entity ptr = new register(new LLVMPointerType(memberLLVMType));
 			currentBlock.push_back(new getelementptr(it.lhs.val, idxes, ptr));
-			if (value == null) value = new register(pointeeType);
+			if (value == null) value = new register(memberLLVMType);
 			currentBlock.push_back(new load(ptr, value));
 		}
 		it.val = value;
@@ -106,7 +108,7 @@ public class IRBuilder implements ASTVisitor {
 			register arraySize = new register(new LLVMIntegerType(32));
 			currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, ptr.size()) , new integerConstant(32, 3), arraySize));
 			currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
-			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Arrays.asList(arraySize)), value));
+			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(arraySize)), value));
 			ptr = new LLVMPointerType(ptr);
 		}
 		it.val = value;

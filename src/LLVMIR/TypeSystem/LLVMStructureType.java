@@ -5,9 +5,19 @@ import java.util.Iterator;
 import java.util.StringJoiner;
 
 public class LLVMStructureType extends LLVMAggregateType {
-	private ArrayList<LLVMFirstClassType> types;
+	private ArrayList<LLVMSingleValueType> types;
 	String name;
 	int size;
+
+	public LLVMStructureType() {
+		super();
+		size = 0;
+	}
+
+	public void registerMember(LLVMSingleValueType memberType) {
+		types.add(memberType);
+		size += memberType.size();
+	}
 
 	@Override
 	public int size() {return size;}
