@@ -1,8 +1,11 @@
 package Frontend;
 
 import AST.*;
+import LLVMIR.Operand.entity;
 import LLVMIR.Operand.globalVariable;
 import LLVMIR.Operand.register;
+import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.function;
 import Util.Scope.*;
 import Util.Type.arrayType;
 import Util.error.semanticError;
@@ -129,9 +132,19 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(funcDefNode it) {
 		currentScope = new functionScope(currentScope);
-		for (int i = it.paraName.size() - 1;i >= 0;-- i)
-			currentScope.defineVariable(it.paraName.get(i), typeCalculator.calcType(gScope, it.paraType.get(i)), it.pos);
+		ArrayList<entity> argValues = new ArrayList<>();
+		String funcName = it.name;
+		if (currentClass != null) {
+			funcName = currentClassName + funcName;
+			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
+		}
+		for (int i = 0;i < it.paraName.size();++ i) {
+			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
+			currentScope.defineVariable(it.paraName.get(i), type, it.pos);
+			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+		}
 		currentReturnType = typeCalculator.calcType(gScope, it.returnType);
+		function func = new function(typeCalculator.calcLLVMSingleValueType(gScope, currentReturnType), funcName, argValues);
 		it.funcBody.accept(this);
 		currentReturnType = null;
 		currentScope = currentScope.parentScope();

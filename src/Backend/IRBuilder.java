@@ -21,12 +21,9 @@ import java.util.HashMap;
 
 public class IRBuilder implements ASTVisitor {
 	private globalScope gScope;
-	private Scope currentScope = null;
-	private HashMap<String, Integer> nameTable;
 	private basicBlock currentBlock = null;
 	private function currentFunction = null;
 	private entry programEntry;
-	private int counter = 0;
 
 	public IRBuilder() {
 		//add initial block
@@ -115,6 +112,7 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(varDefStmtNode it) {
+
 		Type semanticType = typeCalculator.calcType(gScope, it.varType);
 		register value = new register(typeCalculator.calcLLVMSingleValueType(gScope, semanticType));
 		currentBlock.push_back(new alloca(value));
@@ -270,9 +268,7 @@ public class IRBuilder implements ASTVisitor {
 	}
 
 	@Override
-	public void visit(thisExprNode it) {
-
-	}
+	public void visit(thisExprNode it) {it.val = currentFunction.argValues.get(0);}
 
 	@Override
 	public void visit(classDefNode it) {

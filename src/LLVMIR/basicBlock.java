@@ -11,8 +11,9 @@ import java.util.ArrayList;
 public class basicBlock {
 	private ArrayList<statement> stmts = new ArrayList<>();
 	private terminalStmt tailStmt = null;
+	private String name;
 
-	public basicBlock() {}
+	public basicBlock(String name) {this.name = name;}
 
 	public void push_back(statement stmt) {
 		stmts.add(stmt);
