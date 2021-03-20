@@ -1,10 +1,9 @@
 package Frontend;
 
 import AST.*;
-import Util.Scope.Scope;
-import Util.Scope.functionScope;
-import Util.Scope.globalScope;
-import Util.Scope.loopScope;
+import LLVMIR.Operand.globalVariable;
+import LLVMIR.Operand.register;
+import Util.Scope.*;
 import Util.Type.arrayType;
 import Util.error.semanticError;
 import Util.typeCalculator;
@@ -149,6 +148,8 @@ public class semanticChecker implements ASTVisitor {
 		if (!currentScope.containVariable(it.varName, true))
 			throw new semanticError("variable " + it.varName + " not defined.", it.pos);
 		it.resultType = currentScope.getVariableType(it.varName, true);
+		if (!(currentScope instanceof aggregateScope))
+			it.val = currentScope.getVariableEntity(it.varName, true);
 	}
 
 	@Override
@@ -285,6 +286,10 @@ public class semanticChecker implements ASTVisitor {
 			currentScope.defineVariable(name, type, it.pos);
 			assert currentClass == null;
 		}
+		if (currentScope instanceof globalScope) for (String name: it.names)
+			currentScope.bindVariableToEntity(name, new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+		else for (String name: it.names)
+			currentScope.bindVariableToEntity(name, new register(typeCalculator.calcLLVMSingleValueType(gScope, type)));
 	}
 
 	@Override
@@ -325,7 +330,7 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(memberAccessExprNode it) {
 		it.lhs.accept(this);
-		currentScope = new Scope(currentScope);
+		currentScope = new aggregateScope(currentScope);
 		if (it.lhs.resultType instanceof classType) {
 			((classType) it.lhs.resultType).memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
 			((classType) it.lhs.resultType).memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));

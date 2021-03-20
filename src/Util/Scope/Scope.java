@@ -3,6 +3,8 @@ package Util.Scope;
 import java.util.HashMap;
 
 import AST.funcDefNode;
+import LLVMIR.Operand.entity;
+import LLVMIR.TypeSystem.LLVMSingleValueType;
 import Util.Type.Type;
 import Util.Type.functionType;
 import Util.error.semanticError;
@@ -11,6 +13,7 @@ import Util.typeCalculator;
 
 public class Scope {
 	protected HashMap<String, Type> vars = new HashMap<>(), meths = new HashMap<>();
+	protected HashMap<String, entity> varEntities;
 	private Scope parentScope;
 
 	public Scope(Scope parentScope) {this.parentScope = parentScope;}
@@ -20,6 +23,10 @@ public class Scope {
 	public void defineVariable(String name, Type t, position pos) {
 		if (vars.containsKey(name)) throw new semanticError("variable redefine.", pos);
 		vars.put(name, t);
+	}
+
+	public void bindVariableToEntity(String name, entity t) {
+		varEntities.put(name, t);
 	}
 
 	public void defineMethod(String name, Type t, position pos) {
@@ -43,6 +50,14 @@ public class Scope {
 		if (vars.containsKey(name)) return vars.get(name);
 		else if (parentScope != null && lookUpon) return parentScope.getVariableType(name, true);
 		else return null;
+	}
+
+	public entity getVariableEntity(String name, boolean lookUpon) {
+		if (vars.containsKey(name)) return varEntities.get(name);
+		else {
+			assert parentScope != null && lookUpon;
+			return parentScope.getVariableEntity(name, true);
+		}
 	}
 
 	public Type getMethodType(String name, boolean lookUpon) {

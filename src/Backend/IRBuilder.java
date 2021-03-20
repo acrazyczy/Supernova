@@ -34,7 +34,7 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(classLiteralNode it) {
-		LLVMAggregateType baseType = null;// to do: get base type
+		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(it.resultType);
 		register classSize = new register(new LLVMIntegerType(32));
 		currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, baseType.size()), new integerConstant(32, 3), classSize));
 		register value = null;
@@ -92,12 +92,11 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(arrayLiteralNode it) {
-		// to do: get base type
-		LLVMFirstClassType baseType = null;
+		LLVMSingleValueType baseType = typeCalculator.calcLLVMSingleValueType(gScope, ((arrayType) it.resultType).elementType);
 		for (int i = it.totalDim - it.dims.size();i >= 1;-- i) baseType = new LLVMPointerType(baseType);
 		function mallocFunc = null;
 		// to do: get malloc function
-		LLVMSingleValueType ptr = (LLVMSingleValueType) baseType;
+		LLVMSingleValueType ptr = baseType;
 		register value = null;
 		assert it.dims.size() >= 1;
 		for (int i = it.dims.size() - 1;i >= 0;-- i) {
@@ -117,29 +116,8 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(varDefStmtNode it) {
 		Type semanticType = typeCalculator.calcType(gScope, it.varType);
-		register value = null;
-		if (semanticType.is_int) {
-			value = new register(new LLVMIntegerType(32));
-			currentBlock.push_back(new alloca(value));
-		} else if (semanticType.is_bool) {
-			value = new register(new LLVMIntegerType(8));
-			currentBlock.push_back(new alloca(value));
-		} else if (semanticType.is_string) {
-			value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
-			currentBlock.push_back(new alloca(value));
-		}
-		else if (semanticType instanceof arrayType) {
-			// to do: get mapped type
-			LLVMAggregateType mappedType = null;
-			value = new register(new LLVMPointerType(mappedType));
-			currentBlock.push_back(new alloca(value));
-
-		} else {
-			// to do: get mapped type
-			LLVMAggregateType mappedType = null;
-			value = new register(new LLVMPointerType(mappedType));
-			currentBlock.push_back(new alloca(value));
-		}
+		register value = new register(typeCalculator.calcLLVMSingleValueType(gScope, semanticType));
+		currentBlock.push_back(new alloca(value));
 	}
 
 	@Override
@@ -301,10 +279,9 @@ public class IRBuilder implements ASTVisitor {
 
 	}
 
-	@Override
+/*	@Override
 	public void visit(varExprNode it) {
-
-	}
+	}*/
 
 	@Override
 	public void visit(newExprNode it) {

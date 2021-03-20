@@ -1,5 +1,6 @@
 package AST;
 
+import LLVMIR.Operand.entity;
 import Util.position;
 
 public class varExprNode extends exprStmtNode {
