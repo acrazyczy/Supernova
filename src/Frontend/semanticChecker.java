@@ -4,6 +4,10 @@ import AST.*;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.globalVariable;
 import LLVMIR.Operand.register;
+import LLVMIR.TypeSystem.LLVMIntegerType;
+import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.TypeSystem.LLVMSingleValueType;
+import LLVMIR.entry;
 import LLVMIR.function;
 import Util.Scope.*;
 import Util.Type.arrayType;
@@ -14,60 +18,296 @@ import Util.Type.classType;
 import Util.Type.functionType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class semanticChecker implements ASTVisitor {
 	private Scope currentScope = null;
 	private classType currentClass = null;
 	private String currentClassName = null;
 	private Type currentReturnType = null;
+	private entry programEntry = null;
 	private globalScope gScope;
 
-	public semanticChecker(globalScope gScope) {this.currentScope = this.gScope = gScope;}
+	public semanticChecker(globalScope gScope, entry programEntry) {
+		this.currentScope = this.gScope = gScope;
+		this.programEntry = programEntry;
+	}
+
+	private void bindBuiltinFunction(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues) {
+		function func = new function(returnType, functionName, argValues, true);
+		gScope.bindMethodToFunction(functionName, func);
+		programEntry.functions.add(func);
+	}
 
 	@Override
 	public void visit(rootNode it) {
-		gScope.defineMethod("print",
-			new functionType(
-				gScope.getTypeFromName("void", it.pos),
-				new ArrayList<>(){{add(gScope.getTypeFromName("string", it.pos));}}
-			), it.pos
+		functionType func;
+		String funcName;
+
+		funcName = "print";
+		func = new functionType(
+			gScope.getTypeFromName("void", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("string", it.pos)))
 		);
-		gScope.defineMethod("println",
-			new functionType(
-				gScope.getTypeFromName("void", it.pos),
-				new ArrayList(){{add(gScope.getTypeFromName("string", it.pos));}}
-			), it.pos
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(null, funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
 		);
-		gScope.defineMethod("printInt",
-			new functionType(
-				gScope.getTypeFromName("void", it.pos),
-				new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
-			), it.pos
+
+		funcName = "println";
+		func = new functionType(
+			gScope.getTypeFromName("void", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("string", it.pos)))
 		);
-		gScope.defineMethod("printlnInt",
-			new functionType(
-				gScope.getTypeFromName("void", it.pos),
-				new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
-			), it.pos
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(null, funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
 		);
-		gScope.defineMethod("getString",
-			new functionType(
+
+		funcName = "printInt";
+		func = new functionType(
+			gScope.getTypeFromName("void", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("int", it.pos)))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(null, funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMIntegerType(32))
+			))
+		);
+
+		funcName = "printlnInt";
+		func = new functionType(
+			gScope.getTypeFromName("void", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("int", it.pos)))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(null, funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMIntegerType(32))
+			))
+		);
+
+		funcName = "getString";
+		func = new functionType(
+			gScope.getTypeFromName("string", it.pos),
+			new ArrayList<>()
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
+			funcName, new ArrayList<>()
+		);
+
+		funcName = "getInt";
+		func = new functionType(
+			gScope.getTypeFromName("int", it.pos),
+			new ArrayList<>()
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(32),
+			funcName, new ArrayList<>()
+		);
+
+		funcName = "toString";
+		func = new functionType(
+			gScope.getTypeFromName("string", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("int", it.pos)))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMIntegerType(32))
+			))
+		);
+
+		funcName = "malloc";
+		//not a keyword function in MxStar,
+		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMIntegerType(64))
+			))
+		);
+
+		funcName = "builtin.string.add";
+		func = new functionType(
+			gScope.getTypeFromName("string", it.pos),
+			new ArrayList<>(Arrays.asList(
 				gScope.getTypeFromName("string", it.pos),
-				new ArrayList<>()
-			), it.pos
+				gScope.getTypeFromName("string", it.pos)
+			))
 		);
-		gScope.defineMethod("getInt",
-			new functionType(
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
+			funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isEqual";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isNotEqual";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isLessThan";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isGreaterThan";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isLessThanOrEqual";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.isGreaterThanOrEqual";
+		func = new functionType(
+			gScope.getTypeFromName("bool", it.pos),
+			new ArrayList<>(Arrays.asList(
+				gScope.getTypeFromName("string", it.pos),
+				gScope.getTypeFromName("string", it.pos)
+			))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.length";
+		func = new functionType(
+			gScope.getTypeFromName("int", it.pos),
+			new ArrayList<>()
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.substring";
+		func = new functionType(
+			gScope.getTypeFromName("string", it.pos),
+			new ArrayList<>(Arrays.asList(
 				gScope.getTypeFromName("int", it.pos),
-				new ArrayList<>()
-			), it.pos
+				gScope.getTypeFromName("int", it.pos)
+			))
 		);
-		gScope.defineMethod("toString",
-			new functionType(
-				gScope.getTypeFromName("string", it.pos),
-				new ArrayList<>(){{add(gScope.getTypeFromName("int", it.pos));}}
-			), it.pos
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMIntegerType(32)),
+				new register(new LLVMIntegerType(32))
+			))
 		);
+
+		funcName = "builtin.string.parseInt";
+		func = new functionType(
+			gScope.getTypeFromName("int", it.pos),
+			new ArrayList<>()
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+			new ArrayList<>(Collections.singletonList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8)))
+			))
+		);
+
+		funcName = "builtin.string.ord";
+		func = new functionType(
+			gScope.getTypeFromName("int", it.pos),
+			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("int", it.pos)))
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+			new ArrayList<>(Arrays.asList(
+				new register(new LLVMPointerType(new LLVMIntegerType(8))),
+				new register(new LLVMIntegerType(32))
+			))
+		);
+
+		funcName = "builtin.array.size";
+		func = new functionType(
+			gScope.getTypeFromName("int", it.pos),
+			new ArrayList<>()
+		);
+		gScope.defineMethod(funcName, func, it.pos);
+		// size method of array will be implemented in IR builder
+
 		it.units.forEach(unit -> {if (unit.funcDef != null) gScope.registerMethod(gScope, unit.funcDef);});
 		if (!gScope.containMethod("main", true))
 			throw new semanticError("no main function.", it.pos);
@@ -134,7 +374,7 @@ public class semanticChecker implements ASTVisitor {
 		ArrayList<entity> argValues = new ArrayList<>();
 		String funcName = it.name;
 		if (currentClass != null) {
-			funcName = currentClassName + funcName;
+			funcName = currentClassName + "." + funcName;
 			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
 		} else funcName = "global." + funcName;
 		for (int i = 0;i < it.paraName.size();++ i) {
@@ -172,9 +412,9 @@ public class semanticChecker implements ASTVisitor {
 	public void visit(classDefNode it) {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentClassName = it.name;
-		currentScope = new Scope(currentScope);
-		currentClass.memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
-		currentClass.memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));
+		currentScope = new aggregateScope(currentScope, it.name);
+		currentClass.memberVariables.forEach((varName, varType) -> gScope.defineVariable(varName, varType, it.pos));
+		currentClass.memberMethods.forEach((methName, methType) -> gScope.defineMethod(currentClassName + "." + methName, methType, it.pos));
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
 		currentScope = currentScope.parentScope();
 		currentClassName = null;
@@ -347,14 +587,17 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(memberAccessExprNode it) {
 		it.lhs.accept(this);
-		currentScope = new aggregateScope(currentScope);
 		if (it.lhs.resultType instanceof classType) {
+			currentScope = new aggregateScope(currentScope, ((classType) it.lhs.resultType).className);
 			((classType) it.lhs.resultType).memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
 			((classType) it.lhs.resultType).memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));
 		} else if (it.lhs.resultType instanceof arrayType) {
-			currentScope.defineMethod("size", new functionType(gScope.getTypeFromName("int", it.pos), new ArrayList<>()),it.pos);
-		} else if (typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos))) {
-			currentScope.defineMethod("length",
+			currentScope = new aggregateScope(currentScope, "builtin.array");
+			//currentScope.defineMethod("size", new functionType(gScope.getTypeFromName("int", it.pos), new ArrayList<>()),it.pos);
+		} else {
+			assert typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos));
+			currentScope = new aggregateScope(currentScope, "builtin.string");
+			/*currentScope.defineMethod("length",
 				new functionType(
 					gScope.getTypeFromName("int", it.pos),
 					new ArrayList<>()
@@ -382,7 +625,7 @@ public class semanticChecker implements ASTVisitor {
 					gScope.getTypeFromName("int", it.pos),
 					new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
 				), it.pos
-			);
+			);*/
 		}
 		it.rhs.accept(this);
 		currentScope = currentScope.parentScope();

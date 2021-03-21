@@ -132,7 +132,7 @@ for.body7:                                        ; preds = %if.end, %for.body7
 }
 
 ; Function Attrs: nofree nounwind uwtable
-define dso_local noalias i8* @string.add(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #0 {
+define dso_local noalias i8* @builtin.string.add(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #0 {
 entry:
   %call = tail call noalias dereferenceable_or_null(1024) i8* @malloc(i64 1024) #8
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
@@ -174,7 +174,7 @@ for.end11:                                        ; preds = %for.body7, %for.con
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -205,7 +205,7 @@ return:                                           ; preds = %for.body, %for.inc,
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isNotEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isNotEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -236,7 +236,7 @@ return:                                           ; preds = %for.body, %for.inc,
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isLessThan(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isLessThan(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -271,7 +271,7 @@ return:                                           ; preds = %for.body, %if.end, 
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isGreaterThan(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isGreaterThan(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -306,7 +306,7 @@ return:                                           ; preds = %for.body, %if.end, 
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isLessThanOrEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isLessThanOrEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -341,7 +341,7 @@ return:                                           ; preds = %if.end, %for.inc, %
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local zeroext i1 @string.isGreaterThanOrEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
+define dso_local zeroext i1 @builtin.string.isGreaterThanOrEqual(i8* nocapture readonly %lhs, i8* nocapture readonly %rhs) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %lhs, align 1, !tbaa !6
   %1 = load i8, i8* %rhs, align 1, !tbaa !6
@@ -376,7 +376,7 @@ return:                                           ; preds = %if.end, %for.inc, %
 }
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local i32 @string.length(i8* nocapture readonly %s) local_unnamed_addr #4 {
+define dso_local i32 @builtin.string.length(i8* nocapture readonly %s) local_unnamed_addr #4 {
 entry:
   %0 = load i8, i8* %s, align 1, !tbaa !6
   %cmp5 = icmp eq i8 %0, 0
@@ -397,7 +397,7 @@ for.end:                                          ; preds = %for.inc, %entry
 }
 
 ; Function Attrs: nofree nounwind uwtable
-define dso_local noalias i8* @string.substring(i8* nocapture readonly %s, i32 %l, i32 %r) local_unnamed_addr #0 {
+define dso_local noalias i8* @builtin.string.substring(i8* nocapture readonly %s, i32 %l, i32 %r) local_unnamed_addr #0 {
 entry:
   %call = tail call noalias dereferenceable_or_null(1024) i8* @malloc(i64 1024) #8
   %tobool26 = icmp eq i32 %l, 0
@@ -607,7 +607,7 @@ for.end8:                                         ; preds = %for.end8.loopexit, 
 }
 
 ; Function Attrs: nounwind readonly uwtable
-define dso_local i32 @string.parseInt(i8* nocapture readonly %s) local_unnamed_addr #5 {
+define dso_local i32 @builtin.string.parseInt(i8* nocapture readonly %s) local_unnamed_addr #5 {
 entry:
   %call = tail call i16** @__ctype_b_loc() #9
   %0 = load i16*, i16** %call, align 8, !tbaa !18
@@ -645,7 +645,7 @@ for.end:                                          ; preds = %for.body, %entry
 declare dso_local i16** @__ctype_b_loc() local_unnamed_addr #6
 
 ; Function Attrs: norecurse nounwind readonly uwtable
-define dso_local i32 @string.ord(i8* nocapture readonly %s, i32 %pos) local_unnamed_addr #4 {
+define dso_local i32 @builtin.string.ord(i8* nocapture readonly %s, i32 %pos) local_unnamed_addr #4 {
 entry:
   %tobool2 = icmp eq i32 %pos, 0
   %0 = add i32 %pos, -1

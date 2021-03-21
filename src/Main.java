@@ -39,8 +39,8 @@ public class Main {
 			ASTRoot = (rootNode)astBuilder.visit(parseTreeRoot);
 			new symbolCollector(gScope).visit(ASTRoot);
 			new classGenerator(gScope).visit(ASTRoot);
-			new semanticChecker(gScope).visit(ASTRoot);
 			entry programEntry = new entry();
+			new semanticChecker(gScope, programEntry).visit(ASTRoot);
 			new IRBuilder(gScope, programEntry).visit(ASTRoot);
 		} catch (error er) {
 			System.err.println(er.toString());

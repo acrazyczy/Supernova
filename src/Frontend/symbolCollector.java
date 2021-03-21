@@ -21,7 +21,7 @@ public class symbolCollector implements ASTVisitor {
 	}
 
 	@Override
-	public void visit(classDefNode it) {gScope.addType(it.name, new classType(), it.pos);}
+	public void visit(classDefNode it) {gScope.addType(it.name, new classType(it.name), it.pos);}
 
 	@Override public void visit(typeNode it) {}
 	@Override public void visit(programUnitNode it) {}

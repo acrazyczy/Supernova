@@ -201,10 +201,10 @@ toString:                               # @toString
 	.size	toString, .Lfunc_end6-toString
 	.cfi_endproc
                                         # -- End function
-	.globl	string.add              # -- Begin function string.add
+	.globl	builtin.string.add      # -- Begin function builtin.string.add
 	.p2align	2
-	.type	string.add,@function
-string.add:                             # @string.add
+	.type	builtin.string.add,@function
+builtin.string.add:                     # @builtin.string.add
 	.cfi_startproc
 # %bb.0:                                # %entry
 	addi	sp, sp, -16
@@ -253,13 +253,13 @@ string.add:                             # @string.add
 	addi	sp, sp, 16
 	ret
 .Lfunc_end7:
-	.size	string.add, .Lfunc_end7-string.add
+	.size	builtin.string.add, .Lfunc_end7-builtin.string.add
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isEqual          # -- Begin function string.isEqual
+	.globl	builtin.string.isEqual  # -- Begin function builtin.string.isEqual
 	.p2align	2
-	.type	string.isEqual,@function
-string.isEqual:                         # @string.isEqual
+	.type	builtin.string.isEqual,@function
+builtin.string.isEqual:                 # @builtin.string.isEqual
 	.cfi_startproc
 # %bb.0:                                # %entry
 	mv	a2, a0
@@ -290,13 +290,13 @@ string.isEqual:                         # @string.isEqual
 	mv	a0, zero
 	ret
 .Lfunc_end8:
-	.size	string.isEqual, .Lfunc_end8-string.isEqual
+	.size	builtin.string.isEqual, .Lfunc_end8-builtin.string.isEqual
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isNotEqual       # -- Begin function string.isNotEqual
+	.globl	builtin.string.isNotEqual # -- Begin function builtin.string.isNotEqual
 	.p2align	2
-	.type	string.isNotEqual,@function
-string.isNotEqual:                      # @string.isNotEqual
+	.type	builtin.string.isNotEqual,@function
+builtin.string.isNotEqual:              # @builtin.string.isNotEqual
 	.cfi_startproc
 # %bb.0:                                # %entry
 	lbu	a2, 0(a0)
@@ -326,13 +326,13 @@ string.isNotEqual:                      # @string.isNotEqual
 	addi	a0, zero, 1
 	ret
 .Lfunc_end9:
-	.size	string.isNotEqual, .Lfunc_end9-string.isNotEqual
+	.size	builtin.string.isNotEqual, .Lfunc_end9-builtin.string.isNotEqual
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isLessThan       # -- Begin function string.isLessThan
+	.globl	builtin.string.isLessThan # -- Begin function builtin.string.isLessThan
 	.p2align	2
-	.type	string.isLessThan,@function
-string.isLessThan:                      # @string.isLessThan
+	.type	builtin.string.isLessThan,@function
+builtin.string.isLessThan:              # @builtin.string.isLessThan
 	.cfi_startproc
 # %bb.0:                                # %entry
 	lbu	a2, 0(a0)
@@ -367,13 +367,13 @@ string.isLessThan:                      # @string.isLessThan
 	addi	a0, zero, 1
 	ret
 .Lfunc_end10:
-	.size	string.isLessThan, .Lfunc_end10-string.isLessThan
+	.size	builtin.string.isLessThan, .Lfunc_end10-builtin.string.isLessThan
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isGreaterThan    # -- Begin function string.isGreaterThan
+	.globl	builtin.string.isGreaterThan # -- Begin function builtin.string.isGreaterThan
 	.p2align	2
-	.type	string.isGreaterThan,@function
-string.isGreaterThan:                   # @string.isGreaterThan
+	.type	builtin.string.isGreaterThan,@function
+builtin.string.isGreaterThan:           # @builtin.string.isGreaterThan
 	.cfi_startproc
 # %bb.0:                                # %entry
 	lbu	a3, 0(a0)
@@ -408,13 +408,13 @@ string.isGreaterThan:                   # @string.isGreaterThan
 	addi	a0, zero, 1
 	ret
 .Lfunc_end11:
-	.size	string.isGreaterThan, .Lfunc_end11-string.isGreaterThan
+	.size	builtin.string.isGreaterThan, .Lfunc_end11-builtin.string.isGreaterThan
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isLessThanOrEqual # -- Begin function string.isLessThanOrEqual
+	.globl	builtin.string.isLessThanOrEqual # -- Begin function builtin.string.isLessThanOrEqual
 	.p2align	2
-	.type	string.isLessThanOrEqual,@function
-string.isLessThanOrEqual:               # @string.isLessThanOrEqual
+	.type	builtin.string.isLessThanOrEqual,@function
+builtin.string.isLessThanOrEqual:       # @builtin.string.isLessThanOrEqual
 	.cfi_startproc
 # %bb.0:                                # %entry
 	mv	a2, a0
@@ -454,13 +454,13 @@ string.isLessThanOrEqual:               # @string.isLessThanOrEqual
 	mv	a0, zero
 	ret
 .Lfunc_end12:
-	.size	string.isLessThanOrEqual, .Lfunc_end12-string.isLessThanOrEqual
+	.size	builtin.string.isLessThanOrEqual, .Lfunc_end12-builtin.string.isLessThanOrEqual
 	.cfi_endproc
                                         # -- End function
-	.globl	string.isGreaterThanOrEqual # -- Begin function string.isGreaterThanOrEqual
+	.globl	builtin.string.isGreaterThanOrEqual # -- Begin function builtin.string.isGreaterThanOrEqual
 	.p2align	2
-	.type	string.isGreaterThanOrEqual,@function
-string.isGreaterThanOrEqual:            # @string.isGreaterThanOrEqual
+	.type	builtin.string.isGreaterThanOrEqual,@function
+builtin.string.isGreaterThanOrEqual:    # @builtin.string.isGreaterThanOrEqual
 	.cfi_startproc
 # %bb.0:                                # %entry
 	mv	a2, a0
@@ -500,13 +500,13 @@ string.isGreaterThanOrEqual:            # @string.isGreaterThanOrEqual
 	mv	a0, zero
 	ret
 .Lfunc_end13:
-	.size	string.isGreaterThanOrEqual, .Lfunc_end13-string.isGreaterThanOrEqual
+	.size	builtin.string.isGreaterThanOrEqual, .Lfunc_end13-builtin.string.isGreaterThanOrEqual
 	.cfi_endproc
                                         # -- End function
-	.globl	string.length           # -- Begin function string.length
+	.globl	builtin.string.length   # -- Begin function builtin.string.length
 	.p2align	2
-	.type	string.length,@function
-string.length:                          # @string.length
+	.type	builtin.string.length,@function
+builtin.string.length:                  # @builtin.string.length
 	.cfi_startproc
 # %bb.0:                                # %entry
 	mv	a1, a0
@@ -527,13 +527,13 @@ string.length:                          # @string.length
 	mv	a0, zero
 	ret
 .Lfunc_end14:
-	.size	string.length, .Lfunc_end14-string.length
+	.size	builtin.string.length, .Lfunc_end14-builtin.string.length
 	.cfi_endproc
                                         # -- End function
-	.globl	string.substring        # -- Begin function string.substring
+	.globl	builtin.string.substring # -- Begin function builtin.string.substring
 	.p2align	2
-	.type	string.substring,@function
-string.substring:                       # @string.substring
+	.type	builtin.string.substring,@function
+builtin.string.substring:               # @builtin.string.substring
 	.cfi_startproc
 # %bb.0:                                # %entry
 	addi	sp, sp, -128
@@ -1200,13 +1200,13 @@ string.substring:                       # @string.substring
 	lw	a0, 72(sp)
 	j	.LBB15_7
 .Lfunc_end15:
-	.size	string.substring, .Lfunc_end15-string.substring
+	.size	builtin.string.substring, .Lfunc_end15-builtin.string.substring
 	.cfi_endproc
                                         # -- End function
-	.globl	string.parseInt         # -- Begin function string.parseInt
+	.globl	builtin.string.parseInt # -- Begin function builtin.string.parseInt
 	.p2align	2
-	.type	string.parseInt,@function
-string.parseInt:                        # @string.parseInt
+	.type	builtin.string.parseInt,@function
+builtin.string.parseInt:                # @builtin.string.parseInt
 	.cfi_startproc
 # %bb.0:                                # %entry
 	addi	sp, sp, -16
@@ -1256,13 +1256,13 @@ string.parseInt:                        # @string.parseInt
 	addi	sp, sp, 16
 	ret
 .Lfunc_end16:
-	.size	string.parseInt, .Lfunc_end16-string.parseInt
+	.size	builtin.string.parseInt, .Lfunc_end16-builtin.string.parseInt
 	.cfi_endproc
                                         # -- End function
-	.globl	string.ord              # -- Begin function string.ord
+	.globl	builtin.string.ord      # -- Begin function builtin.string.ord
 	.p2align	2
-	.type	string.ord,@function
-string.ord:                             # @string.ord
+	.type	builtin.string.ord,@function
+builtin.string.ord:                     # @builtin.string.ord
 	.cfi_startproc
 # %bb.0:                                # %entry
 	beqz	a1, .LBB17_2
@@ -1272,7 +1272,7 @@ string.ord:                             # @string.ord
 	lb	a0, 0(a0)
 	ret
 .Lfunc_end17:
-	.size	string.ord, .Lfunc_end17-string.ord
+	.size	builtin.string.ord, .Lfunc_end17-builtin.string.ord
 	.cfi_endproc
                                         # -- End function
 	.type	.L.str,@object          # @.str

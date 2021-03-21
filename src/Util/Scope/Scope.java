@@ -56,6 +56,12 @@ public class Scope {
 		else return null;
 	}
 
+	public Type getMethodType(String name, boolean lookUpon) {
+		if (meths.containsKey(name)) return meths.get(name);
+		else if (parentScope != null && lookUpon) return parentScope.getMethodType(name, true);
+		else return null;
+	}
+
 	public entity getVariableEntity(String name, boolean lookUpon) {
 		if (varEntities.containsKey(name)) return varEntities.get(name);
 		else if (parentScope != null && lookUpon) return parentScope.getVariableEntity(name, true);
@@ -65,12 +71,6 @@ public class Scope {
 	public function getMethodFunction(String name, boolean lookUpon) {
 		if (methFunctions.containsKey(name)) return methFunctions.get(name);
 		else if (parentScope != null && lookUpon) return parentScope.getMethodFunction(name, true);
-		else return null;
-	}
-
-	public Type getMethodType(String name, boolean lookUpon) {
-		if (meths.containsKey(name)) return meths.get(name);
-		else if (parentScope != null && lookUpon) return parentScope.getMethodType(name, true);
 		else return null;
 	}
 

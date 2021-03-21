@@ -14,7 +14,6 @@ import Util.Type.classType;
 import Util.typeCalculator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class IRBuilder implements ASTVisitor {
@@ -36,7 +35,7 @@ public class IRBuilder implements ASTVisitor {
 		register value = null;
 		if (it.val != null) value = (register) it.val;
 		else value = new register(new LLVMPointerType(baseType));
-		function mallocFunc = null;// to do: get malloc function
+		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
 		it.val = value;
 	}
@@ -93,8 +92,7 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(arrayLiteralNode it) {
 		LLVMSingleValueType baseType = typeCalculator.calcLLVMSingleValueType(gScope, ((arrayType) it.resultType).elementType);
 		for (int i = it.totalDim - it.dims.size();i >= 1;-- i) baseType = new LLVMPointerType(baseType);
-		function mallocFunc = null;
-		// to do: get malloc function
+		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		LLVMSingleValueType ptr = baseType;
 		register value = null;
 		assert it.dims.size() >= 1;
@@ -269,11 +267,9 @@ public class IRBuilder implements ASTVisitor {
 		else currentBlock.push_back(new br(((forStmtNode) it.loopNode).destBlock));
 	}
 
-	@Override
-	public void visit(thisExprNode it) {it.val = currentFunction.argValues.get(0);}
+	@Override public void visit(thisExprNode it) {it.val = currentFunction.argValues.get(0);}
 
-	@Override
-	public void visit(classDefNode it) {it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});}
+	@Override public void visit(classDefNode it) {it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});}
 
 /*	@Override
 	public void visit(varExprNode it) {
@@ -292,7 +288,6 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(funcDefNode it) {
-		if (!it.name.equals("main")) programEntry.functions.add(it.func);
 		currentFunction = it.func;
 		currentBlock = it.func.blocks.get(0);
 		it.funcBody.accept(this);
@@ -378,12 +373,7 @@ public class IRBuilder implements ASTVisitor {
 
 	}*/
 
-	@Override
-	public void visit(rootNode it) {
-		it.units.forEach(unit -> {if (unit.funcDef != null && unit.funcDef.name.equals("main")) programEntry.functions.add(unit.funcDef.func);});
-		bindBuiltinFunction();
-		it.units.forEach(unit -> unit.accept(this));
-	}
+	@Override public void visit(rootNode it) {it.units.forEach(unit -> unit.accept(this));}
 
 	@Override
 	public void visit(subscriptionExprNode it) {
@@ -405,131 +395,5 @@ public class IRBuilder implements ASTVisitor {
 		if (it.classDef != null) it.classDef.accept(this);
 		if (it.varDef != null) it.varDef.accept(this);
 		if (it.funcDef != null) it.funcDef.accept(this);
-	}
-
-	private void bindBuiltinFunction(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues) {
-		function func = new function(returnType, functionName, argValues, true);
-		gScope.bindMethodToFunction(functionName, func);
-		programEntry.functions.add(func);
-	}
-
-	private void bindBuiltinFunction() {
-		bindBuiltinFunction(null, "print",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(null, "println",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(null, "printInt",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
-			))
-		);
-		bindBuiltinFunction(null, "printlnInt",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
-			))
-		);
-		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
-			"getString",
-			new ArrayList<>()
-		);
-		bindBuiltinFunction(new LLVMIntegerType(32),
-			"getInt",
-			new ArrayList<>()
-		);
-		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
-			"toString",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
-			))
-		);
-		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
-			"malloc",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(64))
-			))
-		);
-		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
-			"string.add",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isEqual",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isNotEqual",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isLessThan",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isGreaterThan",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isLessThanOrEqual",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(8),
-			"string.isGreaterThanOrEqual",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(32),
-			"string.length",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)),
-			"string.substring",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMIntegerType(32)),
-				new register(new LLVMIntegerType(32))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(32),
-			"string.parseInt",
-			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8)))
-			))
-		);
-		bindBuiltinFunction(new LLVMIntegerType(32),
-			"string.ord",
-			new ArrayList<>(Arrays.asList(
-				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMIntegerType(32))
-			))
-		);
-		// builtin method for array is not bind here
 	}
 }
