@@ -1,8 +1,10 @@
 import AST.rootNode;
+import Backend.IRBuilder;
 import Frontend.ASTBuilder;
 import Frontend.classGenerator;
 import Frontend.semanticChecker;
 import Frontend.symbolCollector;
+import LLVMIR.entry;
 import Util.error.error;
 import Util.Scope.globalScope;
 import Util.MxStarErrorListener;
@@ -38,6 +40,8 @@ public class Main {
 			new symbolCollector(gScope).visit(ASTRoot);
 			new classGenerator(gScope).visit(ASTRoot);
 			new semanticChecker(gScope).visit(ASTRoot);
+			entry programEntry = new entry();
+			new IRBuilder(gScope, programEntry).visit(ASTRoot);
 		} catch (error er) {
 			System.err.println(er.toString());
 			throw new RuntimeException();

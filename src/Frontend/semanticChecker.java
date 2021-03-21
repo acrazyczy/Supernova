@@ -4,7 +4,6 @@ import AST.*;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.globalVariable;
 import LLVMIR.Operand.register;
-import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.function;
 import Util.Scope.*;
 import Util.Type.arrayType;
@@ -137,14 +136,18 @@ public class semanticChecker implements ASTVisitor {
 		if (currentClass != null) {
 			funcName = currentClassName + funcName;
 			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
-		}
+		} else funcName = "global." + funcName;
 		for (int i = 0;i < it.paraName.size();++ i) {
 			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
 			currentScope.defineVariable(it.paraName.get(i), type, it.pos);
-			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+			register argEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
+			currentScope.bindVariableToEntity(it.paraName.get(i), argEntity);
+			argValues.add(argEntity);
 		}
 		currentReturnType = typeCalculator.calcType(gScope, it.returnType);
-		function func = new function(typeCalculator.calcLLVMSingleValueType(gScope, currentReturnType), funcName, argValues);
+		function func = new function(typeCalculator.calcLLVMSingleValueType(gScope, currentReturnType), funcName, argValues, false);
+		currentScope.bindMethodToFunction(it.name, func);
+		it.func = func;
 		it.funcBody.accept(this);
 		currentReturnType = null;
 		currentScope = currentScope.parentScope();
@@ -330,6 +333,7 @@ public class semanticChecker implements ASTVisitor {
 		if (!currentScope.containMethod(it.funcName, true))
 			throw new semanticError("method " + it.funcName + " not defined.", it.pos);
 		functionType type = (functionType) currentScope.getMethodType(it.funcName, true);
+		it.func = currentScope.getMethodFunction(it.funcName, true);
 		if (it.argList.size() != type.paraType.size())
 			throw new semanticError("number of parameters not match.", it.pos);
 		for (int i = it.argList.size() - 1;i >= 0;-- i) {

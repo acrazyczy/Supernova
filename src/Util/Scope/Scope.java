@@ -5,6 +5,7 @@ import java.util.HashMap;
 import AST.funcDefNode;
 import LLVMIR.Operand.entity;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
+import LLVMIR.function;
 import Util.Type.Type;
 import Util.Type.functionType;
 import Util.error.semanticError;
@@ -14,6 +15,7 @@ import Util.typeCalculator;
 public class Scope {
 	protected HashMap<String, Type> vars = new HashMap<>(), meths = new HashMap<>();
 	protected HashMap<String, entity> varEntities;
+	protected HashMap<String, function> methFunctions;
 	private Scope parentScope;
 
 	public Scope(Scope parentScope) {this.parentScope = parentScope;}
@@ -25,9 +27,11 @@ public class Scope {
 		vars.put(name, t);
 	}
 
-	public void bindVariableToEntity(String name, entity t) {
-		varEntities.put(name, t);
+	public void bindVariableToEntity(String name, entity enty) {
+		varEntities.put(name, enty);
 	}
+
+	public void bindMethodToFunction(String name, function func) {methFunctions.put(name, func);}
 
 	public void defineMethod(String name, Type t, position pos) {
 		if (meths.containsKey(name)) throw new semanticError("method redefine.", pos);
@@ -53,11 +57,15 @@ public class Scope {
 	}
 
 	public entity getVariableEntity(String name, boolean lookUpon) {
-		if (vars.containsKey(name)) return varEntities.get(name);
-		else {
-			assert parentScope != null && lookUpon;
-			return parentScope.getVariableEntity(name, true);
-		}
+		if (varEntities.containsKey(name)) return varEntities.get(name);
+		else if (parentScope != null && lookUpon) return parentScope.getVariableEntity(name, true);
+		else return null; // member variable will go here
+	}
+
+	public function getMethodFunction(String name, boolean lookUpon) {
+		if (methFunctions.containsKey(name)) return methFunctions.get(name);
+		else if (parentScope != null && lookUpon) return parentScope.getMethodFunction(name, true);
+		else return null;
 	}
 
 	public Type getMethodType(String name, boolean lookUpon) {

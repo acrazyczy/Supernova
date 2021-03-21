@@ -4,7 +4,6 @@ import LLVMIR.Operand.entity;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class function {
@@ -13,10 +12,10 @@ public class function {
 	public ArrayList<entity> argValues;
 	public ArrayList<basicBlock> blocks;
 
-	public function(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues) {
+	public function(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues, boolean is_builtin) {
 		this.returnType = returnType;
 		this.functionName = functionName;
 		this.argValues = argValues;
-		this.blocks = new ArrayList<>(Collections.singletonList(new basicBlock("entry")));
+		this.blocks = is_builtin ? null : new ArrayList<>(Collections.singletonList(new basicBlock("entry")));
 	}
 }

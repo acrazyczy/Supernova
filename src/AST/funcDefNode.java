@@ -1,5 +1,6 @@
 package AST;
 
+import LLVMIR.function;
 import Util.Type.Type;
 import Util.position;
 
@@ -11,6 +12,7 @@ public class funcDefNode extends ASTNode {
 	public ArrayList<String> paraName = new ArrayList<>();
 	public suiteStmtNode funcBody;
 	public String name;
+	public function func;
 
 	public funcDefNode(position pos, String name, suiteStmtNode funcBody) {
 		super(pos);
