@@ -14,8 +14,8 @@ import Util.typeCalculator;
 
 public class Scope {
 	protected HashMap<String, Type> vars = new HashMap<>(), meths = new HashMap<>();
-	protected HashMap<String, entity> varEntities;
-	protected HashMap<String, function> methFunctions;
+	protected HashMap<String, entity> varEntities = new HashMap<>();
+	protected HashMap<String, function> methFunctions = new HashMap<>();
 	private Scope parentScope;
 
 	public Scope(Scope parentScope) {this.parentScope = parentScope;}

@@ -13,6 +13,7 @@ import Util.Type.classType;
 import Util.typeCalculator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class IRBuilder implements ASTVisitor {
@@ -149,24 +150,29 @@ public class IRBuilder implements ASTVisitor {
 		it.rhs.accept(this);
 		register value;
 		if (it.val != null) value = (register) it.val;
-		else {
-			value = new register(new LLVMIntegerType(32));
-			it.val = value;
+		else value = new register(new LLVMIntegerType(32));
+		if (it.lhs.resultType.is_string) {
+			assert it.rhs.resultType.is_string;
+			assert it.op == binaryExprNode.opType.Plus;
+			currentBlock.push_back(new call(gScope.getMethodFunction("builtin.string.add", true),
+				new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)), value));
+		} else {
+			binary.instCode instCode = null;
+			switch (it.op) {
+				case Plus -> instCode = binary.instCode.add;
+				case Minus -> instCode = binary.instCode.sub;
+				case Mul -> instCode = binary.instCode.mul;
+				case Div -> instCode = binary.instCode.sdiv;
+				case Mod -> instCode = binary.instCode.srem;
+				case Lsh -> instCode = binary.instCode.shl;
+				case Rsh -> instCode = binary.instCode.ashr;
+				case And -> instCode = binary.instCode.and;
+				case Or -> instCode = binary.instCode.or;
+				case Xor -> instCode = binary.instCode.xor;
+			}
+			currentBlock.push_back(new binary(instCode, it.lhs.val, it.rhs.val, value));
 		}
-		binary.instCode instCode = null;
-		switch (it.op) {
-			case Plus -> instCode = binary.instCode.add;
-			case Minus -> instCode = binary.instCode.sub;
-			case Mul -> instCode = binary.instCode.mul;
-			case Div -> instCode = binary.instCode.sdiv;
-			case Mod -> instCode = binary.instCode.srem;
-			case Lsh -> instCode = binary.instCode.shl;
-			case Rsh -> instCode = binary.instCode.ashr;
-			case And -> instCode = binary.instCode.and;
-			case Or -> instCode = binary.instCode.or;
-			case Xor -> instCode = binary.instCode.xor;
-		}
-		currentBlock.push_back(new binary(instCode, it.lhs.val, it.rhs.val, value));
+		it.val = value;
 	}
 
 	@Override
@@ -368,16 +374,30 @@ public class IRBuilder implements ASTVisitor {
 			value = new register(new LLVMIntegerType(8));
 			it.val = value;
 		}
-		icmp.condCode condCode = null;
-		switch (it.op) {
-			case Gt -> condCode = icmp.condCode.sgt;
-			case Lt -> condCode = icmp.condCode.slt;
-			case Geq -> condCode = icmp.condCode.sge;
-			case Leq -> condCode = icmp.condCode.sle;
-			case Neq -> condCode = icmp.condCode.ne;
-			case Equ -> condCode = icmp.condCode.eq;
+		if (it.lhs.resultType.is_string) {
+			assert it.rhs.resultType.is_string;
+			function cmpFunc = null;
+			switch (it.op) {
+				case Gt -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThan", true);
+				case Lt -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThan", true);
+				case Geq -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThanOrEqual", true);
+				case Leq -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThanOrEqual", true);
+				case Neq -> cmpFunc = gScope.getMethodFunction("builtin.string.isNotEqual", true);
+				case Equ -> cmpFunc = gScope.getMethodFunction("builtin.string.isEqual", true);
+			}
+			currentBlock.push_back(new call(cmpFunc, new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)) , value));
+		} else {
+			icmp.condCode condCode = null;
+			switch (it.op) {
+				case Gt -> condCode = icmp.condCode.sgt;
+				case Lt -> condCode = icmp.condCode.slt;
+				case Geq -> condCode = icmp.condCode.sge;
+				case Leq -> condCode = icmp.condCode.sle;
+				case Neq -> condCode = icmp.condCode.ne;
+				case Equ -> condCode = icmp.condCode.eq;
+			}
+			currentBlock.push_back(new icmp(condCode, it.lhs.val, it.rhs.val, value));
 		}
-		currentBlock.push_back(new icmp(condCode, it.lhs.val, it.rhs.val, value));
 		if (it.trueBranch != null) {
 			assert it.falseBranch != null;
 			currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));

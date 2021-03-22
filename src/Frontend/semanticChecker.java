@@ -542,8 +542,11 @@ public class semanticChecker implements ASTVisitor {
 			currentScope.defineVariable(name, type, it.pos);
 			assert currentClass == null;
 		}
-		if (currentScope instanceof globalScope) for (String name: it.names)
-			currentScope.bindVariableToEntity(name, new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+		if (currentScope instanceof globalScope) for (String name: it.names) {
+			globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type));
+			currentScope.bindVariableToEntity(name, gVar);
+			programEntry.globals.add(gVar);
+		}
 		else for (String name: it.names)
 			currentScope.bindVariableToEntity(name, new register(typeCalculator.calcLLVMSingleValueType(gScope, type)));
 	}

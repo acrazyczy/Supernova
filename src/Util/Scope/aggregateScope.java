@@ -32,7 +32,7 @@ public class aggregateScope extends Scope {
 	@Override
 	public Type getMethodType(String name, boolean lookUpon) {
 		Type ret = super.getMethodType(className + "." + name, lookUpon);
-		if (ret == null) ret = super.getVariableType(name, lookUpon);
+		if (ret == null) ret = super.getMethodType(name, lookUpon);
 		return ret;
 	}
 

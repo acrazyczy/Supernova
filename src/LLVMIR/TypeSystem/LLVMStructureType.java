@@ -11,6 +11,7 @@ public class LLVMStructureType extends LLVMAggregateType {
 
 	public LLVMStructureType() {
 		super();
+		types = new ArrayList<>();
 		size = 0;
 	}
 
