@@ -405,7 +405,7 @@ public class semanticChecker implements ASTVisitor {
 			throw new semanticError("variable " + it.varName + " not defined.", it.pos);
 		it.resultType = currentScope.getVariableType(it.varName, true);
 		if (!(currentScope instanceof aggregateScope))
-			it.val = currentScope.getVariableEntity(it.varName, true);
+			it.varEntity = currentScope.getVariableEntity(it.varName, true);
 	}
 
 	@Override
@@ -591,41 +591,11 @@ public class semanticChecker implements ASTVisitor {
 			currentScope = new aggregateScope(currentScope, ((classType) it.lhs.resultType).className);
 			((classType) it.lhs.resultType).memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
 			((classType) it.lhs.resultType).memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));
-		} else if (it.lhs.resultType instanceof arrayType) {
+		} else if (it.lhs.resultType instanceof arrayType)
 			currentScope = new aggregateScope(currentScope, "builtin.array");
-			//currentScope.defineMethod("size", new functionType(gScope.getTypeFromName("int", it.pos), new ArrayList<>()),it.pos);
-		} else {
+		else {
 			assert typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos));
 			currentScope = new aggregateScope(currentScope, "builtin.string");
-			/*currentScope.defineMethod("length",
-				new functionType(
-					gScope.getTypeFromName("int", it.pos),
-					new ArrayList<>()
-				), it.pos
-			);
-			currentScope.defineMethod("substring",
-				new functionType(
-					gScope.getTypeFromName("string", it.pos),
-					new ArrayList(){
-						{
-							add(gScope.getTypeFromName("int", it.pos));
-							add(gScope.getTypeFromName("int", it.pos));
-						}
-					}
-				), it.pos
-			);
-			currentScope.defineMethod("parseInt",
-				new functionType(
-					gScope.getTypeFromName("int", it.pos),
-					new ArrayList()
-				), it.pos
-			);
-			currentScope.defineMethod("ord",
-				new functionType(
-					gScope.getTypeFromName("int", it.pos),
-					new ArrayList(){{add(gScope.getTypeFromName("int", it.pos));}}
-				), it.pos
-			);*/
 		}
 		it.rhs.accept(this);
 		currentScope = currentScope.parentScope();

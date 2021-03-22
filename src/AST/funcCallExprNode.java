@@ -2,6 +2,7 @@ package AST;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.function;
+import Util.Type.Type;
 import Util.position;
 
 import java.util.ArrayList;

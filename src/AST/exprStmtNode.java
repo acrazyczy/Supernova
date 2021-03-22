@@ -7,7 +7,7 @@ import Util.position;
 
 abstract public class exprStmtNode extends stmtNode {
 	public Type resultType;
-	public entity val;
+	public entity val, ptr = null;
 
 	public basicBlock trueBranch = null, falseBranch = null;
 

@@ -13,7 +13,10 @@ public class basicBlock {
 	private terminalStmt tailStmt = null;
 	private String name;
 
-	public basicBlock(String name) {this.name = name;}
+	public basicBlock(String name, function currentFunction) {
+		this.name = name;
+		if (currentFunction != null) this.name = this.name + currentFunction.getBlockNameIndex(name);
+	}
 
 	public void push_back(statement stmt) {
 		stmts.add(stmt);

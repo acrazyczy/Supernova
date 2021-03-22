@@ -5,6 +5,7 @@ import Util.position;
 
 public class varExprNode extends exprStmtNode {
 	public String varName;
+	public entity varEntity;
 
 	public varExprNode(position pos, String varName) {
 		super(pos);
