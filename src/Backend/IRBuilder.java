@@ -10,6 +10,7 @@ import Util.Scope.globalScope;
 import Util.Type.Type;
 import Util.Type.arrayType;
 import Util.Type.classType;
+import Util.position;
 import Util.typeCalculator;
 
 import java.util.ArrayList;
@@ -20,6 +21,7 @@ public class IRBuilder implements ASTVisitor {
 	private final globalScope gScope;
 	private basicBlock currentBlock = null;
 	private function currentFunction = null;
+	private classType currentClass = null;
 
 	public IRBuilder(globalScope gScope) {this.gScope = gScope;}
 
@@ -306,10 +308,26 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override public void visit(thisExprNode it) {it.val = currentFunction.argValues.get(0);}
 
-	@Override public void visit(classDefNode it) {it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});}
+	@Override public void visit(classDefNode it) {
+		currentClass = (classType) gScope.getTypeFromName(it.name, new position(0, 0));
+		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
+		currentClass = null;
+	}
 
 	@Override
 	public void visit(varExprNode it) {
+		if (it.varEntity == null) {
+			LLVMSingleValueType varLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, it.resultType);
+			register varPtr = new register(new LLVMPointerType(varLLVMType));
+			currentBlock.push_back(new getelementptr(currentFunction.argValues.get(0),
+				new ArrayList<>(Collections.singletonList(
+					new integerConstant(32, currentClass.memberVariablesIndex.get(it.varName))
+				)), varPtr));
+			register value;
+			if (it.val != null) value = (register) it.val;
+			else it.val = value = new register(varLLVMType);
+			currentBlock.push_back(new load(varPtr, value));
+		}
 		if (it.val == null) it.val = it.varEntity;
 		else currentBlock.push_back(new _move(it.varEntity, it.val));
 	}
@@ -414,10 +432,10 @@ public class IRBuilder implements ASTVisitor {
 		basicBlock destination = new basicBlock("if.dest", currentFunction);
 		currentBlock = trueBranch;
 		it.trueNode.accept(this);
-		currentBlock.push_back(new br(destination));
+		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
 		currentBlock = falseBranch;
-		it.falseNode.accept(this);
-		currentBlock.push_back(new br(destination));
+		if (it.falseNode != null) it.falseNode.accept(this);
+		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
 		currentBlock = destination;
 
 		currentFunction.blocks.add(trueBranch);
