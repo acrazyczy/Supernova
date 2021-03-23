@@ -45,6 +45,9 @@ public class semanticChecker implements ASTVisitor {
 		functionType func;
 		String funcName;
 
+		// a main function for initialization
+		programEntry.functions.add(new function(new LLVMIntegerType(32), "main", new ArrayList<>(), false));
+
 		funcName = "print";
 		func = new functionType(
 			gScope.getTypeFromName("void", it.pos),
@@ -376,7 +379,7 @@ public class semanticChecker implements ASTVisitor {
 		if (currentClass != null) {
 			funcName = currentClassName + "." + funcName;
 			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
-		} else funcName = "global." + funcName;
+		} else funcName = "_global." + funcName;
 		for (int i = 0;i < it.paraName.size();++ i) {
 			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
 			currentScope.defineVariable(it.paraName.get(i), type, it.pos);
@@ -386,7 +389,8 @@ public class semanticChecker implements ASTVisitor {
 		}
 		currentReturnType = typeCalculator.calcType(gScope, it.returnType);
 		function func = new function(typeCalculator.calcLLVMSingleValueType(gScope, currentReturnType), funcName, argValues, false);
-		currentScope.bindMethodToFunction(it.name, func);
+		gScope.bindMethodToFunction(it.name, func);
+		programEntry.functions.add(func);
 		it.func = func;
 		it.funcBody.accept(this);
 		currentReturnType = null;
@@ -404,8 +408,7 @@ public class semanticChecker implements ASTVisitor {
 		if (!currentScope.containVariable(it.varName, true))
 			throw new semanticError("variable " + it.varName + " not defined.", it.pos);
 		it.resultType = currentScope.getVariableType(it.varName, true);
-		if (!(currentScope instanceof aggregateScope))
-			it.varEntity = currentScope.getVariableEntity(it.varName, true);
+		it.varEntity = currentScope.getVariableEntity(it.varName, true);
 	}
 
 	@Override
@@ -413,7 +416,7 @@ public class semanticChecker implements ASTVisitor {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentClassName = it.name;
 		currentScope = new aggregateScope(currentScope, it.name);
-		currentClass.memberVariables.forEach((varName, varType) -> gScope.defineVariable(varName, varType, it.pos));
+		currentClass.memberVariables.forEach((varName, varType) -> gScope.defineVariable(currentClassName + "." + varName, varType, it.pos));
 		currentClass.memberMethods.forEach((methName, methType) -> gScope.defineMethod(currentClassName + "." + methName, methType, it.pos));
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
 		currentScope = currentScope.parentScope();

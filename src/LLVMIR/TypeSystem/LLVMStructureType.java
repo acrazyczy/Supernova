@@ -9,10 +9,11 @@ public class LLVMStructureType extends LLVMAggregateType {
 	String name;
 	int size;
 
-	public LLVMStructureType() {
+	public LLVMStructureType(String name) {
 		super();
 		types = new ArrayList<>();
 		size = 0;
+		this.name = name;
 	}
 
 	public void registerMember(LLVMSingleValueType memberType) {

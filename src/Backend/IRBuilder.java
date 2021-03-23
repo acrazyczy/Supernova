@@ -5,6 +5,7 @@ import LLVMIR.Instruction.*;
 import LLVMIR.Operand.*;
 import LLVMIR.TypeSystem.*;
 import LLVMIR.basicBlock;
+import LLVMIR.entry;
 import LLVMIR.function;
 import Util.Scope.globalScope;
 import Util.Type.Type;
@@ -22,8 +23,12 @@ public class IRBuilder implements ASTVisitor {
 	private basicBlock currentBlock = null;
 	private function currentFunction = null;
 	private classType currentClass = null;
+	private final entry programEntry;
 
-	public IRBuilder(globalScope gScope) {this.gScope = gScope;}
+	public IRBuilder(globalScope gScope, entry programEntry) {
+		this.gScope = gScope;
+		this.programEntry = programEntry;
+	}
 
 	@Override
 	public void visit(classLiteralNode it) {
@@ -79,6 +84,8 @@ public class IRBuilder implements ASTVisitor {
 		} else {
 			ArrayList<entity> parameters = new ArrayList<>();
 			if (it.thisEntity != null) parameters.add(it.thisEntity);
+			else if (currentClass != null && func.functionName.indexOf(currentClass.className + ".") == 0)
+				parameters.add(currentFunction.argValues.get(0));
 			it.argList.forEach(argv -> {
 				argv.accept(this);
 				parameters.add(argv.val);
@@ -132,9 +139,24 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(varDefStmtNode it) {
-		Type semanticType = typeCalculator.calcType(gScope, it.varType);
-		register value = new register(typeCalculator.calcLLVMSingleValueType(gScope, semanticType));
-		currentBlock.push_back(new _move(new undefinedValue(), value));
+		if (it.init == null) {
+			if (!currentFunction.functionName.equals("main"))
+				for (String name: it.names)
+					currentBlock.push_back(new _move(new undefinedValue(), gScope.getVariableEntity(name, true)));
+		} else {
+			assert it.names.size() == 1;
+			register varEntity = null;
+			if (currentFunction.functionName.equals("main")) {
+				globalVariable gVar = (globalVariable) gScope.getVariableEntity(it.names.get(0), true);
+				currentBlock.push_back(new load(gVar, varEntity));
+				it.init.val = varEntity;
+				it.init.accept(this);
+				currentBlock.push_back(new store(varEntity, gVar));
+			} else {
+				it.init.val = (register) gScope.getVariableEntity(it.names.get(0), true);
+				it.init.accept(this);
+			}
+		}
 	}
 
 	@Override
@@ -196,7 +218,7 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock = cond;
 		it.cond.accept(this);
 		currentBlock = body;
-		it.stmt.accept(this);
+		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 		currentBlock = dest;
 
@@ -256,7 +278,7 @@ public class IRBuilder implements ASTVisitor {
 		}
 	}
 
-	@Override public void visit(suiteStmtNode it) {it.stmts.forEach(stmt -> stmt.accept(this));}
+	@Override public void visit(suiteStmtNode it) {it.stmts.forEach(stmt -> {if (stmt != null) stmt.accept(this);});}
 
 	@Override
 	public void visit(logicExprNode it) {
@@ -280,16 +302,16 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(constExprNode it) {
 		entity value = null;
 		if (it.val != null) value = it.val;
-		if (it.type == null)
-			if (value == null) value = new nullPointerConstant();
-			else currentBlock.push_back(new _move(new nullPointerConstant(), value));
-		else if (it.type.equals("int"))
-			if (value == null) value = new integerConstant(32, Integer.parseInt(it.value));
-			else currentBlock.push_back(new _move(new integerConstant(32, Integer.parseInt(it.value)), value));
-		else if (it.type.equals("bool"))
-			if (value == null) value = new booleanConstant(it.value.equals("true") ? 1 : 0);
-			else currentBlock.push_back(new _move(new booleanConstant(it.value.equals("true") ? 1 : 0), value));
-		else {
+		if (it.type == null) {
+			if (value == null) value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
+			currentBlock.push_back(new _move(new nullPointerConstant(), value));
+		} else if (it.type.equals("int")) {
+			if (value == null) value = new register(new LLVMIntegerType(32));
+			currentBlock.push_back(new _move(new integerConstant(32, Integer.parseInt(it.value)), value));
+		} else if (it.type.equals("bool")) {
+			if (value == null) value = new register(new LLVMIntegerType(8));
+			currentBlock.push_back(new _move(new booleanConstant(it.value.equals("true") ? 1 : 0), value));
+		} else {
 			assert it.type.equals("string");
 			if (value == null) value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
 			function mallocFunc = gScope.getMethodFunction("malloc", true);
@@ -387,7 +409,7 @@ public class IRBuilder implements ASTVisitor {
 			it.incr.accept(this);
 		} else incr = cond;
 		currentBlock = body;
-		it.stmt.accept(this);
+		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
 		currentBlock = dest;
 
@@ -418,7 +440,21 @@ public class IRBuilder implements ASTVisitor {
 				case Neq -> cmpFunc = gScope.getMethodFunction("builtin.string.isNotEqual", true);
 				case Equ -> cmpFunc = gScope.getMethodFunction("builtin.string.isEqual", true);
 			}
-			currentBlock.push_back(new call(cmpFunc, new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)) , value));
+			currentBlock.push_back(new call(cmpFunc, new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)), value));
+		}
+		if (it.lhs.resultType instanceof arrayType || it.rhs.resultType instanceof arrayType) {
+			entity lhsEntity, rhsEntity;
+			if (((LLVMPointerType) it.lhs.val.type).pointeeType.size() != 1) {
+				lhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)));
+				currentBlock.push_back(new bitcast(it.lhs.val, lhsEntity));
+			}
+			if (((LLVMPointerType) it.rhs.val.type).pointeeType.size() != 1) {
+				rhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)));
+				currentBlock.push_back(new bitcast(it.rhs.val, rhsEntity));
+			}
+			currentBlock.push_back(new icmp(
+				it.op == cmpExprNode.opType.Equ ? icmp.condCode.eq : icmp.condCode.ne,
+				it.lhs.val, it.rhs.val, value));
 		} else {
 			icmp.condCode condCode = null;
 			switch (it.op) {
@@ -446,7 +482,7 @@ public class IRBuilder implements ASTVisitor {
 
 		basicBlock destination = new basicBlock("if.dest", currentFunction);
 		currentBlock = trueBranch;
-		it.trueNode.accept(this);
+		if (it.trueNode != null) it.trueNode.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
 		currentBlock = falseBranch;
 		if (it.falseNode != null) it.falseNode.accept(this);
@@ -460,7 +496,16 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override public void visit(typeNode it) {}
 
-	@Override public void visit(rootNode it) {it.units.forEach(unit -> unit.accept(this));}
+	@Override public void visit(rootNode it) {
+		currentFunction = programEntry.functions.get(0);
+		currentBlock = currentFunction.blocks.get(0);
+		it.units.forEach(unit -> {if (unit.varDef != null) unit.accept(this);});
+		register retVal = new register(new LLVMIntegerType(32));
+		currentBlock.push_back(new call(gScope.getMethodFunction("main", true), new ArrayList<>(), retVal));
+		currentBlock.push_back(new ret(retVal));
+		currentFunction = null;
+		it.units.forEach(unit -> {if (unit.varDef == null) unit.accept(this);});
+	}
 
 	@Override
 	public void visit(subscriptionExprNode it) {
@@ -480,6 +525,7 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(programUnitNode it) {
+		if (it.varDef != null) it.varDef.accept(this);
 		if (it.classDef != null) it.classDef.accept(this);
 		if (it.funcDef != null) it.funcDef.accept(this);
 	}

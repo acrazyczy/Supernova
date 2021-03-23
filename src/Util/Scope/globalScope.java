@@ -17,7 +17,7 @@ public class globalScope extends Scope {
 	public void addType(String name, Type t, position pos) {
 		if (types.containsKey(name)) throw new semanticError("multiple definition of " + name + ".", pos);
 		types.put(name, t);
-		typesMap.put(t, new LLVMStructureType());
+		typesMap.put(t, new LLVMStructureType(name));
 	}
 
 	public Type getTypeFromName(String name, position pos) {

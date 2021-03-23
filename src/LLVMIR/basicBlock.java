@@ -19,12 +19,9 @@ public class basicBlock {
 	}
 
 	public void push_back(statement stmt) {
+		if (tailStmt != null) return;
 		stmts.add(stmt);
-		if (stmt instanceof terminalStmt) {
-			if (tailStmt != null)
-				throw new internalError("multiple tails of a block", new position(0, 0));
-			tailStmt = (terminalStmt) stmt;
-		}
+		if (stmt instanceof terminalStmt) tailStmt = (terminalStmt) stmt;
 	}
 
 	public ArrayList<basicBlock> successors() {

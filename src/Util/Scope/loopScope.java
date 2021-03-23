@@ -7,7 +7,10 @@ import AST.stmtNode;
 public class loopScope extends Scope {
 	public stmtNode loopNode;
 
-	public loopScope(Scope parentScope) {super(parentScope);}
+	public loopScope(Scope parentScope) {
+		super(parentScope);
+		if (parentScope instanceof loopScope) this.loopNode = ((loopScope) parentScope).loopNode;
+	}
 
 	public loopScope(Scope parentScope, stmtNode loopNode) {
 		super(parentScope);
