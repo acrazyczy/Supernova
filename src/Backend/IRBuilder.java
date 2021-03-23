@@ -211,11 +211,17 @@ public class IRBuilder implements ASTVisitor {
 		it.val = it.expr.val;
 		if (it.op == unaryExprNode.opType.PreIncr) {
 			currentBlock.push_back(new binary(binary.instCode.add, it.expr.val, new integerConstant(32, 1), it.expr.val));
-			if (it.expr.ptr != null) currentBlock.push_back(new store(it.expr.val, it.expr.ptr));
+			if (it.expr.ptr != null) {
+				currentBlock.push_back(new store(it.expr.val, it.expr.ptr));
+				it.ptr = it.expr.ptr;
+			}
 		}
 		else if (it.op == unaryExprNode.opType.PreDecr) {
 			currentBlock.push_back(new binary(binary.instCode.sub, it.expr.val, new integerConstant(32, 1), it.expr.val));
-			if (it.expr.ptr != null) currentBlock.push_back(new store(it.expr.val, it.expr.ptr));
+			if (it.expr.ptr != null) {
+				currentBlock.push_back(new store(it.expr.val, it.expr.ptr));
+				it.ptr = it.expr.ptr;
+			}
 		}
 		else {
 			register value;
@@ -325,10 +331,19 @@ public class IRBuilder implements ASTVisitor {
 				)), varPtr));
 			register value;
 			if (it.val != null) value = (register) it.val;
-			else it.val = value = new register(varLLVMType);
+			else value = new register(varLLVMType);
 			currentBlock.push_back(new load(varPtr, value));
-		}
-		if (it.val == null) it.val = it.varEntity;
+			it.val = value;
+		} else if (it.varEntity instanceof globalVariable) {
+			assert it.varEntity.type instanceof LLVMPointerType;
+			LLVMSingleValueType varLLVMType = (LLVMSingleValueType) ((LLVMPointerType) it.varEntity.type).pointeeType;
+			register value;
+			if (it.val != null) value = (register) it.val;
+			else value = new register(varLLVMType);
+			currentBlock.push_back(new load(it.varEntity, value));
+			it.val = value;
+			it.ptr = it.varEntity;
+		} else if (it.val == null) it.val = it.varEntity;
 		else currentBlock.push_back(new _move(it.varEntity, it.val));
 	}
 
@@ -466,7 +481,6 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(programUnitNode it) {
 		if (it.classDef != null) it.classDef.accept(this);
-		if (it.varDef != null) it.varDef.accept(this);
 		if (it.funcDef != null) it.funcDef.accept(this);
 	}
 }
