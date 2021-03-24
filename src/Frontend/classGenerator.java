@@ -2,6 +2,8 @@
 package Frontend;
 
 import AST.*;
+import LLVMIR.Operand.entity;
+import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 import LLVMIR.TypeSystem.LLVMStructureType;
 import Util.Scope.globalScope;

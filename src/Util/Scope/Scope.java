@@ -73,17 +73,4 @@ public class Scope {
 		else if (parentScope != null && lookUpon) return parentScope.getMethodFunction(name, true);
 		else return null;
 	}
-
-	public void registerMethod(globalScope gScope, funcDefNode funcDef) {
-		if (funcDef.returnType == null && (this instanceof globalScope))
-			throw new semanticError("return type not declared.", funcDef.pos);
-		functionType funcType = typeCalculator.functionTypeGenerator(gScope, funcDef);
-		if (funcDef.name.equals("main") && (this instanceof globalScope)) {
-			if (!funcType.returnType.is_int)
-				throw new semanticError("return type of main function must be int.", funcDef.pos);
-			if (!funcType.paraType.isEmpty())
-				throw new semanticError("main function should not have parameters.", funcDef.pos);
-		}
-		meths.put(funcDef.name, funcType);
-	}
 }

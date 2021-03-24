@@ -311,8 +311,9 @@ public class semanticChecker implements ASTVisitor {
 		gScope.defineMethod(funcName, func, it.pos);
 		// size method of array will be implemented in IR builder
 
-		it.units.forEach(unit -> {if (unit.funcDef != null) gScope.registerMethod(gScope, unit.funcDef);});
-		if (!gScope.containMethod("main", true))
+		registerAllMethods(it);
+
+		if (!gScope.containMethod("_global.main", true))
 			throw new semanticError("no main function.", it.pos);
 		it.units.forEach(unit -> unit.accept(this));
 	}
@@ -374,24 +375,12 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(funcDefNode it) {
 		currentScope = new functionScope(currentScope);
-		ArrayList<entity> argValues = new ArrayList<>();
-		String funcName = it.name;
-		if (currentClass != null) {
-			funcName = currentClassName + "." + funcName;
-			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
-		} else funcName = "_global." + funcName;
 		for (int i = 0;i < it.paraName.size();++ i) {
 			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
 			currentScope.defineVariable(it.paraName.get(i), type, it.pos);
-			register argEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
-			currentScope.bindVariableToEntity(it.paraName.get(i), argEntity);
-			argValues.add(argEntity);
+			currentScope.bindVariableToEntity(it.paraName.get(i), it.func.argValues.get(i + (currentClass != null ? 1 : 0)));
 		}
 		currentReturnType = typeCalculator.calcType(gScope, it.returnType);
-		function func = new function(typeCalculator.calcLLVMSingleValueType(gScope, currentReturnType), funcName, argValues, false);
-		gScope.bindMethodToFunction(it.name, func);
-		programEntry.functions.add(func);
-		it.func = func;
 		it.funcBody.accept(this);
 		currentReturnType = null;
 		currentScope = currentScope.parentScope();
@@ -417,7 +406,6 @@ public class semanticChecker implements ASTVisitor {
 		currentClassName = it.name;
 		currentScope = new aggregateScope(currentScope, it.name);
 		currentClass.memberVariables.forEach((varName, varType) -> gScope.defineVariable(currentClassName + "." + varName, varType, it.pos));
-		currentClass.memberMethods.forEach((methName, methType) -> gScope.defineMethod(currentClassName + "." + methName, methType, it.pos));
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
 		currentScope = currentScope.parentScope();
 		currentClassName = null;
@@ -576,28 +564,38 @@ public class semanticChecker implements ASTVisitor {
 
 	@Override
 	public void visit(funcCallExprNode it) {
-		if (!currentScope.containMethod(it.funcName, true))
-			throw new semanticError("method " + it.funcName + " not defined.", it.pos);
-		functionType type = (functionType) currentScope.getMethodType(it.funcName, true);
-		it.func = currentScope.getMethodFunction(it.funcName, true);
+		boolean isGlobalFunc = false;
+		if (!currentScope.containMethod(it.funcName, true)) {
+			isGlobalFunc = true;
+			if (!currentScope.containMethod("_global." + it.funcName, true))
+				throw new semanticError("method " + it.funcName + " not defined.", it.pos);
+		}
+		functionType type;
+		if (isGlobalFunc) {
+			type = (functionType) currentScope.getMethodType("_global." + it.funcName, true);
+			it.func = currentScope.getMethodFunction("_global." + it.funcName, true);
+		} else {
+			type = (functionType) currentScope.getMethodType(it.funcName, true);
+			it.func = currentScope.getMethodFunction(it.funcName, true);
+		}
 		if (it.argList.size() != type.paraType.size())
 			throw new semanticError("number of parameters not match.", it.pos);
+		Scope tmpScope = currentScope;
+		if (currentScope instanceof aggregateScope) currentScope = currentScope.parentScope();
 		for (int i = it.argList.size() - 1;i >= 0;-- i) {
 			it.argList.get(i).accept(this);
 			if (!typeCalculator.isEqualType(it.argList.get(i).resultType, type.paraType.get(i)))
 				throw new semanticError("parameter type not match.", it.pos);
 		}
 		it.resultType = type.returnType;
+		currentScope = tmpScope;
 	}
 
 	@Override
 	public void visit(memberAccessExprNode it) {
 		it.lhs.accept(this);
-		if (it.lhs.resultType instanceof classType) {
-			currentScope = new aggregateScope(currentScope, ((classType) it.lhs.resultType).className);
-			((classType) it.lhs.resultType).memberVariables.forEach((varName, varType) -> currentScope.defineVariable(varName, varType, it.pos));
-			((classType) it.lhs.resultType).memberMethods.forEach((methName, methType) -> currentScope.defineMethod(methName, methType, it.pos));
-		} else if (it.lhs.resultType instanceof arrayType)
+		if (it.lhs.resultType instanceof classType) currentScope = new aggregateScope(currentScope, ((classType) it.lhs.resultType).className);
+		else if (it.lhs.resultType instanceof arrayType)
 			currentScope = new aggregateScope(currentScope, "builtin.array");
 		else {
 			assert typeCalculator.isEqualType(it.lhs.resultType, gScope.getTypeFromName("string", it.pos));
@@ -624,5 +622,41 @@ public class semanticChecker implements ASTVisitor {
 		it.resultType = typeCalculator.calcType(gScope, it.type);
 		if (it.resultType.is_bool || it.resultType.is_int || it.resultType.is_void)
 			throw new semanticError("type cannot be used in new expression.", it.pos);
+	}
+
+	private void registerAllMethods(rootNode it) {
+		it.units.forEach(unit -> {if (unit.funcDef != null) bindFunction(unit.funcDef);});
+		it.units.forEach(unit -> {
+			if (unit.classDef != null) {
+				currentClass = (classType) gScope.getTypeFromName(unit.classDef.name, unit.classDef.pos);
+				currentClassName = unit.classDef.name;
+				unit.classDef.units.forEach(classUnit -> {
+					if (classUnit.funcDef != null) bindFunction(classUnit.funcDef);
+				});
+				currentClassName = null;
+				currentClass = null;
+			}
+		});
+	}
+
+	private void bindFunction(funcDefNode it) {
+		ArrayList<entity> argValues = new ArrayList<>();
+		String funcName = it.name;
+		if (currentClass != null) {
+			funcName = currentClassName + "." + funcName;
+			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
+		} else funcName = "_global." + funcName;
+		gScope.registerMethod(it, funcName, currentClass != null);
+		for (int i = 0;i < it.paraName.size();++ i) {
+			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
+			register argEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
+			argValues.add(argEntity);
+		}
+		function func = new function(
+			typeCalculator.calcLLVMSingleValueType(gScope, typeCalculator.calcType(gScope, it.returnType)),
+			funcName, argValues, false);
+		gScope.bindMethodToFunction(it.name, func);
+		programEntry.functions.add(func);
+		it.func = func;
 	}
 }
