@@ -405,7 +405,6 @@ public class semanticChecker implements ASTVisitor {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentClassName = it.name;
 		currentScope = new aggregateScope(currentScope, it.name);
-		currentClass.memberVariables.forEach((varName, varType) -> gScope.defineVariable(currentClassName + "." + varName, varType, it.pos));
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
 		currentScope = currentScope.parentScope();
 		currentClassName = null;

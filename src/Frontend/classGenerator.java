@@ -77,6 +77,7 @@ public class classGenerator implements ASTVisitor {
 			currentClass.memberVariables.put(varName, varType);
 			currentClass.memberVariablesIndex.put(varName, currentClass.memberVariablesCounter);
 			++ currentClass.memberVariablesCounter;
+			gScope.defineVariable(currentClassName + "." + varName, varType, it.pos);
 			currentLLVMClass.registerMember(varLLVMType);
 		}
 //		if (it.init != null)
