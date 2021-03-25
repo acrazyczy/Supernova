@@ -1,5 +1,6 @@
 import AST.rootNode;
 import Backend.IRBuilder;
+import Backend.IRPrinter;
 import Frontend.ASTBuilder;
 import Frontend.classGenerator;
 import Frontend.semanticChecker;
@@ -42,6 +43,7 @@ public class Main {
 			entry programEntry = new entry();
 			new semanticChecker(gScope, programEntry).visit(ASTRoot);
 			new IRBuilder(gScope, programEntry).visit(ASTRoot);
+			new IRPrinter(programEntry, System.out).run();
 		} catch (error er) {
 			System.err.println(er.toString());
 			throw new RuntimeException();

@@ -8,4 +8,6 @@ public abstract class statement {
 	public statement() {}
 
 	public statement(entity dest) {this.dest = dest;}
+
+	@Override abstract public String toString();
 }

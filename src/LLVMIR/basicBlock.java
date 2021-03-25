@@ -9,9 +9,9 @@ import Util.position;
 import java.util.ArrayList;
 
 public class basicBlock {
-	private ArrayList<statement> stmts = new ArrayList<>();
+	public ArrayList<statement> stmts = new ArrayList<>();
 	private terminalStmt tailStmt = null;
-	private String name;
+	public String name;
 
 	public basicBlock(String name, function currentFunction) {
 		this.name = name;

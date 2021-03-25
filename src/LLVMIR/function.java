@@ -12,7 +12,7 @@ public class function {
 	public String functionName;
 	public ArrayList<entity> argValues;
 	public ArrayList<basicBlock> blocks;
-	private HashMap<String, Integer> blockNameCounter;
+	private final HashMap<String, Integer> blockNameCounter;
 
 	public function(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues, boolean is_builtin) {
 		this.returnType = returnType;
@@ -32,4 +32,22 @@ public class function {
 			return 0;
 		}
 	}
+
+	private String functionArgListToString(ArrayList<entity> argList) {
+		StringBuilder ret = new StringBuilder();
+		if (argList.isEmpty()) return ret.toString();
+		entity argv = argList.get(0);
+		ret.append(argv.type).append(" ").append(argv);
+		for (int i = 1;i < argList.size();++ i) {
+			argv = argList.get(i);
+			ret.append(", ").append(argv.type).append(" ").append(argv);
+		}
+		return ret.toString();
+	}
+
+	public String functionToString(ArrayList<entity> argList) {
+		return returnType + " " + "@" + functionName + "(" + functionArgListToString(argList == null ? argValues : argList) + ")";
+	}
+
+	@Override public String toString() {return functionToString(null);}
 }

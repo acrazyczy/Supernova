@@ -22,12 +22,12 @@ import java.util.Arrays;
 import java.util.Collections;
 
 public class semanticChecker implements ASTVisitor {
-	private Scope currentScope = null;
+	private Scope currentScope;
 	private classType currentClass = null;
 	private String currentClassName = null;
 	private Type currentReturnType = null;
-	private entry programEntry = null;
-	private globalScope gScope;
+	private final entry programEntry;
+	private final globalScope gScope;
 
 	public semanticChecker(globalScope gScope, entry programEntry) {
 		this.currentScope = this.gScope = gScope;
@@ -533,7 +533,7 @@ public class semanticChecker implements ASTVisitor {
 			assert currentClass == null;
 		}
 		if (currentScope instanceof globalScope) for (String name: it.names) {
-			globalVariable gVar = new globalVariable(new LLVMPointerType(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+			globalVariable gVar = new globalVariable(new LLVMPointerType(typeCalculator.calcLLVMSingleValueType(gScope, type)), "globalVariable." + it.names);
 			currentScope.bindVariableToEntity(name, gVar);
 			programEntry.globals.add(gVar);
 		}

@@ -3,5 +3,15 @@ package LLVMIR.Operand;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 
 public class globalVariable extends entity {
-	public globalVariable(LLVMSingleValueType type) {super(type);}
+	private final String name;
+
+	public globalVariable(LLVMSingleValueType type, String name) {
+		super(type);
+		this.name = name;
+	}
+
+	@Override
+	public String toString() {
+		return "@" + name;
+	}
 }

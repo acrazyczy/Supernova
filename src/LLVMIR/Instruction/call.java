@@ -6,8 +6,8 @@ import LLVMIR.function;
 import java.util.ArrayList;
 
 public class call extends statement {
-	private function callee;
-	private ArrayList<entity> parameters;
+	private final function callee;
+	private final ArrayList<entity> parameters;
 
 	public call(function callee, ArrayList<entity> parameters) {
 		super();
@@ -19,5 +19,12 @@ public class call extends statement {
 		super(dest);
 		this.callee = callee;
 		this.parameters = parameters;
+	}
+
+	@Override public String toString() {
+		String ret = "";
+		if (this.dest != null) ret += this.dest + " = ";
+		ret += "call " + callee.functionToString(parameters);
+		return ret;
 	}
 }

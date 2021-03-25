@@ -44,7 +44,7 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(memberAccessExprNode it) {
 		it.lhs.accept(this);
-		register value = null;
+		register value;
 		if (it.rhs instanceof funcCallExprNode) {
 			((funcCallExprNode) it.rhs).thisEntity = it.lhs.val;
 			it.rhs.accept(this);
@@ -283,7 +283,7 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(constExprNode it) {
-		entity value = null;
+		entity value;
 		if (it.type == null) {
 			value = new register(new LLVMPointerType(new LLVMIntegerType(8)));
 			currentBlock.push_back(new _move(new nullPointerConstant(), value));
@@ -399,20 +399,7 @@ public class IRBuilder implements ASTVisitor {
 		register value = new register(new LLVMIntegerType(8));
 		if (it.lhs.resultType == null && it.rhs.resultType == null)
 			currentBlock.push_back(new _move(new booleanConstant(it.op == cmpExprNode.opType.Equ ? 1 : 0), value));
-		else if (it.lhs.resultType.is_string) {
-			assert it.rhs.resultType.is_string;
-			function cmpFunc = null;
-			switch (it.op) {
-				case Gt -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThan", true);
-				case Lt -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThan", true);
-				case Geq -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThanOrEqual", true);
-				case Leq -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThanOrEqual", true);
-				case Neq -> cmpFunc = gScope.getMethodFunction("builtin.string.isNotEqual", true);
-				case Equ -> cmpFunc = gScope.getMethodFunction("builtin.string.isEqual", true);
-			}
-			currentBlock.push_back(new call(cmpFunc, new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)), value));
-		}
-		if (it.lhs.resultType instanceof arrayType || it.rhs.resultType instanceof arrayType) {
+		else if (it.lhs.resultType instanceof arrayType || it.rhs.resultType instanceof arrayType) {
 			entity lhsEntity, rhsEntity;
 			if (((LLVMPointerType) it.lhs.val.type).pointeeType.size() != 1) {
 				lhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)));
@@ -426,16 +413,31 @@ public class IRBuilder implements ASTVisitor {
 				it.op == cmpExprNode.opType.Equ ? icmp.condCode.eq : icmp.condCode.ne,
 				it.lhs.val, it.rhs.val, value));
 		} else {
-			icmp.condCode condCode = null;
-			switch (it.op) {
-				case Gt -> condCode = icmp.condCode.sgt;
-				case Lt -> condCode = icmp.condCode.slt;
-				case Geq -> condCode = icmp.condCode.sge;
-				case Leq -> condCode = icmp.condCode.sle;
-				case Neq -> condCode = icmp.condCode.ne;
-				case Equ -> condCode = icmp.condCode.eq;
+			assert it.lhs.resultType != null && it.rhs.resultType != null;
+			if (it.lhs.resultType.is_string) {
+				assert it.rhs.resultType.is_string;
+				function cmpFunc = null;
+				switch (it.op) {
+					case Gt -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThan", true);
+					case Lt -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThan", true);
+					case Geq -> cmpFunc = gScope.getMethodFunction("builtin.string.isGreaterThanOrEqual", true);
+					case Leq -> cmpFunc = gScope.getMethodFunction("builtin.string.isLessThanOrEqual", true);
+					case Neq -> cmpFunc = gScope.getMethodFunction("builtin.string.isNotEqual", true);
+					case Equ -> cmpFunc = gScope.getMethodFunction("builtin.string.isEqual", true);
+				}
+				currentBlock.push_back(new call(cmpFunc, new ArrayList<>(Arrays.asList(it.lhs.val, it.rhs.val)), value));
+			} else {
+				icmp.condCode condCode = null;
+				switch (it.op) {
+					case Gt -> condCode = icmp.condCode.sgt;
+					case Lt -> condCode = icmp.condCode.slt;
+					case Geq -> condCode = icmp.condCode.sge;
+					case Leq -> condCode = icmp.condCode.sle;
+					case Neq -> condCode = icmp.condCode.ne;
+					case Equ -> condCode = icmp.condCode.eq;
+				}
+				currentBlock.push_back(new icmp(condCode, it.lhs.val, it.rhs.val, value));
 			}
-			currentBlock.push_back(new icmp(condCode, it.lhs.val, it.rhs.val, value));
 		}
 		if (it.trueBranch != null) {
 			assert it.falseBranch != null;

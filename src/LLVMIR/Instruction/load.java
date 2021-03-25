@@ -1,14 +1,14 @@
 package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
-import LLVMIR.TypeSystem.LLVMPointerType;
-import LLVMIR.TypeSystem.LLVMType;
 
 public class load extends statement {
-	private entity pointer;
+	private final entity pointer;
 
 	public load(entity pointer, entity dest) {
 		super(dest);
 		this.pointer = pointer;
 	}
+
+	@Override public String toString() {return dest + " = load " + dest.type + " " + pointer.type + " " + pointer;}
 }
