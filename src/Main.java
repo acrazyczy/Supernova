@@ -1,11 +1,13 @@
 import AST.rootNode;
+import Assembly.asmEntry;
 import Backend.IRBuilder;
 import Backend.IRPrinter;
+import Backend.instSelector;
 import Frontend.ASTBuilder;
 import Frontend.classGenerator;
 import Frontend.semanticChecker;
 import Frontend.symbolCollector;
-import LLVMIR.entry;
+import LLVMIR.IREntry;
 import Util.error.error;
 import Util.Scope.globalScope;
 import Util.MxStarErrorListener;
@@ -113,13 +115,14 @@ public class Main {
 			ASTRoot = (rootNode)astBuilder.visit(parseTreeRoot);
 			new symbolCollector(gScope).visit(ASTRoot);
 			new classGenerator(gScope).visit(ASTRoot);
-			entry programEntry = new entry();
-			new semanticChecker(gScope, programEntry).visit(ASTRoot);
-			new IRBuilder(gScope, programEntry).visit(ASTRoot);
+			IREntry programIREntry = new IREntry();
+			new semanticChecker(gScope, programIREntry).visit(ASTRoot);
+			new IRBuilder(gScope, programIREntry).visit(ASTRoot);
 
-			if (LLVMGeneratingFlag) new IRPrinter(programEntry, os).run();
+			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, os).run();
 			if (assemblyGeneratingFlag) {
-
+				asmEntry programAsmEntry = new asmEntry();
+				new instSelector(programIREntry, programAsmEntry).run();
 			}
 		} catch (error | IOException er) {
 			System.err.println(er.toString());

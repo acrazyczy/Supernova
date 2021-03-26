@@ -4,7 +4,7 @@ import LLVMIR.Operand.globalVariable;
 import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.TypeSystem.LLVMStructureType;
 import LLVMIR.basicBlock;
-import LLVMIR.entry;
+import LLVMIR.IREntry;
 import LLVMIR.function;
 
 import java.io.OutputStream;
@@ -12,11 +12,11 @@ import java.io.PrintWriter;
 
 public class IRPrinter implements pass {
 	private final OutputStream out;
-	private final entry programEntry;
+	private final IREntry programIREntry;
 	private final PrintWriter pWriter;
 
-	public IRPrinter(entry programEntry, OutputStream out) {
-		this.programEntry = programEntry;
+	public IRPrinter(IREntry programIREntry, OutputStream out) {
+		this.programIREntry = programIREntry;
 		this.out = out;
 		this.pWriter = new PrintWriter(out);
 	}
@@ -48,11 +48,11 @@ public class IRPrinter implements pass {
 
 	@Override
 	public void run() {
-		programEntry.classes.forEach(this::printClass);
+		programIREntry.classes.forEach(this::printClass);
 		pWriter.println();
-		programEntry.globals.forEach(this::printGlobalVariable);
+		programIREntry.globals.forEach(this::printGlobalVariable);
 		pWriter.println();
-		programEntry.functions.forEach(this::printFunction);
+		programIREntry.functions.forEach(this::printFunction);
 		pWriter.flush();
 	}
 }

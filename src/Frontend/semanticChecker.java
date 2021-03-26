@@ -8,7 +8,7 @@ import LLVMIR.TypeSystem.LLVMIntegerType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 import LLVMIR.TypeSystem.LLVMStructureType;
-import LLVMIR.entry;
+import LLVMIR.IREntry;
 import LLVMIR.function;
 import Util.Scope.*;
 import Util.Type.arrayType;
@@ -27,18 +27,18 @@ public class semanticChecker implements ASTVisitor {
 	private classType currentClass = null;
 	private String currentClassName = null;
 	private Type currentReturnType = null;
-	private final entry programEntry;
+	private final IREntry programIREntry;
 	private final globalScope gScope;
 
-	public semanticChecker(globalScope gScope, entry programEntry) {
+	public semanticChecker(globalScope gScope, IREntry programIREntry) {
 		this.currentScope = this.gScope = gScope;
-		this.programEntry = programEntry;
+		this.programIREntry = programIREntry;
 	}
 
 	private void bindBuiltinFunction(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues) {
 		function func = new function(returnType, functionName, argValues, true);
 		gScope.bindMethodToFunction(functionName, func);
-		programEntry.functions.add(func);
+		programIREntry.functions.add(func);
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class semanticChecker implements ASTVisitor {
 		String funcName;
 
 		// a main function for initialization
-		programEntry.functions.add(new function(new LLVMIntegerType(32), "main", new ArrayList<>(), false));
+		programIREntry.functions.add(new function(new LLVMIntegerType(32), "main", new ArrayList<>(), false));
 
 		funcName = "print";
 		func = new functionType(
@@ -404,7 +404,7 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(classDefNode it) {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
-		programEntry.classes.add((LLVMStructureType) gScope.getLLVMTypeFromType(currentClass));
+		programIREntry.classes.add((LLVMStructureType) gScope.getLLVMTypeFromType(currentClass));
 		currentClassName = it.name;
 		currentScope = new aggregateScope(currentScope, it.name);
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
@@ -538,7 +538,7 @@ public class semanticChecker implements ASTVisitor {
 			globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type), "_g." + name, false, false);
 			currentScope.bindVariableToEntity(name, gVar);
 			it.varEntities.add(gVar);
-			programEntry.globals.add(gVar);
+			programIREntry.globals.add(gVar);
 		}
 		else for (String name: it.names) {
 			entity varEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
@@ -661,7 +661,7 @@ public class semanticChecker implements ASTVisitor {
 			typeCalculator.calcLLVMSingleValueType(gScope, typeCalculator.calcType(gScope, it.returnType)),
 			funcName, argValues, false);
 		gScope.bindMethodToFunction(it.name, func);
-		programEntry.functions.add(func);
+		programIREntry.functions.add(func);
 		it.func = func;
 	}
 }

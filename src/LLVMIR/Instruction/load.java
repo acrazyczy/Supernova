@@ -3,7 +3,7 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 
 public class load extends statement {
-	private final entity pointer;
+	public final entity pointer;
 
 	public load(entity pointer, entity dest) {
 		super(dest);

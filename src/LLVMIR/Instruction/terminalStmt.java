@@ -1,4 +1,4 @@
 package LLVMIR.Instruction;
 
-public abstract class terminalStmt extends statement {
+abstract public class terminalStmt extends statement {
 }

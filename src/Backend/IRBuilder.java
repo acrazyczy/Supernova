@@ -5,7 +5,7 @@ import LLVMIR.Instruction.*;
 import LLVMIR.Operand.*;
 import LLVMIR.TypeSystem.*;
 import LLVMIR.basicBlock;
-import LLVMIR.entry;
+import LLVMIR.IREntry;
 import LLVMIR.function;
 import Util.Scope.globalScope;
 import Util.Type.Type;
@@ -23,12 +23,12 @@ public class IRBuilder implements ASTVisitor {
 	private basicBlock currentBlock = null;
 	private function currentFunction = null;
 	private classType currentClass = null;
-	private final entry programEntry;
+	private final IREntry programIREntry;
 	private int strConstCounter = 0;
 
-	public IRBuilder(globalScope gScope, entry programEntry) {
+	public IRBuilder(globalScope gScope, IREntry programIREntry) {
 		this.gScope = gScope;
-		this.programEntry = programEntry;
+		this.programIREntry = programIREntry;
 	}
 
 	@Override
@@ -146,7 +146,7 @@ public class IRBuilder implements ASTVisitor {
 					globalVariable gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "_strConst." + strConstCounter, true, true);
 					++ strConstCounter;
 					gStr.val = str;
-					programEntry.globals.add(gStr);
+					programIREntry.globals.add(gStr);
 					register strPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_strPtr");
 					currentBlock.push_back(new getelementptr(gStr,
 						new ArrayList<>(Arrays.asList(new integerConstant(32, 0), new integerConstant(32, 0))),
@@ -319,7 +319,7 @@ public class IRBuilder implements ASTVisitor {
 			globalVariable gStr = new globalVariable(new LLVMArrayType(it.value.length() + 1, new LLVMIntegerType(8)), "_strConst." + strConstCounter, true, true);
 			++ strConstCounter;
 			gStr.val = it.value;
-			programEntry.globals.add(gStr);
+			programIREntry.globals.add(gStr);
 			currentBlock.push_back(new getelementptr(gStr,
 				new ArrayList<>(Arrays.asList(new integerConstant(32, 0), new integerConstant(32, 0))),
 				value
@@ -488,7 +488,7 @@ public class IRBuilder implements ASTVisitor {
 	@Override public void visit(typeNode it) {}
 
 	@Override public void visit(rootNode it) {
-		currentFunction = programEntry.functions.get(0);
+		currentFunction = programIREntry.functions.get(0);
 		currentBlock = currentFunction.blocks.get(0);
 		it.units.forEach(unit -> {if (unit.varDef != null) unit.accept(this);});
 		register retVal = new register(new LLVMIntegerType(32), "_retVal", currentFunction);

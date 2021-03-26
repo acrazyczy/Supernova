@@ -2,7 +2,7 @@ package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
 
-public abstract class statement {
+abstract public class statement {
 	public entity dest;
 
 	public statement() {}

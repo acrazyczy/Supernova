@@ -1,6 +1,6 @@
 package LLVMIR.TypeSystem;
 
-public abstract class LLVMType {
-	public abstract String toString();
+abstract public class LLVMType {
+	abstract public String toString();
 	public LLVMType() {}
 }

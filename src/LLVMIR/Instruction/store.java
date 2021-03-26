@@ -3,7 +3,7 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 
 public class store extends statement {
-	private final entity value, pointer;
+	public final entity value, pointer;
 
 	public store(entity value, entity pointer) {
 		super();

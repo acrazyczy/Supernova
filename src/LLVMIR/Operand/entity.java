@@ -2,7 +2,7 @@ package LLVMIR.Operand;
 
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 
-public abstract class entity {
+abstract public class entity {
 	public final LLVMSingleValueType type;
 
 	public entity(LLVMSingleValueType type) {this.type = type;}
