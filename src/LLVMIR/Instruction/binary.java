@@ -18,5 +18,5 @@ public class binary extends statement {
 		assert op1.type == op2.type;
 	}
 
-	@Override public String toString() {return dest + " = " + inst + " " + op1.type + ", " + op2.type;}
+	@Override public String toString() {return dest + " = " + inst + " " + op1.type + " " + op1 + ", " + op2.type + " " + op2;}
 }

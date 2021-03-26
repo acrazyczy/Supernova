@@ -1,11 +1,9 @@
 package LLVMIR.TypeSystem;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.StringJoiner;
 
 public class LLVMStructureType extends LLVMAggregateType {
-	private ArrayList<LLVMSingleValueType> types;
+	private final ArrayList<LLVMSingleValueType> types;
 	String name;
 	int size;
 
@@ -27,5 +25,15 @@ public class LLVMStructureType extends LLVMAggregateType {
 	@Override
 	public String toString() {
 		return "%struct." + name;
+	}
+
+	public String classDefString() {
+		StringBuilder ret = new StringBuilder(this + " = type <{");
+		if (!types.isEmpty()) {
+			ret.append(" ").append(types.get(0));
+			for (int i = 1;i < types.size();++ i) ret.append(", ").append(types.get(i));
+		}
+		ret.append(" }>");
+		return ret.toString();
 	}
 }

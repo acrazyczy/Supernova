@@ -12,8 +12,8 @@ import Util.typeCalculator;
 import java.util.HashMap;
 
 public class globalScope extends Scope {
-	private HashMap<String, Type> types = new HashMap<>();
-	private HashMap<Type, LLVMFirstClassType> typesMap = new HashMap<>();
+	private final HashMap<String, Type> types = new HashMap<>();
+	private final HashMap<Type, LLVMFirstClassType> typesMap = new HashMap<>();
 
 	public globalScope(Scope parentScope) {super(parentScope);}
 

@@ -10,5 +10,5 @@ public class load extends statement {
 		this.pointer = pointer;
 	}
 
-	@Override public String toString() {return dest + " = load " + dest.type + " " + pointer.type + " " + pointer;}
+	@Override public String toString() {return dest + " = load " + dest.type + ", " + pointer.type + " " + pointer;}
 }

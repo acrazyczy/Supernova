@@ -3,16 +3,14 @@ package Frontend;
 import AST.*;
 import Parser.MxStarBaseVisitor;
 import Parser.MxStarParser;
-import Util.Scope.globalScope;
 import Util.error.semanticError;
 import Util.position;
 
 import java.util.ArrayList;
 
 public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
-	private globalScope gScope;
 
-	public ASTBuilder(globalScope gScope) {this.gScope = gScope;}
+	public ASTBuilder() {}
 
 /*	@Override
 	public ASTNode visitArgList(MxStarParser.ArgListContext ctx) {
@@ -133,7 +131,14 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 		constExprNode constExpr =  new constExprNode(new position(ctx), ctx.getText());
 		if (ctx.logicConstant() != null) constExpr.type = "bool";
 		else if (ctx.IntegerConstant() != null) constExpr.type = "int";
-		else if (ctx.StringConstant() != null) constExpr.type = "string";
+		else if (ctx.StringConstant() != null) {
+			constExpr.type = "string";
+			String tmp = constExpr.value.replace("\\\"","\"")
+				.replace("\\n","\n")
+				.replace("\\t","\t")
+				.replace("\\\\","\\");
+			constExpr.value = tmp.substring(1, tmp.length() - 1);
+		}
 		else constExpr.type = null;
 		return constExpr;
 	}

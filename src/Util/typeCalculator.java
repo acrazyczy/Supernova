@@ -37,13 +37,11 @@ public class typeCalculator {
 	}
 
 	static public LLVMSingleValueType calcLLVMSingleValueType(globalScope gScope, Type type) {
-		if (type instanceof classType) {
-			return new LLVMPointerType(gScope.getLLVMTypeFromType(type));
-		} else if (type instanceof arrayType) {
-			return new LLVMPointerType(calcLLVMSingleValueType(gScope, ((arrayType) type).subType()));
-		} else if (type.is_string || type.is_bool) {
-			return new LLVMIntegerType(8);
-		} else {
+		if (type instanceof classType) return new LLVMPointerType(gScope.getLLVMTypeFromType(type));
+		else if (type instanceof arrayType) return new LLVMPointerType(calcLLVMSingleValueType(gScope, ((arrayType) type).subType()));
+		else if (type.is_bool) return new LLVMIntegerType(8);
+		else if (type.is_string) return new LLVMPointerType(new LLVMIntegerType(8));
+		else {
 			assert type.is_int;
 			return new LLVMIntegerType(32);
 		}

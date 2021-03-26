@@ -7,6 +7,7 @@ import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMIntegerType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
+import LLVMIR.TypeSystem.LLVMStructureType;
 import LLVMIR.entry;
 import LLVMIR.function;
 import Util.Scope.*;
@@ -313,7 +314,7 @@ public class semanticChecker implements ASTVisitor {
 
 		registerAllMethods(it);
 
-		if (!gScope.containMethod("_global.main", true))
+		if (!gScope.containMethod("_g.main", true))
 			throw new semanticError("no main function.", it.pos);
 		it.units.forEach(unit -> unit.accept(this));
 	}
@@ -403,6 +404,7 @@ public class semanticChecker implements ASTVisitor {
 	@Override
 	public void visit(classDefNode it) {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
+		programEntry.classes.add((LLVMStructureType) gScope.getLLVMTypeFromType(currentClass));
 		currentClassName = it.name;
 		currentScope = new aggregateScope(currentScope, it.name);
 		it.units.forEach(unit -> {if (unit.funcDef != null) unit.funcDef.accept(this);});
@@ -533,12 +535,16 @@ public class semanticChecker implements ASTVisitor {
 			assert currentClass == null;
 		}
 		if (currentScope instanceof globalScope) for (String name: it.names) {
-			globalVariable gVar = new globalVariable(new LLVMPointerType(typeCalculator.calcLLVMSingleValueType(gScope, type)), "globalVariable." + it.names);
+			globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type), "_g." + name, false, false);
 			currentScope.bindVariableToEntity(name, gVar);
+			it.varEntities.add(gVar);
 			programEntry.globals.add(gVar);
 		}
-		else for (String name: it.names)
-			currentScope.bindVariableToEntity(name, new register(typeCalculator.calcLLVMSingleValueType(gScope, type)));
+		else for (String name: it.names) {
+			entity varEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
+			currentScope.bindVariableToEntity(name, varEntity);
+			it.varEntities.add(varEntity);
+		}
 	}
 
 	@Override
@@ -566,13 +572,13 @@ public class semanticChecker implements ASTVisitor {
 		boolean isGlobalFunc = false;
 		if (!currentScope.containMethod(it.funcName, true)) {
 			isGlobalFunc = true;
-			if (!currentScope.containMethod("_global." + it.funcName, true))
+			if (!currentScope.containMethod("_g." + it.funcName, true))
 				throw new semanticError("method " + it.funcName + " not defined.", it.pos);
 		}
 		functionType type;
 		if (isGlobalFunc) {
-			type = (functionType) currentScope.getMethodType("_global." + it.funcName, true);
-			it.func = currentScope.getMethodFunction("_global." + it.funcName, true);
+			type = (functionType) currentScope.getMethodType("_g." + it.funcName, true);
+			it.func = currentScope.getMethodFunction("_g." + it.funcName, true);
 		} else {
 			type = (functionType) currentScope.getMethodType(it.funcName, true);
 			it.func = currentScope.getMethodFunction(it.funcName, true);
@@ -644,11 +650,11 @@ public class semanticChecker implements ASTVisitor {
 		if (currentClass != null) {
 			funcName = currentClassName + "." + funcName;
 			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
-		} else funcName = "_global." + funcName;
+		} else funcName = "_g." + funcName;
 		gScope.registerMethod(it, funcName, currentClass != null);
 		for (int i = 0;i < it.paraName.size();++ i) {
 			Type type = typeCalculator.calcType(gScope, it.paraType.get(i));
-			register argEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
+			register argEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type), it.paraName.get(i));
 			argValues.add(argEntity);
 		}
 		function func = new function(

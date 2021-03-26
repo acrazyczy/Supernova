@@ -7,7 +7,7 @@ import Util.Type.Type;
 import Util.Type.classType;
 
 public class symbolCollector implements ASTVisitor {
-	private globalScope gScope;
+	private final globalScope gScope;
 
 	public symbolCollector(globalScope gScope) {this.gScope = gScope;}
 

@@ -1,7 +1,7 @@
 package LLVMIR.TypeSystem;
 
 public class LLVMIntegerType extends LLVMSingleValueType {
-	private int width;
+	private final int width;
 
 	public LLVMIntegerType(int width) {
 		super();

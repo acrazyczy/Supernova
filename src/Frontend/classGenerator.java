@@ -2,8 +2,6 @@
 package Frontend;
 
 import AST.*;
-import LLVMIR.Operand.entity;
-import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 import LLVMIR.TypeSystem.LLVMStructureType;
 import Util.Scope.globalScope;
@@ -17,7 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class classGenerator implements ASTVisitor {
-	private globalScope gScope;
+	private final globalScope gScope;
 	private classType currentClass = null;
 	private LLVMStructureType currentLLVMClass = null;
 	private String currentClassName = null;

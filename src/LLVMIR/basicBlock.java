@@ -34,4 +34,6 @@ public class basicBlock {
 	}
 
 	public boolean hasTerminalStmt() {return tailStmt != null;}
+
+	@Override public String toString() {return name;}
 }

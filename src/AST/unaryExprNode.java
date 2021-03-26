@@ -5,7 +5,7 @@ import Util.position;
 public class unaryExprNode extends exprStmtNode {
 	public enum opType{
 		PreIncr, PreDecr, SufIncr, SufDecr, Plus, Minus, LogicNot, BitwiseNot
-	};
+	}
 
 	public exprStmtNode expr;
 	public opType op;

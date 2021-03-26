@@ -1,6 +1,7 @@
 package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
+import LLVMIR.TypeSystem.LLVMPointerType;
 
 import java.util.ArrayList;
 
@@ -16,7 +17,7 @@ public class getelementptr extends statement {
 
 	@Override
 	public String toString() {
-		StringBuilder ret = new StringBuilder(dest + " = getelementptr " + dest.type + ", " + pointer.type);
+		StringBuilder ret = new StringBuilder(dest + " = getelementptr " + ((LLVMPointerType) pointer.type).pointeeType + ", " + pointer.type + " " + pointer);
 		for (entity idx: idxes) ret.append(", ").append(idx.type).append(" ").append(idx);
 		return ret.toString();
 	}

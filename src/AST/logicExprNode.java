@@ -4,7 +4,7 @@ import Util.position;
 
 public class logicExprNode extends exprStmtNode {
 	public enum opType{
-		And, Or;
+		And, Or
 	}
 
 	public exprStmtNode lhs, rhs;

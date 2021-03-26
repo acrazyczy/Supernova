@@ -4,8 +4,8 @@ import Util.position;
 
 public class cmpExprNode extends exprStmtNode {
 	public enum opType {
-		Gt, Lt, Geq, Leq, Neq, Equ;
-	};
+		Gt, Lt, Geq, Leq, Neq, Equ
+	}
 
 	public exprStmtNode lhs, rhs;
 	public opType op;
