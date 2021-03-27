@@ -7,8 +7,8 @@ public class icmp extends statement {
 		eq, ne, ugt, uge, ult, ule, sgt, sge, slt, sle
 	}
 
-	private final condCode cond;
-	private final entity op1, op2;
+	public final condCode cond;
+	public final entity op1, op2;
 
 	public icmp(condCode cond, entity op1, entity op2, entity dest) {
 		super(dest);

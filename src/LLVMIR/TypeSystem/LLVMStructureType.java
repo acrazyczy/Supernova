@@ -3,7 +3,7 @@ package LLVMIR.TypeSystem;
 import java.util.ArrayList;
 
 public class LLVMStructureType extends LLVMAggregateType {
-	private final ArrayList<LLVMSingleValueType> types;
+	public final ArrayList<LLVMSingleValueType> types;
 	String name;
 	int size;
 

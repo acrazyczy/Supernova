@@ -34,8 +34,7 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(classLiteralNode it) {
 		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(it.resultType);
-		register classSize = new register(new LLVMIntegerType(32), "_classSize", currentFunction);
-		currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, baseType.size()), new integerConstant(32, 3), classSize));
+		entity classSize = new integerConstant(32, baseType.size() >> 3);
 		register value = it.val != null ? (register) it.val : new register(new LLVMPointerType(baseType), "_classMallocPtr", currentFunction);
 		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
@@ -299,6 +298,7 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
 		}
 		it.val = value;
+		// TODO: 2021/3/27 short circuit
 	}
 
 	@Override

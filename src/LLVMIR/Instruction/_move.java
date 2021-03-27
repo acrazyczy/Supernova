@@ -6,11 +6,11 @@ import LLVMIR.Operand.undefinedValue;
 import LLVMIR.TypeSystem.LLVMPointerType;
 
 public class _move extends statement {
-	entity src, dest;
+	public entity src;
 
 	public _move(entity src, entity dest) {
+		super(dest);
 		this.src = src;
-		this.dest = dest;
 	}
 
 	@Override

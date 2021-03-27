@@ -89,6 +89,8 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 			case "&" -> binaryExpr.op = binaryExprNode.opType.And;
 			case "^" -> binaryExpr.op = binaryExprNode.opType.Xor;
 			case "|" -> binaryExpr.op = binaryExprNode.opType.Or;
+			case "<<" -> binaryExpr.op = binaryExprNode.opType.Lsh;
+			case ">>" -> binaryExpr.op = binaryExprNode.opType.Rsh;
 		}
 		return binaryExpr;
 	}

@@ -7,8 +7,8 @@ public class binary extends statement {
 		add, sub, mul, sdiv, srem, shl, ashr, and, or, xor
 	}
 
-	private final instCode inst;
-	private final entity op1, op2;
+	public final instCode inst;
+	public final entity op1, op2;
 
 	public binary(instCode inst, entity op1, entity op2, entity dest) {
 		super(dest);

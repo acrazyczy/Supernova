@@ -1,6 +1,6 @@
 package Assembly.Operand;
 
-public class physicalReg extends register {
+public class physicalReg extends reg {
 	private final String name;
 
 	public physicalReg(String name) {

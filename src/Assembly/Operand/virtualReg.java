@@ -1,6 +1,6 @@
 package Assembly.Operand;
 
-public class virtualReg extends register {
+public class virtualReg extends reg {
 	private int index;
 
 	public virtualReg(int index) {

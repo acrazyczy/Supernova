@@ -6,8 +6,8 @@ import LLVMIR.TypeSystem.LLVMPointerType;
 import java.util.ArrayList;
 
 public class getelementptr extends statement {
-	private final entity pointer;
-	private final ArrayList<entity> idxes;
+	public final entity pointer;
+	public final ArrayList<entity> idxes;
 
 	public getelementptr(entity pointer, ArrayList<entity> idxes, entity dest) {
 		super(dest);

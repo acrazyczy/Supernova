@@ -1,18 +1,18 @@
 package Assembly.Instruction;
 
 import Assembly.Operand.Imm;
-import Assembly.Operand.register;
+import Assembly.Operand.reg;
 
-public class STORE extends inst {
+public class storeInst extends inst {
 	public enum storeType {
-		SB, SW
+		sb, sw
 	}
 
-	private final register rs1, rs2;
+	private final reg rs1, rs2;
 	private final Imm offset;
 	private final storeType type;
 
-	public STORE(storeType type, register rs2, Imm offset, register rs1) {
+	public storeInst(storeType type, reg rs2, Imm offset, reg rs1) {
 		super();
 		this.type = type;
 		this.rs2 = rs2;

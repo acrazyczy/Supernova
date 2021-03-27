@@ -3,7 +3,7 @@ package LLVMIR.Operand;
 import LLVMIR.TypeSystem.LLVMIntegerType;
 
 public class integerConstant extends constant {
-	private final int val;
+	public final int val;
 
 	public integerConstant(int width, int val) {
 		super(new LLVMIntegerType(width));
