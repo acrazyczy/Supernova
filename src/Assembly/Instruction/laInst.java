@@ -1,6 +1,6 @@
 package Assembly.Instruction;
 
-import Assembly.Operand.Imm;
+import Assembly.Operand.globalData;
 import Assembly.Operand.physicalReg;
 import Assembly.Operand.reg;
 import Assembly.Operand.virtualReg;
@@ -8,14 +8,14 @@ import Assembly.Operand.virtualReg;
 import java.util.ArrayList;
 import java.util.function.BiFunction;
 
-public class liInst extends inst {
+public class laInst extends inst {
 	private reg rd;
-	private final Imm imm;
+	private final globalData symbol;
 
-	public liInst(reg rd, Imm imm) {
+	public laInst(reg rd, globalData symbol) {
 		super();
 		this.rd = rd;
-		this.imm = imm;
+		this.symbol = symbol;
 	}
 
 	@Override
@@ -23,5 +23,5 @@ public class liInst extends inst {
 		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
 	}
 
-	@Override public String toString() {return "li " + rd + ", " + imm;}
+	@Override public String toString() {return "la " + rd + ", " + symbol;}
 }

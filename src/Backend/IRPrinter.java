@@ -26,9 +26,7 @@ public class IRPrinter implements pass {
 	private void printGlobalVariable(globalVariable gVar) {
 		pWriter.print(gVar + " = " + (gVar.isConstant ? "constant" : "global") + " " + ((LLVMPointerType) gVar.type).pointeeType + " ");
 		if (gVar.isString) pWriter.println("c\"" + gVar.convert() + "\\00\"");
-		else if (gVar.val != null) pWriter.println(gVar.val);
-		else if (((LLVMPointerType) gVar.type).pointeeType instanceof LLVMPointerType) pWriter.println("null");
-		else pWriter.println("0");
+		else pWriter.println(gVar.val);
 	}
 
 	private void printFunction(function func) {

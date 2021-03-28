@@ -8,11 +8,11 @@ import Assembly.Operand.virtualReg;
 import java.util.ArrayList;
 import java.util.function.BiFunction;
 
-public class liInst extends inst {
+public class luiInst extends inst {
 	private reg rd;
 	private final Imm imm;
 
-	public liInst(reg rd, Imm imm) {
+	public luiInst(reg rd, Imm imm) {
 		super();
 		this.rd = rd;
 		this.imm = imm;
@@ -23,5 +23,5 @@ public class liInst extends inst {
 		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
 	}
 
-	@Override public String toString() {return "li " + rd + ", " + imm;}
+	@Override public String toString() {return "lui " + rd + ", " + imm;}
 }

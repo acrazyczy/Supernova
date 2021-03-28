@@ -1,14 +1,19 @@
 package Assembly.Instruction;
 
 import Assembly.Operand.Imm;
+import Assembly.Operand.physicalReg;
 import Assembly.Operand.reg;
+import Assembly.Operand.virtualReg;
+
+import java.util.ArrayList;
+import java.util.function.BiFunction;
 
 public class loadInst extends inst {
 	public enum loadType {
-		LBU, LW
+		lbu, lw
 	}
 
-	private final reg rd, rs1;
+	private reg rd, rs1;
 	private final Imm imm;
 	private final loadType type;
 
@@ -18,6 +23,12 @@ public class loadInst extends inst {
 		this.rd = rd;
 		this.rs1 = rs1;
 		this.imm = imm;
+	}
+
+	@Override
+	public void replaceVirtualRegister(ArrayList<inst> insts, BiFunction<virtualReg, ArrayList<inst>, physicalReg> action) {
+		if (rs1 instanceof virtualReg) rs1 = action.apply((virtualReg) rs1, insts);
+		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
 	}
 
 	@Override public String toString() {return type + " " + rd + ", " + imm + "(" + rs1 + ")";}

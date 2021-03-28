@@ -1,12 +1,11 @@
 package Backend;
 
 import Assembly.Instruction.*;
-import Assembly.Operand.Imm;
-import Assembly.Operand.reg;
-import Assembly.Operand.virtualReg;
+import Assembly.Operand.*;
 import Assembly.asmBlock;
 import Assembly.asmEntry;
 import Assembly.asmFunction;
+import Assembly.stackFrame;
 import LLVMIR.IREntry;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.*;
@@ -16,6 +15,7 @@ import LLVMIR.basicBlock;
 import LLVMIR.Instruction.*;
 import LLVMIR.function;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
@@ -30,10 +30,20 @@ public class instSelector implements pass {
 	private asmBlock currentBlock;
 
 	private final HashMap<register, virtualReg> regMap = new HashMap<>();
+	private final HashMap<basicBlock, asmBlock> blkMap = new HashMap<>();
+	static physicalReg
+		sp = physicalReg.pRegs.get("sp"),
+		a0 = physicalReg.pRegs.get("a0"),
+		zero = physicalReg.pRegs.get("zero");
 
 	private virtualReg registerMapping(register reg) {
 		if (!regMap.containsKey(reg)) regMap.put(reg, new virtualReg(++ virtualRegCounter));
 		return regMap.get(reg);
+	}
+
+	private asmBlock blockMapping(basicBlock blk) {
+		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter));
+		return blkMap.get(blk);
 	}
 
 	public instSelector(IREntry programIREntry, asmEntry programAsmEntry) {
@@ -45,12 +55,16 @@ public class instSelector implements pass {
 		if (stmt instanceof _move) {
 			_move stmt_ = (_move) stmt;
 			reg rd = registerMapping((register) stmt_.dest);
-			if (stmt_.src instanceof globalVariable) {
-				// TODO: 2021/3/27 deal with data segmentation
-			} else if (stmt_.src instanceof integerConstant) currentBlock.addInst(new liInst(rd, new Imm(((integerConstant) stmt_.src).val)));
-			else if (stmt_.src instanceof booleanConstant) currentBlock.addInst(new liInst(rd, new Imm(((booleanConstant) stmt_.src).val)));
-			else if (stmt_.src instanceof nullPointerConstant) currentBlock.addInst(new liInst(rd, new Imm(0)));
-			else currentBlock.addInst(new mvInst(rd, registerMapping((register) stmt_.src)));
+			if (stmt_.src instanceof integerConstant) currentBlock.addInst(new liInst(rd, new intImm(((integerConstant) stmt_.src).val)));
+			else if (stmt_.src instanceof booleanConstant) currentBlock.addInst(new liInst(rd, new intImm(((booleanConstant) stmt_.src).val)));
+			else if (stmt_.src instanceof nullPointerConstant) currentBlock.addInst(new liInst(rd, new intImm(0)));
+			else if (stmt_.src instanceof register) currentBlock.addInst(new mvInst(rd, registerMapping((register) stmt_.src)));
+			else {
+				assert stmt_.src instanceof globalVariable;
+				globalData glb = programAsmEntry.gblMapping.get(stmt_.src);
+				currentBlock.addInst(new luiInst(rd, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new loadInst(loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
+			}
 		} else if (stmt instanceof binary) {
 			binary stmt_ = (binary) stmt;
 			entity lhs = stmt_.op1, rhs = stmt_.op2;
@@ -64,14 +78,14 @@ public class instSelector implements pass {
 					assert lhs instanceof integerConstant || lhs instanceof booleanConstant;
 					int val = lhs instanceof integerConstant ? ((integerConstant) lhs).val : ((booleanConstant) lhs).val;
 					rs1 = new virtualReg(++ virtualRegCounter);
-					currentBlock.addInst(new liInst(rs1, new Imm(val)));
+					currentBlock.addInst(new liInst(rs1, new intImm(val)));
 				}
 				if (rhs instanceof register) rs2 = registerMapping((register) rhs);
 				else {
 					assert rhs instanceof integerConstant || rhs instanceof booleanConstant;
 					int val = rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val;
 					rs2 = new virtualReg(++ virtualRegCounter);
-					currentBlock.addInst(new liInst(rs2, new Imm(val)));
+					currentBlock.addInst(new liInst(rs2, new intImm(val)));
 				}
 				RTypeInst.opType type = null;
 				switch (inst) {
@@ -103,7 +117,7 @@ public class instSelector implements pass {
 						currentBlock.addInst(new RTypeInst(type, rd, lhs_, rhs_));
 					} else {
 						assert rhs instanceof integerConstant || rhs instanceof booleanConstant;
-						Imm imm = new Imm(rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val);
+						intImm intImm = new intImm(rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val);
 						ITypeInst.opType type = null;
 						switch (inst) {
 							case or -> type = ITypeInst.opType.ori;
@@ -111,7 +125,7 @@ public class instSelector implements pass {
 							case and -> type = ITypeInst.opType.andi;
 							case xor -> type = ITypeInst.opType.xori;
 						}
-						currentBlock.addInst(new ITypeInst(type, rd, lhs_, imm));
+						currentBlock.addInst(new ITypeInst(type, rd, lhs_, intImm));
 					}
 				} else {
 					assert (lhs instanceof integerConstant || lhs instanceof booleanConstant) &&
@@ -119,56 +133,127 @@ public class instSelector implements pass {
 					int lhs_ = lhs instanceof integerConstant ? ((integerConstant) lhs).val : ((booleanConstant) lhs).val;
 					int rhs_ = rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val;
 					switch (inst) {
-						case add -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ + rhs_)));
-						case and -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ & rhs_)));
-						case or -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ | rhs_)));
-						case xor -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ ^ rhs_)));
+						case add -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ + rhs_)));
+						case and -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ & rhs_)));
+						case or -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ | rhs_)));
+						case xor -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ ^ rhs_)));
 					}
 				}
 			}
 		} else if (stmt instanceof bitcast) {
-			// TODO: 2021/3/27 deal with data segmentation
 			bitcast stmt_ = (bitcast) stmt;
-			currentBlock.addInst(new mvInst(registerMapping((register) stmt_.dest),
-				registerMapping((register) stmt_.value)
-			));
+			reg rd = registerMapping((register) stmt_.dest);
+			if (stmt_.value instanceof globalVariable) currentBlock.addInst(new laInst(rd, programAsmEntry.gblMapping.get(stmt_.value)));
+			else currentBlock.addInst(new mvInst(rd, registerMapping((register) stmt_.value)));
 		} else if (stmt instanceof br) {
-
+			br stmt_ = (br) stmt;
+			asmBlock trueBlk = blkMap.get(stmt_.trueBranch);
+			if (stmt_.cond == null) currentBlock.addInst(new jumpInst(trueBlk));
+			else {
+				asmBlock falseBlk = blkMap.get(stmt_.falseBranch);
+				if (stmt_.cond instanceof booleanConstant)
+					if (((booleanConstant) stmt_.cond).val == 1) currentBlock.addInst(new jumpInst(trueBlk));
+					else currentBlock.addInst(new jumpInst(falseBlk));
+				else {
+					reg cond = registerMapping((register) stmt_.cond);
+					boolean merged = false;
+					inst tailInst = currentBlock.tailInst;
+					if (tailInst != null)
+						if (tailInst instanceof szInst) {
+							if (((szInst) tailInst).testMergeability(cond)) {
+								currentBlock.tailInst = new brInst(
+									((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
+									((szInst) tailInst).rs, null, falseBlk
+								);
+								merged = true;
+							}
+						} else if (tailInst instanceof RTypeInst) {
+							if (((RTypeInst) tailInst).testMergeability(cond)) {
+								if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
+									currentBlock.tailInst = new brInst(
+										brInst.opType.bge,
+										((RTypeInst) tailInst).rs1, ((RTypeInst) tailInst).rs2, falseBlk
+									);
+								else currentBlock.tailInst = new brInst(
+										brInst.opType.bgeu,
+										((RTypeInst) tailInst).rs1, ((RTypeInst) tailInst).rs2, falseBlk
+									);
+								merged = true;
+							}
+						} else if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
+							RTypeInst preInst = (RTypeInst) tailInst.pre;
+							if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
+								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
+								else currentBlock.tailInst = new brInst(brInst.opType.bltu, preInst.rs1, preInst.rs2, falseBlk);
+								currentBlock.tailInst.pre = preInst.pre;
+								if (preInst.pre != null) preInst.suf = currentBlock.tailInst;
+								else currentBlock.headInst = currentBlock.tailInst;
+								merged = true;
+							}
+						}
+					if (!merged) currentBlock.addInst(new brInst(brInst.opType.beqz, cond, null, falseBlk));
+				}
+			}
 		} else if (stmt instanceof call) {
-
+			call stmt_ = (call) stmt;
+			HashMap<String, virtualReg> virRegs = new HashMap<>();
+			// store caller save registers
+			physicalReg.callerSavePRegs.forEach((name, phyReg) -> {
+				virtualReg virReg = new virtualReg(++ virtualRegCounter);
+				currentBlock.addInst(new mvInst(virReg, phyReg));
+				virRegs.put(name, virReg);
+			});
+			for (int i = stmt_.callee.argValues.size() - 1;i >= 0;-- i) {
+				entity paraEntity = stmt_.parameters.get(i);
+				virtualReg rs;
+				if (paraEntity instanceof register) rs = registerMapping((register) paraEntity);
+				else {
+					rs = new virtualReg(++ virtualRegCounter);
+					if (paraEntity instanceof integerConstant)
+						currentBlock.addInst(new liInst(rs, new intImm(((integerConstant) paraEntity).val)));
+					else if (paraEntity instanceof booleanConstant)
+						currentBlock.addInst(new liInst(rs, new intImm(((booleanConstant) paraEntity).val)));
+					else currentBlock.addInst(new mvInst(rs, zero));
+				}
+				if (i > 7) {
+					currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, sp, sp, new intImm(-4)));
+					currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs, new intImm(0), sp));
+				} else currentBlock.addInst(new mvInst(physicalReg.pRegs.get("a" + i), rs));
+			}
+			currentBlock.addInst(new callInst(programAsmEntry.asmFunctions.get(stmt_.callee)));
+			// load caller save register
+			physicalReg.callerSavePRegs.forEach((name, phyReg) -> currentBlock.addInst(new mvInst(phyReg, virRegs.get(name))));
 		} else if (stmt instanceof getelementptr) {
 			getelementptr stmt_ = (getelementptr) stmt;
 			reg rd = registerMapping((register) stmt_.dest);
 			//0. index addressing
+			reg rs1;
 			if (stmt_.pointer instanceof globalVariable) {
-				// TODO: 2021/3/27 deal with data segmentation
+				rs1 = new virtualReg(++ virtualRegCounter);
+				currentBlock.addInst(new laInst(rs1, programAsmEntry.gblMapping.get(stmt_.pointer)));
+			} else rs1 = registerMapping((register) stmt_.pointer);
+			entity idx = stmt_.idxes.get(0);
+			if (idx instanceof register) {
+				reg offset = new virtualReg(++ virtualRegCounter);
+				currentBlock.addInst(new liInst(offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
+				currentBlock.addInst(new RTypeInst(RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
+				currentBlock.addInst(new RTypeInst(RTypeInst.opType.add, rd, rs1, offset));
 			} else {
-				reg rs1 = registerMapping((register) stmt_.pointer);
-				entity idx = stmt_.idxes.get(0);
-				if (idx instanceof register) {
-					reg offset = new virtualReg(++ virtualRegCounter);
-					currentBlock.addInst(new liInst(offset, new Imm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
-					currentBlock.addInst(new RTypeInst(RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
-					currentBlock.addInst(new RTypeInst(RTypeInst.opType.add, rd, rs1, offset));
-				} else if (idx instanceof globalVariable) {
-					// TODO: 2021/3/27 deal with data segmentation
-				} else {
-					assert idx instanceof integerConstant;
-					currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rs1,
-						new Imm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() * ((integerConstant) idx).val)
-					));
-				}
+				assert idx instanceof integerConstant;
+				currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rs1,
+					new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() * ((integerConstant) idx).val)
+				));
 			}
 			//1. member accessing
 			if (stmt_.idxes.size() > 1) {
-				entity idx = stmt_.idxes.get(1);
+				idx = stmt_.idxes.get(1);
 				assert idx instanceof integerConstant;
 				assert ((LLVMPointerType) stmt_.pointer.type).pointeeType instanceof LLVMStructureType;
 				LLVMStructureType structType = (LLVMStructureType) ((LLVMPointerType) stmt_.pointer.type).pointeeType;
 				int offset_ = 0;
 				for (int i = 0;i < ((integerConstant) idx).val;++ i)
 					offset_ += structType.types.get(i).size() / 8;
-				currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rd, new Imm(offset_)));
+				currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
 			}
 		} else if (stmt instanceof icmp) {
 			icmp stmt_ = (icmp) stmt;
@@ -206,27 +291,27 @@ public class instSelector implements pass {
 						case ugt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs_, lhs_));
 						case uge -> {
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case ult -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, lhs_, rhs_));
 						case ule -> {
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs_, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case sgt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs_, lhs_));
 						case sge -> {
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case slt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, lhs_, rhs_));
 						case sle -> {
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs_, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 					}
 				} else {
 					assert rhs instanceof integerConstant;
-					Imm rhs_ = new Imm(((integerConstant) rhs).val);
+					intImm rhs_ = new intImm(((integerConstant) rhs).val);
 					switch (cond) {
 						case eq -> {
 							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, lhs_, rhs_));
@@ -243,14 +328,14 @@ public class instSelector implements pass {
 						}
 						case uge -> {
 							currentBlock.addInst(new ITypeInst(ITypeInst.opType.sltiu, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case ult -> currentBlock.addInst(new ITypeInst(ITypeInst.opType.sltiu, rd, lhs_, rhs_));
 						case ule -> {
 							reg rhs__ = new virtualReg(++ virtualRegCounter);
 							currentBlock.addInst(new liInst(rhs__, rhs_));
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs__, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case sgt -> {
 							reg rhs__ = new virtualReg(++ virtualRegCounter);
@@ -259,13 +344,13 @@ public class instSelector implements pass {
 						}
 						case sge -> {
 							currentBlock.addInst(new ITypeInst(ITypeInst.opType.slti, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case slt -> currentBlock.addInst(new ITypeInst(ITypeInst.opType.slti, rd, lhs_, rhs_));
 						case sle -> {
 							reg rhs__ = new virtualReg(++ virtualRegCounter);
 							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs__, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new Imm(1)));
+							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 					}
 				}
@@ -273,51 +358,77 @@ public class instSelector implements pass {
 				assert lhs instanceof integerConstant && rhs instanceof integerConstant;
 				int lhs_ = ((integerConstant) lhs).val, rhs_ = ((integerConstant) rhs).val;
 				switch (cond) {
-					case eq -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ == rhs_ ? 1 : 0)));
-					case ne -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ != rhs_ ? 1 : 0)));
-					case ugt -> currentBlock.addInst(new liInst(rd, new Imm(compareUnsigned(lhs_, rhs_) > 0 ? 1 : 0)));
-					case uge -> currentBlock.addInst(new liInst(rd, new Imm(compareUnsigned(lhs_, rhs_) >= 0 ? 1 : 0)));
-					case ult -> currentBlock.addInst(new liInst(rd, new Imm(compareUnsigned(lhs_, rhs_) < 0 ? 1 : 0)));
-					case ule -> currentBlock.addInst(new liInst(rd, new Imm(compareUnsigned(lhs_, rhs_) <= 0 ? 1 : 0)));
-					case sgt -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ > rhs_ ? 1 : 0)));
-					case sge -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ >= rhs_ ? 1 : 0)));
-					case slt -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ < rhs_ ? 1 : 0)));
-					case sle -> currentBlock.addInst(new liInst(rd, new Imm(lhs_ <= rhs_ ? 1 : 0)));
+					case eq -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ == rhs_ ? 1 : 0)));
+					case ne -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ != rhs_ ? 1 : 0)));
+					case ugt -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) > 0 ? 1 : 0)));
+					case uge -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) >= 0 ? 1 : 0)));
+					case ult -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) < 0 ? 1 : 0)));
+					case ule -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) <= 0 ? 1 : 0)));
+					case sgt -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ > rhs_ ? 1 : 0)));
+					case sge -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ >= rhs_ ? 1 : 0)));
+					case slt -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ < rhs_ ? 1 : 0)));
+					case sle -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ <= rhs_ ? 1 : 0)));
 				}
 			}
 
-		} else if (stmt instanceof LLVMIR.Instruction.load) {
+		} else if (stmt instanceof load) {
 			load stmt_ = (load) stmt;
+			reg rd = registerMapping((register) stmt_.dest);
 			if (stmt_.pointer instanceof globalVariable) {
-				// TODO: 2021/3/27 deal with data segmentation 
+				globalData glb = programAsmEntry.gblMapping.get(stmt_.pointer);
+				currentBlock.addInst(new luiInst(rd, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new loadInst(loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
 			} else {
 				currentBlock.addInst(new loadInst(
-					((LLVMPointerType) stmt_.pointer.type).pointeeType.size() == 8 ? loadInst.loadType.LBU : loadInst.loadType.LW,
-					registerMapping((register) stmt_.dest),
-					registerMapping((register) stmt_.pointer),
-					new Imm(0)
+					((LLVMPointerType) stmt_.pointer.type).pointeeType.size() == 8 ? loadInst.loadType.lbu : loadInst.loadType.lw,
+					rd, registerMapping((register) stmt_.pointer), new intImm(0)
 				));
 			}
 		} else if (stmt instanceof ret) {
-
+			ret stmt_ = (ret) stmt;
+			if (stmt_.value != null)
+				if (stmt_.value instanceof booleanConstant)
+					currentBlock.addInst(new luiInst(a0, new intImm(((booleanConstant) stmt_.value).val)));
+				else if (stmt_.value instanceof integerConstant)
+					currentBlock.addInst(new luiInst(a0, new intImm(((integerConstant) stmt_.value).val)));
+				else if (stmt_.value instanceof nullPointerConstant)
+					currentBlock.addInst(new mvInst(a0, zero));
+				else {
+					assert stmt_.value instanceof register;
+					currentBlock.addInst(new mvInst(a0, registerMapping((register) stmt_.value)));
+				}
+			currentBlock.addInst(new jumpInst(currentFunction.retBlock));
 		} else {
 			assert stmt instanceof store;
 			store stmt_ = (store) stmt;
-			if (stmt_.dest instanceof globalVariable) {
-				// TODO: 2021/3/27 deal with data segmentation
-			} else {
+			reg rs2;
+			if (stmt_.value instanceof register) rs2 = registerMapping((register) stmt_.value);
+			else {
+				rs2 = new virtualReg(++ virtualRegCounter);
+				if (stmt_.value instanceof booleanConstant)
+					currentBlock.addInst(new liInst(rs2, new intImm(((booleanConstant) stmt_.value).val)));
+				else if (stmt_.value instanceof integerConstant)
+					currentBlock.addInst(new liInst(rs2, new intImm(((integerConstant) stmt_.value).val)));
+				else currentBlock.addInst(new mvInst(rs2, zero));
+			}
+		if (stmt_.value instanceof integerConstant)
+			if (stmt_.pointer instanceof globalVariable) {
+				globalData glb = programAsmEntry.gblMapping.get(stmt_.pointer);
+				reg rs1 = new virtualReg(++ virtualRegCounter);
+				currentBlock.addInst(new luiInst(rs1, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs2,
+					new relocationImm(relocationImm.type.lo, glb), rs1));
+			} else
 				currentBlock.addInst(new storeInst(
 					stmt_.value.type.size() == 8 ? storeInst.storeType.sb : storeInst.storeType.sw,
-					registerMapping((register) stmt_.pointer),
-					new Imm(0),
-					registerMapping((register) stmt_.value)
+					registerMapping((register) stmt_.pointer), new intImm(0), rs2
 				));
-			}
 		}
 	}
 
 	private void buildAsmBlock(basicBlock block) {
-		asmBlock asmBlk = new asmBlock(++ blockCounter, block.name);
+		asmBlock asmBlk = blockMapping(block);
+		asmBlk.comment = block.name;
 		currentFunction.asmBlocks.add(asmBlk);
 		currentBlock = asmBlk;
 		block.stmts.forEach(this::buildAsmInst);
@@ -325,16 +436,31 @@ public class instSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
-		asmFunction asmFunc = new asmFunction(func.functionName);
-		programAsmEntry.asmFunctions.add(asmFunc);
+		stackFrame stkFrame = new stackFrame();
+		ArrayList<virtualReg> paraVRegs = new ArrayList<>();
+		func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
+		asmFunction asmFunc = new asmFunction(func.functionName, stkFrame, paraVRegs);
+		asmFunc.initBlock = new asmBlock(++ blockCounter);
+		asmFunc.initBlock.comment = "init block of " + func.functionName;
+		asmFunc.retBlock = new asmBlock(++ blockCounter);
+		asmFunc.retBlock.comment = "return block of " + func.functionName;
+		programAsmEntry.asmFunctions.put(func, asmFunc);
 		currentFunction = asmFunc;
 		func.blocks.forEach(this::buildAsmBlock);
 		currentFunction = null;
 	}
 
+	private void registerGlobalVariable() {
+		for (globalVariable global: programIREntry.globals)
+			if (global.isString)
+				programAsmEntry.gblMapping.put(global, new globalData(global.name, global.val, global.isConstant));
+			else
+				programAsmEntry.gblMapping.put(global, new globalData(global.name, Integer.parseInt(global.val), global.isConstant));
+	}
+
 	@Override
 	public void run() {
-		// TODO: 2021/3/27 deal with global data
+		registerGlobalVariable();
 		programIREntry.functions.forEach(this::buildAsmFunction);
 	}
 }

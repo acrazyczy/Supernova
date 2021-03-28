@@ -1,10 +1,11 @@
 package LLVMIR.Operand;
 
 import LLVMIR.TypeSystem.LLVMFirstClassType;
+import LLVMIR.TypeSystem.LLVMIntegerType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 
 public class globalVariable extends entity {
-	private final String name;
+	public final String name;
 	public boolean isConstant, isString;
 	public String val = null;
 
@@ -13,6 +14,8 @@ public class globalVariable extends entity {
 		this.isConstant = isConstant;
 		this.isString = isString;
 		this.name = name;
+		if (type instanceof LLVMIntegerType) val = "0";
+		else val = "null";
 	}
 
 	public String convert() {

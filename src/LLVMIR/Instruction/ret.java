@@ -3,7 +3,7 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 
 public class ret extends terminalStmt {
-	private final entity value;
+	public final entity value;
 
 	public ret(entity value) {
 		super();

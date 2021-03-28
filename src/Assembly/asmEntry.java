@@ -1,12 +1,14 @@
 package Assembly;
 
-import java.util.ArrayList;
+import Assembly.Operand.globalData;
+import LLVMIR.Operand.globalVariable;
+import LLVMIR.function;
+
 import java.util.HashMap;
 
 public class asmEntry {
-	public HashMap<String, String> stringData = new HashMap<>();
-	public HashMap<String, Integer> integerData = new HashMap<>();
-	public ArrayList<asmFunction> asmFunctions = new ArrayList<>();
+	public HashMap<globalVariable, globalData> gblMapping = new HashMap<>();
+	public HashMap<function, asmFunction> asmFunctions = new HashMap<>();
 
 	public asmEntry() {}
 }

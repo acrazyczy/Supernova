@@ -6,8 +6,8 @@ import LLVMIR.function;
 import java.util.ArrayList;
 
 public class call extends statement {
-	private final function callee;
-	private final ArrayList<entity> parameters;
+	public final function callee;
+	public final ArrayList<entity> parameters;
 
 	public call(function callee, ArrayList<entity> parameters) {
 		super();

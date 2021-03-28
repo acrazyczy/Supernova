@@ -1,12 +1,8 @@
 package Assembly.Operand;
 
-public class Imm extends operand {
-	private int value;
+abstract public class Imm extends operand {
 
-	public Imm(int value) {
-		super();
-		this.value = value;
-	}
+	public Imm() {super();}
 
-	@Override public String toString() {return String.valueOf(value);};
+	@Override abstract public String toString();
 }

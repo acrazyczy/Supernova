@@ -4,19 +4,18 @@ import Assembly.Instruction.inst;
 
 public class asmBlock {
 	private final int index;
-	private final String comment;
-	public inst head, tail;
+	public String comment;
+	public inst headInst, tailInst;
 
-	public asmBlock(int index, String comment) {
+	public asmBlock(int index) {
 		this.index = index;
-		this.comment = comment;
-		this.head = this.tail = null;
+		this.headInst = this.tailInst = null;
 	}
 
 	public void addInst(inst i) {
-		if (head == null) head = i;
-		else (i.pre = tail).suf = i;
-		tail = i;
+		if (headInst == null) headInst = i;
+		else (i.pre = tailInst).suf = i;
+		tailInst = i;
 	}
 
 	@Override public String toString() {return ".Block"  + index + ":\t\t\t" + comment;}

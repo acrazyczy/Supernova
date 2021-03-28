@@ -1,8 +1,6 @@
 import AST.rootNode;
 import Assembly.asmEntry;
-import Backend.IRBuilder;
-import Backend.IRPrinter;
-import Backend.instSelector;
+import Backend.*;
 import Frontend.ASTBuilder;
 import Frontend.classGenerator;
 import Frontend.semanticChecker;
@@ -123,6 +121,8 @@ public class Main {
 			if (assemblyGeneratingFlag) {
 				asmEntry programAsmEntry = new asmEntry();
 				new instSelector(programIREntry, programAsmEntry).run();
+				new regAllocator(programAsmEntry).run();
+				new asmPrinter(programAsmEntry).run();
 			}
 		} catch (error | IOException er) {
 			System.err.println(er.toString());

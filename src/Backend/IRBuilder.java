@@ -142,7 +142,7 @@ public class IRBuilder implements ASTVisitor {
 			if (currentFunction.functionName.equals("main")) {
 				if (it.init.resultType != null && it.init.resultType.is_string) {
 					String str = ((constExprNode) it.init).value;
-					globalVariable gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "_strConst." + strConstCounter, true, true);
+					globalVariable gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
 					++ strConstCounter;
 					gStr.val = str;
 					programIREntry.globals.add(gStr);
@@ -288,11 +288,25 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(logicExprNode it) {
-		it.lhs.accept(this);
 		it.rhs.accept(this);
 		register value = new register(new LLVMIntegerType(8), "", currentFunction);
 		binary.instCode instCode = it.op == logicExprNode.opType.And ? binary.instCode.and : binary.instCode.or;
-		currentBlock.push_back(new binary(instCode, it.lhs.val, it.rhs.val, value));
+//		currentBlock.push_back(new binary(instCode, it.lhs.val, it.rhs.val, value));
+		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction),
+			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction),
+			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
+		currentBlock.push_back(new br(lhs));
+		currentBlock = lhs;
+		it.lhs.accept(this);
+		currentBlock.push_back(new _move(it.lhs.val, value));
+		if (it.op == logicExprNode.opType.And) currentBlock.push_back(new br(it.lhs.val, rhs, dest));
+		else currentBlock.push_back(new br(it.lhs.val, dest, rhs));
+		currentBlock = rhs;
+		it.rhs.accept(this);
+		currentBlock.push_back(new _move(it.rhs.val, value));
+		currentBlock.push_back(new br(dest));
+		currentBlock = dest;
+
 		if (it.trueBranch != null) {
 			assert it.falseBranch != null;
 			currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
@@ -316,7 +330,7 @@ public class IRBuilder implements ASTVisitor {
 		} else {
 			assert it.type.equals("string");
 			value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_string", currentFunction);
-			globalVariable gStr = new globalVariable(new LLVMArrayType(it.value.length() + 1, new LLVMIntegerType(8)), "_strConst." + strConstCounter, true, true);
+			globalVariable gStr = new globalVariable(new LLVMArrayType(it.value.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
 			++ strConstCounter;
 			gStr.val = it.value;
 			programIREntry.globals.add(gStr);
