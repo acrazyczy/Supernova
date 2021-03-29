@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.function.BiFunction;
 
 public class mvInst extends inst {
-	private reg rd, rs;
+	public reg rd, rs;
 
 	public mvInst(reg rd, reg rs) {
 		super();

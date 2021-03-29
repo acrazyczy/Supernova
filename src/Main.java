@@ -120,8 +120,8 @@ public class Main {
 			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, os).run();
 			if (assemblyGeneratingFlag) {
 				asmEntry programAsmEntry = new asmEntry();
-				new instSelector(programIREntry, programAsmEntry).run();
-				new regAllocator(programAsmEntry).run();
+				new instructionSelector(programIREntry, programAsmEntry).run();
+				new registerAllocator(programAsmEntry).run();
 				new asmPrinter(programAsmEntry).run();
 			}
 		} catch (error | IOException er) {

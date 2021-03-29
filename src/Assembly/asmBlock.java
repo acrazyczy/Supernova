@@ -1,11 +1,17 @@
 package Assembly;
 
 import Assembly.Instruction.inst;
+import Assembly.Operand.virtualReg;
+
+import java.util.ArrayList;
+import java.util.Set;
 
 public class asmBlock {
 	private final int index;
 	public String comment;
 	public inst headInst, tailInst;
+	public ArrayList<asmBlock> predecessors, successors;
+	public Set<virtualReg> liveOut;
 
 	public asmBlock(int index) {
 		this.index = index;

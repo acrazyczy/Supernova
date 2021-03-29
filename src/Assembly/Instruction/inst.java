@@ -4,11 +4,15 @@ import Assembly.Operand.physicalReg;
 import Assembly.Operand.virtualReg;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 abstract public class inst {
 	public inst pre = null, suf = null;
 	private String comment = null;
+
+	/*graph coloring information*/
+	public Set<virtualReg> def, use;
 
 	public inst() {}
 	public inst(String comment) {this.comment = comment;}

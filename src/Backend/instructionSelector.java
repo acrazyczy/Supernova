@@ -19,8 +19,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
+import static java.lang.Integer.max;
 
-public class instSelector implements pass {
+public class instructionSelector implements pass {
 	private final IREntry programIREntry;
 	private final asmEntry programAsmEntry;
 	private int blockCounter = 0;
@@ -46,7 +47,7 @@ public class instSelector implements pass {
 		return blkMap.get(blk);
 	}
 
-	public instSelector(IREntry programIREntry, asmEntry programAsmEntry) {
+	public instructionSelector(IREntry programIREntry, asmEntry programAsmEntry) {
 		this.programIREntry = programIREntry;
 		this.programAsmEntry = programAsmEntry;
 	}
@@ -196,13 +197,6 @@ public class instSelector implements pass {
 			}
 		} else if (stmt instanceof call) {
 			call stmt_ = (call) stmt;
-			HashMap<String, virtualReg> virRegs = new HashMap<>();
-			// store caller save registers
-			physicalReg.callerSavePRegs.forEach((name, phyReg) -> {
-				virtualReg virReg = new virtualReg(++ virtualRegCounter);
-				currentBlock.addInst(new mvInst(virReg, phyReg));
-				virRegs.put(name, virReg);
-			});
 			for (int i = stmt_.callee.argValues.size() - 1;i >= 0;-- i) {
 				entity paraEntity = stmt_.parameters.get(i);
 				virtualReg rs;
@@ -221,8 +215,8 @@ public class instSelector implements pass {
 				} else currentBlock.addInst(new mvInst(physicalReg.pRegs.get("a" + i), rs));
 			}
 			currentBlock.addInst(new callInst(programAsmEntry.asmFunctions.get(stmt_.callee)));
-			// load caller save register
-			physicalReg.callerSavePRegs.forEach((name, phyReg) -> currentBlock.addInst(new mvInst(phyReg, virRegs.get(name))));
+			if (stmt_.dest != null) currentBlock.addInst(new mvInst(registerMapping((register) stmt_.dest), a0));
+			currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, sp, sp, new intImm(4 * max(0, stmt_.callee.argValues.size() - 7))));
 		} else if (stmt instanceof getelementptr) {
 			getelementptr stmt_ = (getelementptr) stmt;
 			reg rd = registerMapping((register) stmt_.dest);
