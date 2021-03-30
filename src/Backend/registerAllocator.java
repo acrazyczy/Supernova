@@ -1,7 +1,10 @@
 package Backend;
 
 import Assembly.Instruction.inst;
+import Assembly.Instruction.loadInst;
 import Assembly.Instruction.mvInst;
+import Assembly.Instruction.storeInst;
+import Assembly.Operand.intImm;
 import Assembly.Operand.physicalReg;
 import Assembly.Operand.virtualReg;
 import Assembly.asmBlock;
@@ -14,25 +17,27 @@ import java.util.*;
 public class registerAllocator implements asmVisitor {
 	private final asmEntry programAsmEntry;
 
-	private Set<virtualReg> precolored;
-	private Set<virtualReg> initial;
-	private ArrayList<virtualReg> simplifyWorkList;
-	private ArrayList<virtualReg> freezeWorkList;
-	private ArrayList<virtualReg> spillWorkList;
-	private ArrayList<virtualReg> spilledNodes;
-	private Set<virtualReg> coalescedNodes;
-	private Set<virtualReg> coloredNodes;
-	private Stack<virtualReg> selectStack;
+	private Set<virtualReg> precolored;             // virtual registers corresponding to machine physical registers
+	private Set<virtualReg> initial;                // nodes which haven't been colored and processed
+	private ArrayList<virtualReg> simplifyWorkList; // move-unrelated nodes with low degrees
+	private ArrayList<virtualReg> freezeWorkList;   // move-related nodes with low degrees
+	private ArrayList<virtualReg> spillWorkList;    // nodes with high degrees
+	private ArrayList<virtualReg> spilledNodes;     // nodes to spill
+	private Set<virtualReg> coalescedNodes;         // nodes which have been coalesced
+	private Set<virtualReg> coloredNodes;           // nodes which have been colored
+	private Stack<virtualReg> selectStack;          // nodes deleted from the graph
 
-	private Set<mvInst> coalescedMoves;
-	private Set<mvInst> constrainedMoves;
-	private Set<mvInst> frozenMoves;
-	private Set<mvInst> workListMoves;
-	private Set<mvInst> activeMoves;
+	private Set<mvInst> coalescedMoves;             // move instructions which have been coalesced
+	private Set<mvInst> constrainedMoves;           // move instructions whose source and dest share the same live cycle
+	private Set<mvInst> frozenMoves;                // move instructions which won't be considered to merge any more
+	private Set<mvInst> workListMoves;              // move instructions which are possible to merge
+	private Set<mvInst> activeMoves;                // move instructions which aren't ready for merging
 
 	private static class edge extends Pair<virtualReg, virtualReg> {
 		public edge(virtualReg x, virtualReg y) {super(x, y);}
 	}
+
+	static virtualReg sp = physicalReg.pRegToVReg.get("sp");
 
 	private Set<edge> adjSet;
 	private Map<virtualReg, virtualReg> alias;
@@ -42,9 +47,14 @@ public class registerAllocator implements asmVisitor {
 	public registerAllocator(asmEntry programAsmEntry) {
 		this.programAsmEntry = programAsmEntry;
 	}
+	
+	private void initialization() {
+		// TODO: 2021/3/30
+	}
 
 	private void runGraphColoring(asmFunction asmFunc) {
 		while (true) {
+			initialization();
 			new livenessAnalyser(programAsmEntry).run();
 			build(asmFunc);
 			makeWorkList();
@@ -57,31 +67,48 @@ public class registerAllocator implements asmVisitor {
 				!freezeWorkList.isEmpty() || !spillWorkList.isEmpty());
 			assignColors();
 			if (spilledNodes.isEmpty()) break;
-			rewriteProgram(spilledNodes);
+			rewriteProgram(asmFunc);
 		}
 	}
-	
+
+	// build the interference graph based on the result of static liveness analysis
+	// fill workListMoves with all move instructions
 	private void build(asmFunction asmFunc) {
 		for (asmBlock block: asmFunc.asmBlocks) {
 			Set<virtualReg> live = block.liveOut;
 			for (inst i = block.tailInst;i != null;i = i.pre) {
 				if (i instanceof mvInst) {
-					live.removeAll(i.use);
+					live.removeAll(i.use);// no def between i and use of i.rs
 					for (virtualReg n: i.def) n.moveList.add((mvInst) i);
 					for (virtualReg n: i.use) n.moveList.add((mvInst) i);
 					workListMoves.add((mvInst) i);
 				}
 				live.addAll(i.def);
 				i.def.forEach(d -> live.forEach(l -> addEdge(l, d)));
-				live.addAll(i.use);
-				for (virtualReg l: live) if (!i.def.contains(l)) live.add(l);
+				live.removeAll(i.def);
+				live.addAll(i.use);// there are defs of these virtual registers before
 			}
 		}
 	}
-	
+
+	private void addEdge(virtualReg u, virtualReg v) {
+		if (!adjSet.contains(new edge(u, v)) && u != v) {
+			adjSet.add(new edge(u, v));
+			adjSet.add(new edge(v, u));
+			if (!precolored.contains(u)) {
+				u.adjList.add(v);
+				++ u.deg;
+			}
+			if (!precolored.contains(v)) {
+				v.adjList.add(u);
+				++ v.deg;
+			}
+		}
+	}
+
 	private void makeWorkList() {
 		for (virtualReg n: initial) {
-			initial.add(n);
+			initial.remove(n);
 			if (n.deg >= registerNumber) spillWorkList.add(n);
 			else if (moveRelated(n)) freezeWorkList.add(n);
 			else simplifyWorkList.add(n);
@@ -90,8 +117,8 @@ public class registerAllocator implements asmVisitor {
 
 	private Set<virtualReg> adjacent(virtualReg n) {
 		Set<virtualReg> ret = n.adjList;
-		ret.retainAll(selectStack);
-		ret.retainAll(coalescedNodes);
+		ret.removeAll(selectStack);
+		ret.removeAll(coalescedNodes);
 		return ret;
 	}
 
@@ -106,19 +133,19 @@ public class registerAllocator implements asmVisitor {
 		return !nodeMoves(n).isEmpty();
 	}
 
+	// remove a node whose degree is less than K from the interference graph
 	private void simplify() {
 		virtualReg n = simplifyWorkList.get(0);
 		simplifyWorkList.remove(n);
-		selectStack.add(n);
+		selectStack.push(n);
 		adjacent(n).forEach(this::decrementDegree);
 	}
 
 	private void decrementDegree(virtualReg m) {
-		int d = m.deg --;
-		if (d == registerNumber) {
+		if (m.deg -- == registerNumber) {
 			Set<virtualReg> nodes = new HashSet<>(adjacent(m));
 			nodes.add(m);
-			enableMoves(nodes);
+			enableMoves(nodes); // TODO: 2021/3/31 still cannot understand
 			spillWorkList.remove(m);
 			if (moveRelated(m)) freezeWorkList.add(m);
 			else simplifyWorkList.add(m);
@@ -136,7 +163,7 @@ public class registerAllocator implements asmVisitor {
 	
 	private void coalesce() {
 		mvInst m = workListMoves.iterator().next();
-		virtualReg x = getAlias(m.rd), y = getAlias(m.rs);
+		virtualReg x = getAlias(m.rd), y = getAlias(m.rs1);
 		virtualReg u, v;
 		if (precolored.contains(y)) {
 			u = y;
@@ -149,7 +176,7 @@ public class registerAllocator implements asmVisitor {
 		if (u == v) {
 			coalescedMoves.add(m);
 			addWorkList(u);
-		} else if (precolored.contains(v) && adjSet.contains(new edge(u, v))) {
+		} else if (precolored.contains(v) || adjSet.contains(new edge(u, v))) {
 			constrainedMoves.add(m);
 			addWorkList(u);
 			addWorkList(v);
@@ -171,19 +198,21 @@ public class registerAllocator implements asmVisitor {
 		}
 	}
 
+	// George's strategy for conservative coalescing
 	private boolean ok(virtualReg t, virtualReg r) {
 		return t.deg < registerNumber || precolored.contains(t) || adjSet.contains(new edge(t, r));
 	}
 
+	// Briggs' strategy for conservative coalescing
 	private boolean conservative(Set<virtualReg> nodes) {
-		int k = 0;
-		for (virtualReg n: nodes) if (n.deg >= registerNumber) ++ k;
-		return k < registerNumber;
+		return nodes.stream().filter(n -> n.deg >= registerNumber).count() < registerNumber;
 	}
 
 	private virtualReg getAlias(virtualReg n) {
 		return coalescedNodes.contains(n) ? getAlias(alias.get(n)) : n;
 	}
+
+	// TODO: 2021/3/31 check stops here and I go to sleep 
 
 	private void combine(virtualReg u, virtualReg v) {
 		if (freezeWorkList.contains(v)) freezeWorkList.remove(v);
@@ -208,7 +237,7 @@ public class registerAllocator implements asmVisitor {
 
 	private void freezeMoves(virtualReg u) {
 		for (mvInst m: nodeMoves(u)) {
-			virtualReg x = getAlias(m.rd), y = getAlias(m.rs),
+			virtualReg x = getAlias((virtualReg) m.rd), y = getAlias((virtualReg) m.rs),
 			v = getAlias(y) == getAlias(u) ? getAlias(x) : getAlias(y);
 			activeMoves.remove(m);
 			frozenMoves.add(m);
@@ -248,12 +277,28 @@ public class registerAllocator implements asmVisitor {
 		coalescedNodes.forEach(n -> n.color = getAlias(n).color);
 	}
 	
-	private void rewriteProgram(ArrayList<virtualReg> spilledNodes) {
+	private void rewriteProgram(asmFunction asmFunc) {
 		// allocate a memory unit for each spilled node v
 		// create a new temporary variable v_i for each def and use
 		// insert a store instruction after each def of v_i and a load instruction before each use of v_i
 		// add all v_i into newTemps
-		Set<virtualReg> newTemps = null;
+		Set<virtualReg> newTemps = new HashSet<>();
+		spilledNodes.forEach(v -> {
+			intImm offset = new intImm();
+			asmFunc.stkFrame.spilledRegisterOffsets.put(v, offset);
+			v.uses.forEach(use -> {
+				virtualReg v_ = new virtualReg();
+				use.replaceUse(v, v_);
+				newTemps.add(v_);
+				use.linkBefore(new loadInst(use.belongTo, loadInst.loadType.lw, v_, sp, offset));
+			});
+			v.defs.forEach(def -> {
+				virtualReg v_ = new virtualReg();
+				def.replaceDef(v, v_);
+				newTemps.add(v_);
+				def.linkAfter(new storeInst(def.belongTo, storeInst.storeType.sw, v_, offset, sp));
+			});
+		});
 		spilledNodes.clear();
 		initial = coloredNodes;
 		initial.addAll(coalescedNodes);
@@ -261,24 +306,9 @@ public class registerAllocator implements asmVisitor {
 		coloredNodes.clear();
 		coalescedNodes.clear();
 	}
-	
-	private void addEdge(virtualReg u, virtualReg v) {
-		if (!adjSet.contains(new edge(u, v)) && u != v) {
-			adjSet.add(new edge(u, v));
-			adjSet.add(new edge(v, u));
-			if (!precolored.contains(u)) {
-				u.adjList.add(v);
-				++ u.deg;
-			}
-			if (!precolored.contains(v)) {
-				v.adjList.add(u);
-				++ v.deg;
-			}
-		}
-	}
 
 	@Override
 	public void run() {
-		programAsmEntry.asmFunctions.forEach((IRFunc, asmFunc) -> runGraphColoring(asmFunc));
+		programAsmEntry.asmFunctions.values().forEach(this::runGraphColoring);
 	}
 }

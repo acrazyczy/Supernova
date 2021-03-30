@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
-import static java.lang.Integer.max;
 
 public class instructionSelector implements pass {
 	private final IREntry programIREntry;
@@ -32,10 +31,10 @@ public class instructionSelector implements pass {
 
 	private final HashMap<register, virtualReg> regMap = new HashMap<>();
 	private final HashMap<basicBlock, asmBlock> blkMap = new HashMap<>();
-	static physicalReg
-		sp = physicalReg.pRegs.get("sp"),
-		a0 = physicalReg.pRegs.get("a0"),
-		zero = physicalReg.pRegs.get("zero");
+	static virtualReg
+		sp = physicalReg.pRegToVReg.get("sp"),
+		a0 = physicalReg.pRegToVReg.get("a0"),
+		zero = physicalReg.pRegToVReg.get("zero");
 
 	private virtualReg registerMapping(register reg) {
 		if (!regMap.containsKey(reg)) regMap.put(reg, new virtualReg(++ virtualRegCounter));
@@ -197,7 +196,8 @@ public class instructionSelector implements pass {
 			}
 		} else if (stmt instanceof call) {
 			call stmt_ = (call) stmt;
-			for (int i = stmt_.callee.argValues.size() - 1;i >= 0;-- i) {
+			ArrayList<intImm> argOffsets = new ArrayList<>();
+			for (int i = 0;i < stmt_.parameters.size();++ i) {
 				entity paraEntity = stmt_.parameters.get(i);
 				virtualReg rs;
 				if (paraEntity instanceof register) rs = registerMapping((register) paraEntity);
@@ -210,13 +210,14 @@ public class instructionSelector implements pass {
 					else currentBlock.addInst(new mvInst(rs, zero));
 				}
 				if (i > 7) {
-					currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, sp, sp, new intImm(-4)));
-					currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs, new intImm(0), sp));
-				} else currentBlock.addInst(new mvInst(physicalReg.pRegs.get("a" + i), rs));
+					intImm offset = new intImm();
+					currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs, offset, sp));
+					argOffsets.add(offset);
+				} else currentBlock.addInst(new mvInst(physicalReg.pRegToVReg.get("a" + i), rs));
 			}
+			currentFunction.stkFrame.calleeParameterOffsets.put(stmt_.callee, argOffsets);
 			currentBlock.addInst(new callInst(programAsmEntry.asmFunctions.get(stmt_.callee)));
 			if (stmt_.dest != null) currentBlock.addInst(new mvInst(registerMapping((register) stmt_.dest), a0));
-			currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, sp, sp, new intImm(4 * max(0, stmt_.callee.argValues.size() - 7))));
 		} else if (stmt instanceof getelementptr) {
 			getelementptr stmt_ = (getelementptr) stmt;
 			reg rd = registerMapping((register) stmt_.dest);
@@ -430,26 +431,45 @@ public class instructionSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
-		stackFrame stkFrame = new stackFrame();
-		ArrayList<virtualReg> paraVRegs = new ArrayList<>();
-		func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
-		asmFunction asmFunc = new asmFunction(func.functionName, stkFrame, paraVRegs);
-		asmFunc.initBlock = new asmBlock(++ blockCounter);
-		asmFunc.initBlock.comment = "init block of " + func.functionName;
-		asmFunc.retBlock = new asmBlock(++ blockCounter);
-		asmFunc.retBlock.comment = "return block of " + func.functionName;
-		programAsmEntry.asmFunctions.put(func, asmFunc);
-		currentFunction = asmFunc;
-		func.blocks.forEach(this::buildAsmBlock);
-		currentFunction = null;
+		if (func.blocks == null)
+			programAsmEntry.asmFunctions.put(func, new asmFunction(func.functionName, null));
+		else {
+			ArrayList<virtualReg> paraVRegs = new ArrayList<>();
+			func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
+			asmFunction asmFunc = new asmFunction(func.functionName, paraVRegs);
+			asmFunc.stkFrame = new stackFrame(asmFunc);
+			asmFunc.initBlock = new asmBlock(++ blockCounter);
+			asmFunc.initBlock.comment = "init block of " + func.functionName;
+			ArrayList<intImm> argOffsets = new ArrayList<>();
+			func.argValues.stream().map(argv -> (register) argv).forEach(argv -> {
+				intImm offset = new intImm();
+				argOffsets.add(offset);
+				asmFunc.initBlock.addInst(new loadInst(loadInst.loadType.lw, registerMapping(argv), sp, offset));
+			});
+			asmFunc.stkFrame.callerParameterOffsets = argOffsets;
+			ArrayList<virtualReg> calleeSavers = new ArrayList<>();
+			for (int i = 0;i < 12;++ i) {
+				virtualReg calleeSaver = new virtualReg(++ virtualRegCounter);
+				calleeSavers.add(calleeSaver);
+				asmFunc.initBlock.addInst(new mvInst(calleeSaver, physicalReg.pRegToVReg.get("s" + i)));
+			}
+			asmFunc.retBlock = new asmBlock(++ blockCounter);
+			asmFunc.retBlock.comment = "return block of " + func.functionName;
+			for (int i = 0;i < 12;++ i)
+				asmFunc.initBlock.addInst(new mvInst(physicalReg.pRegToVReg.get("s" + i), calleeSavers.get(i)));
+			programAsmEntry.asmFunctions.put(func, asmFunc);
+			currentFunction = asmFunc;
+			func.blocks.forEach(this::buildAsmBlock);
+			currentFunction = null;
+		}
 	}
 
 	private void registerGlobalVariable() {
 		for (globalVariable global: programIREntry.globals)
 			if (global.isString)
-				programAsmEntry.gblMapping.put(global, new globalData(global.name, global.val, global.isConstant));
+				programAsmEntry.gblMapping.put(global, new globalData(global.name, global.val));
 			else
-				programAsmEntry.gblMapping.put(global, new globalData(global.name, Integer.parseInt(global.val), global.isConstant));
+				programAsmEntry.gblMapping.put(global, new globalData(global.name, Integer.parseInt(global.val)));
 	}
 
 	@Override

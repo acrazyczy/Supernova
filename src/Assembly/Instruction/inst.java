@@ -1,35 +1,50 @@
 package Assembly.Instruction;
 
-import Assembly.Operand.physicalReg;
 import Assembly.Operand.virtualReg;
+import Assembly.asmBlock;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.function.BiFunction;
 
 abstract public class inst {
 	public inst pre = null, suf = null;
+	public virtualReg rd, rs1, rs2;
 	private String comment = null;
 
-	/*graph coloring information*/
-	public Set<virtualReg> def, use;
+	/* graph coloring information */
+	public Set<virtualReg> def = new HashSet<>(), use = new HashSet<>();
+	public asmBlock belongTo;
 
-	public inst() {}
-	public inst(String comment) {this.comment = comment;}
+	public inst(asmBlock belongTo) {this.belongTo = belongTo;}
+	public inst(String comment, asmBlock belongTo) {
+		this.comment = comment;
+		this.belongTo = belongTo;
+	}
 
-	public inst linkBefore(ArrayList<inst> newInst) {
-		if (newInst.isEmpty()) return null;
-		inst lst = this, tmp = pre, cur = null;
-		for (int i = newInst.size() - 1;i >= 0;-- i) {
-			cur = newInst.get(i);
-			(cur.suf = lst).pre = suf;
+	public void linkBefore(inst newInst) {
+		if (pre != null) pre.suf = newInst;
+		else belongTo.headInst = newInst;
+		newInst.pre = pre;
+		(newInst.suf = this).pre = newInst;
+	}
+
+	public void linkAfter(inst newInst) {
+		if (suf != null) suf.pre = newInst;
+		else belongTo.tailInst = newInst;
+		newInst.suf = suf;
+		(newInst.pre = this).suf = newInst;
+	}
+
+	public void replaceUse(virtualReg oldReg, virtualReg newReg) {
+	}
+
+	public void replaceDef(virtualReg oldReg, virtualReg newReg) {
+		if (rd == oldReg) {
+			rd = newReg;
+			def.remove(oldReg);
+			def.add(newReg);
 		}
-		if (tmp == null) return cur;
-		(tmp.suf = cur).pre = tmp;
-		return null;
 	}
 
 	@Override abstract public String toString();
-
-	public void replaceVirtualRegister(ArrayList<inst> insts, BiFunction<virtualReg, ArrayList<inst>, physicalReg> action) {}
 }

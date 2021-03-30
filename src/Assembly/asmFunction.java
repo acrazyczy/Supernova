@@ -7,16 +7,19 @@ import java.util.LinkedList;
 
 public class asmFunction {
 	private final String name;
-	public final stackFrame stkFrame;
 	public LinkedList<asmBlock> asmBlocks;
 	public asmBlock initBlock, retBlock;
 	public ArrayList<virtualReg> virtualRegs;
+	public stackFrame stkFrame;
 
-	public asmFunction(String name, stackFrame stkFrame, ArrayList<virtualReg> virtualRegs) {
+	public asmFunction(String name, ArrayList<virtualReg> virtualRegs) {
 		this.name = name;
-		this.stkFrame = stkFrame;
 		this.virtualRegs = virtualRegs;
+		if (virtualRegs == null) asmBlocks = null;
+		else asmBlocks = new LinkedList<>();
 	}
 
-	@Override public String toString() {return this.name + ":\t";}
+	@Override public String toString() {
+		return "\t.globl\t" + this.name + "\n\t.p2align\t2\n" + this.name + ":\n";
+	}
 }

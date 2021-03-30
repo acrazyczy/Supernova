@@ -1,26 +1,16 @@
 package Assembly.Instruction;
 
 import Assembly.Operand.Imm;
-import Assembly.Operand.physicalReg;
-import Assembly.Operand.reg;
 import Assembly.Operand.virtualReg;
-
-import java.util.ArrayList;
-import java.util.function.BiFunction;
+import Assembly.asmBlock;
 
 public class liInst extends inst {
-	private reg rd;
 	private final Imm imm;
 
-	public liInst(reg rd, Imm imm) {
-		super();
-		this.rd = rd;
+	public liInst(asmBlock belongTo, virtualReg rd, Imm imm) {
+		super(belongTo);
+		this.def.add(this.rd = rd);
 		this.imm = imm;
-	}
-
-	@Override
-	public void replaceVirtualRegister(ArrayList<inst> insts, BiFunction<virtualReg, ArrayList<inst>, physicalReg> action) {
-		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
 	}
 
 	@Override public String toString() {return "li " + rd + ", " + imm;}

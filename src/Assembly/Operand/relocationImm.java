@@ -14,5 +14,5 @@ public class relocationImm extends Imm {
 		this.data = data;
 	}
 
-	@Override public String toString() {return "%" + ty + "(" + data + ")";}
+	@Override public String toString() {return "%" + ty + "(" + data.name + ")";}
 }

@@ -23,12 +23,9 @@ public class Main {
 	private static final String LLVM = "-emit-llvm";
 //	private static final String SSA_DESTRUCT = "-fno-ssa";
 	private static final String INPUT_FILE = "-i";
-	private static final String OUTPUT_FILE = "-o";
-//	private static final String HELP = "--help";
-//	private static final String HELP_ABBR = "-h";
 
 	private InputStream is;
-	private OutputStream os;
+	private OutputStream LLVMOs, asmOs;
 	private boolean LLVMGeneratingFlag;
 	private boolean assemblyGeneratingFlag;
 //	private boolean optimizationFlag;
@@ -41,7 +38,7 @@ public class Main {
 
 	public Main(String[] args) {
 		is = System.in;
-		os = System.out;
+		LLVMOs = asmOs = System.out;
 		LLVMGeneratingFlag = false;
 		assemblyGeneratingFlag = true;
 //		optimizationFlag = false;
@@ -71,23 +68,12 @@ public class Main {
 						try {
 							is = new FileInputStream(args[i + 1]);
 							i++;
+							LLVMOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".ll");
+							asmOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".s");
 						} catch (FileNotFoundException e) {
 							error("file not found: " + args[i + 1]);
 						}
 					}
-					case OUTPUT_FILE -> {
-						if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no output file specified");
-						try {
-							os = new FileOutputStream(args[i + 1]);
-							i++;
-						} catch (FileNotFoundException e) {
-							error("cannot write to file: " + args[i + 1]);
-						}
-					}
-					/*case HELP, HELP_ABBR -> {
-						System.out.println("See https://github.com/XOR-op/TrickRoom for more information.");
-						System.exit(0);
-					}*/
 					//case SSA_DESTRUCT -> ssaDestructFlag = true;
 				}
 			} else
@@ -117,12 +103,12 @@ public class Main {
 			new semanticChecker(gScope, programIREntry).visit(ASTRoot);
 			new IRBuilder(gScope, programIREntry).visit(ASTRoot);
 
-			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, os).run();
+			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 			if (assemblyGeneratingFlag) {
 				asmEntry programAsmEntry = new asmEntry();
 				new instructionSelector(programIREntry, programAsmEntry).run();
 				new registerAllocator(programAsmEntry).run();
-				new asmPrinter(programAsmEntry).run();
+				new asmPrinter(programAsmEntry, asmOs).run();
 			}
 		} catch (error | IOException er) {
 			System.err.println(er.toString());

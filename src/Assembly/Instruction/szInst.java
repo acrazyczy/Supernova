@@ -1,11 +1,8 @@
 package Assembly.Instruction;
 
-import Assembly.Operand.physicalReg;
 import Assembly.Operand.reg;
 import Assembly.Operand.virtualReg;
-
-import java.util.ArrayList;
-import java.util.function.BiFunction;
+import Assembly.asmBlock;
 
 public class szInst extends inst {
 	public enum opType {
@@ -13,22 +10,15 @@ public class szInst extends inst {
 	}
 
 	public final opType type;
-	public reg rd, rs;
 
-	public szInst(opType type, reg rd, reg rs) {
-		super();
+	public szInst(asmBlock belongTo, opType type, virtualReg rd, virtualReg rs1) {
+		super(belongTo);
 		this.type = type;
-		this.rd = rd;
-		this.rs = rs;
+		this.def.add(this.rd = rd);
+		this.use.add(this.rs1 = rs1);
 	}
 
 	public boolean testMergeability(reg rd) {return rd == this.rd;}
 
-	@Override
-	public void replaceVirtualRegister(ArrayList<inst> insts, BiFunction<virtualReg, ArrayList<inst>, physicalReg> action) {
-		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
-		if (rs instanceof virtualReg) rs = action.apply((virtualReg) rs, insts);
-	}
-
-	@Override public String toString() {return type + " " + rd + ", " + rs;}
+	@Override public String toString() {return type + " " + rd + ", " + rs1;}
 }

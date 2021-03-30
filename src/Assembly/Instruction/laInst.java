@@ -1,27 +1,17 @@
 package Assembly.Instruction;
 
 import Assembly.Operand.globalData;
-import Assembly.Operand.physicalReg;
-import Assembly.Operand.reg;
 import Assembly.Operand.virtualReg;
-
-import java.util.ArrayList;
-import java.util.function.BiFunction;
+import Assembly.asmBlock;
 
 public class laInst extends inst {
-	private reg rd;
 	private final globalData symbol;
 
-	public laInst(reg rd, globalData symbol) {
-		super();
-		this.rd = rd;
+	public laInst(asmBlock belongTo, virtualReg rd, globalData symbol) {
+		super(belongTo);
+		this.def.add(this.rd = rd);
 		this.symbol = symbol;
 	}
 
-	@Override
-	public void replaceVirtualRegister(ArrayList<inst> insts, BiFunction<virtualReg, ArrayList<inst>, physicalReg> action) {
-		if (rd instanceof virtualReg) rd = action.apply((virtualReg) rd, insts);
-	}
-
-	@Override public String toString() {return "la " + rd + ", " + symbol;}
+	@Override public String toString() {return "la " + rd + ", " + symbol.name;}
 }

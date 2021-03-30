@@ -1,5 +1,6 @@
 package Assembly.Operand;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class physicalReg extends reg {
@@ -32,6 +33,8 @@ public class physicalReg extends reg {
 	static public HashMap<String, physicalReg> calleeSavePRegs;
 	static public HashMap<String, physicalReg> allocatablePRegs;
 
+	static public HashMap<physicalReg, virtualReg> pRegToVReg;
+
 	static {
 		pRegs = new HashMap<>();
 		callerSavePRegs = new HashMap<>();
@@ -41,6 +44,11 @@ public class physicalReg extends reg {
 		for (String name: callerSavePRegNames) callerSavePRegs.put(name, pRegs.get(name));
 		for (String name: calleeSavePRegNames) calleeSavePRegs.put(name, pRegs.get(name));
 		for (String name: allocatablePRegNames) allocatablePRegs.put(name, pRegs.get(name));
+		pRegs.forEach((name, pReg) -> {
+			virtualReg vReg = new virtualReg(-Arrays.asList(pRegNames).indexOf(name) - 1);
+			vReg.color = pReg;
+			pRegToVReg.put(pReg, vReg);
+		});
 	}
 
 	private final String name;
