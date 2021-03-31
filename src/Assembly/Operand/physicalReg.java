@@ -40,6 +40,7 @@ public class physicalReg extends reg {
 		callerSavePRegs = new HashMap<>();
 		calleeSavePRegs = new HashMap<>();
 		allocatablePRegs = new HashMap<>();
+		pRegToVReg = new HashMap<>();
 		for (String name: pRegNames) pRegs.put(name, new physicalReg(name));
 		for (String name: callerSavePRegNames) callerSavePRegs.put(name, pRegs.get(name));
 		for (String name: calleeSavePRegNames) calleeSavePRegs.put(name, pRegs.get(name));

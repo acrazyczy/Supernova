@@ -25,5 +25,5 @@ public class brInst extends inst {
 		this.label = label;
 	}
 
-	@Override public String toString() {return type + " " + rs1 + ", " + (rs2 == null ? "" : rs2 + ", ") + label;}
+	@Override public String toString() {return type + " " + rs1 + ", " + (rs2 == null ? "" : rs2 + ", ") + label.name();}
 }

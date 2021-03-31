@@ -1,18 +1,17 @@
 #include <stdbool.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 
-void print(char *s) {printf("%s", s);}
+void print(const char *s) {printf("%s", s);}
 
-void println(char *s) {printf("%s\n", s);}
+void println(const char *s) {printf("%s\n", s);}
 
 void printInt(int n) {printf("%d", n);}
 
 void printlnInt(int n) {printf("%d\n", n);}
 
-char *getString()
+const char *getString()
 {
 	char *buf = malloc(sizeof(char) * 1024);
 	scanf("%s", buf);
@@ -26,111 +25,48 @@ int getInt()
 	return ret;
 }
 
-char *toString(int i)
+const char *toString(int i)
 {
-	char *buf = malloc(sizeof(char) * 1024);
-	int len = 0;
-	for (;i;i /= 10) buf[len ++] = '0' + (i % 10);
-	if (!len) buf[len ++] = '0';
-	for (int l = 0;(l << 1) < len - 1;++ l)
-	{
-		char w = buf[l];
-		buf[l] = buf[len - l - 1];
-		buf[len - l - 1] = w;
-	}
-	buf[len] = '\0';
+	char *buf = malloc(sizeof(char) * 15);
+	sprintf(buf, "%d", i);
 	return buf;
 }
 
-char *stringAdd(char *lhs, char *rhs)
+const char *stringAdd(const char *lhs, const char *rhs)
 {
 	char *buf = malloc(sizeof(char) * 1024);
-	char *ptr = buf;
-	for (;*lhs != '\0';++ lhs, ++ ptr) *ptr = *lhs;
-	for (;*rhs != '\0';++ rhs, ++ ptr) *ptr = *rhs;
-	*ptr = '\0';
+	strcpy(buf, lhs);
+	strcat(buf, rhs);
 	return buf;
 }
 
-bool stringIsEqual(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-		if (*lhs != *rhs) return false;
-	return true;
-}
+bool stringIsEqual(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) == 0;}
 
-bool stringIsNotEqual(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-		if (*lhs != *rhs) return true;
-	return false;
-}
+bool stringIsNotEqual(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) != 0;}
 
-bool stringIsLessThan(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-	{
-		if (*lhs < *rhs) return true;
-		if (*lhs > *rhs) return false;
-	}
-	return false;
-}
+bool stringIsLessThan(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) < 0;}
 
-bool stringIsGreaterThan(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-	{
-		if (*lhs > *rhs) return true;
-		if (*lhs < *rhs) return false;
-	}
-	return false;
-}
+bool stringIsGreaterThan(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) > 0;}
 
-bool stringIsLessThanOrEqual(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-	{
-		if (*lhs < *rhs) return true;
-		if (*lhs > *rhs) return false;
-	}
-	return true;
-}
+bool stringIsLessThanOrEqual(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) <= 0;}
 
-bool stringIsGreaterThanOrEqual(char *lhs, char *rhs)
-{
-	for (;*lhs != '\0' || *rhs != '\0';++ lhs, ++ rhs)
-	{
-		if (*lhs > *rhs) return true;
-		if (*lhs < *rhs) return false;
-	}
-	return true;
-}
+bool stringIsGreaterThanOrEqual(const char *lhs, const char *rhs) {return strcmp(lhs, rhs) >= 0;}
 
-int stringLength(char *s)
-{
-	int len = 0;
-	for (;*s != '\0';++ s, ++ len);
-	return len;
-}
+int stringLength(const char *s) {return strlen(s);}
 
-char *stringSubstring(char *s, int l, int r)
+const char *stringSubstring(const char *s, int l, int r)
 {
-	char *buf = malloc(sizeof(char) * 1024);
-	for (;l;++ s, -- r, -- l);
-	for (;r;++ s, -- r, ++ l) buf[l] = *s;
-	buf[l] = '\0';
+	char *buf = malloc(sizeof(char) * (r - l + 1));
+	memcpy(buf, s + l, r - l);
+	buf[r - l] = '\0';
 	return buf;
 }
 
-int stringParseInt(char *s)
+int stringParseInt(const char *s)
 {
-	int ret = 0;
-	for (;isdigit(*s);++ s) ret = ret * 10 + (*s - '0');
+	int ret;
+	sscanf(s, "%d", &ret);
 	return ret;
 }
 
-int stringOrd(char *s, int pos)
-{
-	for (;pos; ++ s, -- pos);
-	return *s;
-}
+int stringOrd(const char *s, int pos) {return s[pos];}

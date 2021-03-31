@@ -36,6 +36,7 @@ public class instructionSelector implements pass {
 	static virtualReg sp = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("sp"));
 	static virtualReg a0 = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("a0"));
 	static virtualReg zero = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("zero"));
+	static virtualReg ra = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("ra"));
 
 	private virtualReg registerMapping(register reg) {
 		if (!regMap.containsKey(reg)) regMap.put(reg, createNewVirtualRegister());
@@ -435,43 +436,43 @@ public class instructionSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
-		if (func.blocks == null)
-			programAsmEntry.asmFunctions.put(func, new asmFunction(func.functionName, null));
-		else {
-			ArrayList<virtualReg> paraVRegs = new ArrayList<>();
-			asmFunction asmFunc = new asmFunction(func.functionName, paraVRegs);
-			currentFunction = asmFunc;
-			func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
-			asmFunc.stkFrame = new stackFrame(asmFunc);
-			asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
-			asmFunc.initBlock.comment = "init block of " + func.functionName;
-			currentBlock = asmFunc.initBlock;
-			ArrayList<intImm> argOffsets = new ArrayList<>();
-			func.argValues.stream().map(argv -> (register) argv).forEach(argv -> {
+		asmFunction asmFunc = programAsmEntry.asmFunctions.get(func);
+		currentFunction = asmFunc;
+		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping((register) arg)));
+		asmFunc.stkFrame = new stackFrame(asmFunc);
+		asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
+		asmFunc.initBlock.comment = "init block of " + func.functionName;
+		currentBlock = asmFunc.initBlock;
+		virtualReg returnAddress = createNewVirtualRegister();
+		asmFunc.initBlock.addInst(new mvInst(currentBlock, returnAddress, ra));
+		ArrayList<intImm> argOffsets = new ArrayList<>();
+		for (int i = 0;i < func.argValues.size();++ i) {
+			virtualReg vReg = registerMapping((register) func.argValues.get(i));
+			if (i > 7) {
 				intImm offset = new intImm();
 				argOffsets.add(offset);
-				asmFunc.initBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, registerMapping(argv), sp, offset));
-			});
-			asmFunc.stkFrame.callerParameterOffsets = argOffsets;
-			ArrayList<virtualReg> calleeSavers = new ArrayList<>();
-			for (int i = 0;i < 12;++ i) {
-				virtualReg calleeSaver = createNewVirtualRegister();
-				calleeSavers.add(calleeSaver);
-				asmFunc.initBlock.addInst(new mvInst(currentBlock, calleeSaver, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i))));
+				asmFunc.initBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, vReg, sp, offset));
 			}
-			currentBlock = null;
-			asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
-			asmFunc.retBlock.comment = "return block of " + func.functionName;
-			currentBlock = asmFunc.retBlock;
-			for (int i = 0;i < 12;++ i)
-				asmFunc.retBlock.addInst(new mvInst(currentBlock, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i)), calleeSavers.get(i)));
-			asmFunc.retBlock.addInst(new retInst(currentBlock));
-			currentBlock = null;
-			programAsmEntry.asmFunctions.put(func, asmFunc);
-			func.blocks.forEach(this::buildAsmBlock);
-			asmFunc.initBlock.addSuccessor(asmFunc.asmBlocks.get(0));
-			currentFunction = null;
 		}
+		asmFunc.stkFrame.callerParameterOffsets = argOffsets;
+		ArrayList<virtualReg> calleeSavers = new ArrayList<>();
+		for (int i = 0;i < 12;++ i) {
+			virtualReg calleeSaver = createNewVirtualRegister();
+			calleeSavers.add(calleeSaver);
+			asmFunc.initBlock.addInst(new mvInst(currentBlock, calleeSaver, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i))));
+		}
+		currentBlock = null;
+		asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
+		asmFunc.retBlock.comment = "return block of " + func.functionName;
+		currentBlock = asmFunc.retBlock;
+		for (int i = 0;i < 12;++ i)
+			asmFunc.retBlock.addInst(new mvInst(currentBlock, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i)), calleeSavers.get(i)));
+		asmFunc.retBlock.addInst(new mvInst(currentBlock, ra, returnAddress));
+		asmFunc.retBlock.addInst(new retInst(currentBlock));
+		currentBlock = null;
+		func.blocks.forEach(this::buildAsmBlock);
+		asmFunc.initBlock.addSuccessor(asmFunc.asmBlocks.get(0));
+		currentFunction = null;
 	}
 
 	private void registerGlobalVariable() {
@@ -485,6 +486,9 @@ public class instructionSelector implements pass {
 	@Override
 	public void run() {
 		registerGlobalVariable();
-		programIREntry.functions.forEach(this::buildAsmFunction);
+		programIREntry.functions.forEach(IRFunc -> {
+			programAsmEntry.asmFunctions.put(IRFunc, new asmFunction(IRFunc.functionName, IRFunc.blocks == null ? null : new ArrayList<>()));
+		});
+		programIREntry.functions.stream().filter(IRFunc -> IRFunc.blocks != null).forEach(this::buildAsmFunction);
 	}
 }

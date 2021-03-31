@@ -3,4 +3,8 @@ out/
 test.mx
 test.ll
 test.s
+test.in
+test.out
+output.ll
+output.s
 Compiler-2021-testcases/

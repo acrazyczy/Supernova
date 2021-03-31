@@ -46,5 +46,6 @@ public class asmBlock {
 		return ret;
 	}
 
-	@Override public String toString() {return ".Block"  + index + ":\t\t\t" + comment;}
+	public String name() {return ".Block" + index;}
+	@Override public String toString() {return name() + ":\t\t\t# " + comment;}
 }

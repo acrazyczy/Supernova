@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Set;
 
 public class asmFunction {
-	private final String name;
+	public final String name;
 	public LinkedList<asmBlock> asmBlocks;
 	public asmBlock initBlock, retBlock;
 	public ArrayList<virtualReg> parameters;
@@ -20,8 +20,13 @@ public class asmFunction {
 	public asmFunction(String name, ArrayList<virtualReg> parameters) {
 		this.name = name;
 		this.parameters = parameters;
-		if (parameters == null) asmBlocks = null;
-		else asmBlocks = new LinkedList<>();
+		if (parameters == null) {
+			this.asmBlocks = null;
+			this.virtualRegs = new HashSet<>();
+		} else {
+			this.asmBlocks = new LinkedList<>();
+			this.virtualRegs = new HashSet<>(parameters);
+		}
 	}
 
 	private void dfsBlock(asmBlock asmBlk, ArrayList<asmBlock> dfsOrder) {
@@ -37,7 +42,5 @@ public class asmFunction {
 		return ret;
 	}
 
-	@Override public String toString() {
-		return "\t.globl\t" + this.name + "\n\t.p2align\t2\n" + this.name + ":\n";
-	}
+	@Override public String toString() {return "\t.globl\t" + this.name + "\n\t.p2align\t2\n" + this.name + ":";}
 }

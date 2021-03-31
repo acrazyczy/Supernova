@@ -314,7 +314,6 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
 		}
 		it.val = value;
-		// TODO: 2021/3/27 short circuit
 	}
 
 	@Override

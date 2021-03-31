@@ -58,7 +58,6 @@ public class registerAllocator implements asmVisitor {
 	}
 	
 	private void initialization(asmFunction asmFunc) {
-		precolored = new HashSet<>(physicalReg.pRegToVReg.values());
 		simplifyWorkList = new ArrayList<>();
 		freezeWorkList = new ArrayList<>();
 		spillWorkList = new ArrayList<>();
@@ -74,14 +73,16 @@ public class registerAllocator implements asmVisitor {
 		adjSet = new HashSet<>();
 		alias = new HashMap<>();
 
-		initial.addAll(asmFunc.virtualRegs);
-		initial.removeAll(precolored);
-
 		initial.forEach(virtualReg::initializationForGraphColoring);
+		precolored.forEach(virtualReg::initializationForGraphColoring);
 		precolored.forEach(vReg -> vReg.deg = Integer.MAX_VALUE >> 1);
 	}
 
 	private void runGraphColoring(asmFunction asmFunc) {
+		initial = new HashSet<>(asmFunc.virtualRegs);
+		precolored = new HashSet<>(physicalReg.pRegToVReg.values());
+		initial.removeAll(precolored);
+
 		while (true) {
 			initialization(asmFunc);
 			spillCostComputation(asmFunc);
@@ -135,7 +136,10 @@ public class registerAllocator implements asmVisitor {
 	// build the interference graph based on the result of static liveness analysis
 	// fill workListMoves with all move instructions
 	private void build(asmFunction asmFunc) {
-		for (asmBlock block: asmFunc.asmBlocks) {
+		LinkedList<asmBlock> blocks = new LinkedList<>(asmFunc.asmBlocks);
+		blocks.addFirst(asmFunc.initBlock);
+		blocks.addLast(asmFunc.initBlock);
+		for (asmBlock block: blocks) {
 			Set<virtualReg> live = block.liveOut;
 			for (inst i = block.tailInst;i != null;i = i.pre) {
 				if (i instanceof mvInst) {
@@ -384,6 +388,6 @@ public class registerAllocator implements asmVisitor {
 
 	@Override
 	public void run() {
-		programAsmEntry.asmFunctions.values().forEach(this::runGraphColoring);
+		programAsmEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::runGraphColoring);
 	}
 }

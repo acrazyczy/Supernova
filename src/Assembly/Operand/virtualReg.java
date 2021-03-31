@@ -13,7 +13,7 @@ public class virtualReg extends reg {
 	public Set<virtualReg> adjList;
 	public Set<mvInst> moveList;
 	public physicalReg color;
-	public Set<inst> uses, defs;
+	public Set<inst> uses = new HashSet<>(), defs = new HashSet<>();
 	public double spillCost;
 	public int deg;
 
@@ -30,12 +30,10 @@ public class virtualReg extends reg {
 	public void initializationForGraphColoring() {
 		adjList = new HashSet<>();
 		moveList = new HashSet<>();
-		color = null;
+		if (-32 > index || index >= 0) color = null;
 		deg = 0;
 		spillCost = 0;
 	}
 
-	@Override public String toString() {
-		return color == null ? "%" + index : color.toString();
-	}
+	@Override public String toString() {return color == null ? "%" + index : color.toString();}
 }

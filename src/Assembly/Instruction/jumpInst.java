@@ -10,5 +10,5 @@ public class jumpInst extends inst {
 		this.label = label;
 	}
 
-	@Override public String toString() {return "j " + label;}
+	@Override public String toString() {return "j " + label.name();}
 }

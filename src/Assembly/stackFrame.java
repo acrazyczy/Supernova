@@ -8,7 +8,10 @@ import Assembly.Operand.virtualReg;
 import LLVMIR.function;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
+
+import static java.lang.Integer.max;
 
 public class stackFrame {
 	private final asmFunction asmFunc;
@@ -17,10 +20,14 @@ public class stackFrame {
 	public Map<function, ArrayList<intImm>> calleeParameterOffsets;
 	public ArrayList<intImm> callerParameterOffsets;
 
-	public stackFrame(asmFunction asmFunc) {this.asmFunc = asmFunc;}
+	public stackFrame(asmFunction asmFunc) {
+		this.asmFunc = asmFunc;
+		spilledRegisterOffsets = new HashMap<>();
+		calleeParameterOffsets = new HashMap<>();
+	}
 
 	public void offsetsComputation() {
-		int maxParameterNumber = calleeParameterOffsets.keySet().stream().mapToInt(func -> func.argValues.size()).summaryStatistics().getMax();
+		int maxParameterNumber = max(calleeParameterOffsets.keySet().stream().mapToInt(func -> func.argValues.size()).summaryStatistics().getMax() - 8, 0);
 		int size = spilledRegisterOffsets.size() + maxParameterNumber;
 		for (int i = 0;i < callerParameterOffsets.size();++ i)
 			callerParameterOffsets.get(i).val = (i + size) * 4;

@@ -36,9 +36,10 @@ public class Main {
 		System.exit(-1);
 	}
 
-	public Main(String[] args) {
+	public Main(String[] args) throws FileNotFoundException {
 		is = System.in;
-		LLVMOs = asmOs = System.out;
+		LLVMOs = new FileOutputStream("output.ll");
+		asmOs = new FileOutputStream("output.s");
 		LLVMGeneratingFlag = false;
 		assemblyGeneratingFlag = true;
 //		optimizationFlag = false;
@@ -60,19 +61,19 @@ public class Main {
 					}
 					case LLVM -> {
 						LLVMGeneratingFlag = true;
-						assemblyGeneratingFlag = false;
+						assemblyGeneratingFlag = true;
 					}
 //					case OPTIMIZATION -> optimizationFlag = true;
 					case INPUT_FILE -> {
 						if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no input file specified");
 						try {
 							is = new FileInputStream(args[i + 1]);
-							i++;
 							LLVMOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".ll");
 							asmOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".s");
 						} catch (FileNotFoundException e) {
 							error("file not found: " + args[i + 1]);
 						}
+						++ i;
 					}
 					//case SSA_DESTRUCT -> ssaDestructFlag = true;
 				}
@@ -111,8 +112,8 @@ public class Main {
 				new asmPrinter(programAsmEntry, asmOs).run();
 			}
 		} catch (error | IOException er) {
-			System.err.println(er.toString());
-			throw new RuntimeException();
+			er.printStackTrace();
+			throw new RuntimeException(er);
 		}
 	}
 }

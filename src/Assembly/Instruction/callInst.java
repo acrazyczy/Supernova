@@ -14,5 +14,5 @@ public class callInst extends inst {
 			map(pReg -> physicalReg.pRegToVReg.get(pReg)).forEach(vReg -> {defs.add(vReg); vReg.defs.add(this);});
 	}
 
-	@Override public String toString() {return "call " + func;}
+	@Override public String toString() {return "call " + func.name;}
 }

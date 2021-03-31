@@ -1,5 +1,7 @@
 package Backend;
 
+import Assembly.Instruction.inst;
+import Assembly.asmBlock;
 import Assembly.asmEntry;
 import Assembly.asmFunction;
 
@@ -17,17 +19,27 @@ public class asmPrinter implements asmVisitor {
 		this.pWriter = new PrintWriter(out);
 	}
 
+	private void printAsmBlock(asmBlock asmBlk) {
+		pWriter.println(asmBlk);
+		for (inst i = asmBlk.headInst;i != null;i = i.suf) pWriter.println("\t" + i);
+	}
+
 	private void printAsmFunction(asmFunction asmFunc) {
+		pWriter.println();
 		pWriter.println(asmFunc);
-		asmFunc.asmBlocks.forEach(pWriter::println);
+		printAsmBlock(asmFunc.initBlock);
+		asmFunc.asmBlocks.forEach(this::printAsmBlock);
+		printAsmBlock(asmFunc.retBlock);
 	}
 
 	@Override
 	public void run() {
 		pWriter.println("\t.text");
-		programAsmEntry.asmFunctions.forEach((IRFunc, asmFunc) -> {if (asmFunc.asmBlocks != null) printAsmFunction(asmFunc);});
+		programAsmEntry.asmFunctions.values().stream().filter(asmFunc  -> asmFunc.asmBlocks != null).forEach(this::printAsmFunction);
+		pWriter.println();
 		pWriter.println("\t.section\t.sdata,\"aw\",@progbits");
 		programAsmEntry.gblMapping.values().forEach(pWriter::println);
 		pWriter.println();
+		pWriter.flush();
 	}
 }

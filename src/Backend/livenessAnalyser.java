@@ -19,8 +19,9 @@ public class livenessAnalyser implements asmVisitor {
 	private void livenessComputation(asmFunction asmFunc) {
 		ArrayList<asmBlock> dfsOrder = asmFunc.dfsOrderComputation();
 		dfsOrder.forEach(blk -> {blk.liveIn = new HashSet<>();blk.liveOut = new HashSet<>();});
-		boolean changed = false;
+		boolean changed;
 		do {
+			changed = false;
 			for (int i = dfsOrder.size() - 1; i >= 0; --i) {
 				asmBlock blk = dfsOrder.get(i);
 				Set<virtualReg> oldLiveIn = new HashSet<>(blk.liveIn), oldLiveOut = new HashSet<>(blk.liveOut);
@@ -34,5 +35,5 @@ public class livenessAnalyser implements asmVisitor {
 		} while (changed);
 	}
 
-	@Override public void run() {programEntry.asmFunctions.values().forEach(this::livenessComputation);}
+	@Override public void run() {programEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::livenessComputation);}
 }
