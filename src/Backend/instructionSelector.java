@@ -417,7 +417,6 @@ public class instructionSelector implements pass {
 					currentBlock.addInst(new liInst(currentBlock, rs2, new intImm(((integerConstant) stmt_.value).val)));
 				else currentBlock.addInst(new mvInst(currentBlock, rs2, zero));
 			}
-		if (stmt_.value instanceof integerConstant)
 			if (stmt_.pointer instanceof globalVariable) {
 				globalData glb = programAsmEntry.gblMapping.get(stmt_.pointer);
 				virtualReg rs1 = createNewVirtualRegister();
@@ -425,7 +424,7 @@ public class instructionSelector implements pass {
 				currentBlock.addInst(new storeInst(currentBlock, storeInst.storeType.sw, rs2,
 					new relocationImm(relocationImm.type.lo, glb), rs1));
 			} else
-				currentBlock.addInst(new storeInst(currentBlock, 
+				currentBlock.addInst(new storeInst(currentBlock,
 					stmt_.value.type.size() == 8 ? storeInst.storeType.sb : storeInst.storeType.sw,
 					registerMapping((register) stmt_.pointer), new intImm(0), rs2
 				));
