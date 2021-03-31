@@ -660,7 +660,7 @@ public class semanticChecker implements ASTVisitor {
 		function func = new function(
 			typeCalculator.calcLLVMSingleValueType(gScope, typeCalculator.calcType(gScope, it.returnType)),
 			funcName, argValues, false);
-		gScope.bindMethodToFunction(it.name, func);
+		gScope.bindMethodToFunction(funcName, func);
 		programIREntry.functions.add(func);
 		it.func = func;
 	}

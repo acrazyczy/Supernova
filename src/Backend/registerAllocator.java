@@ -136,10 +136,7 @@ public class registerAllocator implements asmVisitor {
 	// build the interference graph based on the result of static liveness analysis
 	// fill workListMoves with all move instructions
 	private void build(asmFunction asmFunc) {
-		LinkedList<asmBlock> blocks = new LinkedList<>(asmFunc.asmBlocks);
-		blocks.addFirst(asmFunc.initBlock);
-		blocks.addLast(asmFunc.initBlock);
-		for (asmBlock block: blocks) {
+		for (asmBlock block: asmFunc.dfsOrderComputation()) {
 			Set<virtualReg> live = block.liveOut;
 			for (inst i = block.tailInst;i != null;i = i.pre) {
 				if (i instanceof mvInst) {
@@ -365,13 +362,14 @@ public class registerAllocator implements asmVisitor {
 		spilledNodes.forEach(v -> {
 			intImm offset = new intImm();
 			asmFunc.stkFrame.spilledRegisterOffsets.put(v, offset);
-			v.uses.forEach(use -> {
+			Set<inst> uses = new HashSet<>(v.uses), defs = new HashSet<>(v.defs);
+			uses.forEach(use -> {
 				virtualReg v_ = new virtualReg();
 				use.replaceUse(v, v_);
 				newTemps.add(v_);
 				use.linkBefore(new loadInst(use.belongTo, loadInst.loadType.lw, v_, sp, offset));
 			});
-			v.defs.forEach(def -> {
+			defs.forEach(def -> {
 				virtualReg v_ = new virtualReg();
 				def.replaceDef(v, v_);
 				newTemps.add(v_);

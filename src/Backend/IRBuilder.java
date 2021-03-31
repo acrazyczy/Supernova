@@ -139,8 +139,8 @@ public class IRBuilder implements ASTVisitor {
 					currentBlock.push_back(new _move(new undefinedValue(), varEntity));
 		} else {
 			assert it.names.size() == 1;
-			globalVariable gVar = (globalVariable) it.varEntities.get(0);
 			if (currentFunction.functionName.equals("main")) {
+				globalVariable gVar = (globalVariable) it.varEntities.get(0);
 				if (it.init.resultType != null && it.init.resultType.is_string) {
 					String str = ((constExprNode) it.init).value;
 					globalVariable gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
@@ -161,7 +161,7 @@ public class IRBuilder implements ASTVisitor {
 				}
 			} else {
 				it.init.accept(this);
-				currentBlock.push_back(new _move(it.init.val, gVar));
+				currentBlock.push_back(new _move(it.init.val, it.varEntities.get(0)));
 			}
 		}
 		if (!currentFunction.functionName.equals("main"))
@@ -225,6 +225,8 @@ public class IRBuilder implements ASTVisitor {
 		basicBlock cond = new basicBlock("while.cond", currentFunction, currentLoopDepth),
 			body = new basicBlock("while.body", currentFunction, currentLoopDepth),
 			dest = new basicBlock("while.dest", currentFunction, currentLoopDepth);
+		it.bodyBlock = body;
+		it.destBlock = dest;
 		currentBlock.push_back(new br(cond));
 		it.cond.trueBranch = body;
 		it.cond.falseBranch = dest;
@@ -401,6 +403,8 @@ public class IRBuilder implements ASTVisitor {
 			body = new basicBlock("for.body", currentFunction, currentLoopDepth),
 			incr = new basicBlock("for.incr", currentFunction, currentLoopDepth),
 			dest = new basicBlock("for.dest", currentFunction, currentLoopDepth);
+		it.destBlock = dest;
+		it.incrBlock = incr;
 		if (it.cond != null) {
 			currentBlock.push_back(new br(cond));
 			it.cond.trueBranch = body;
@@ -510,7 +514,7 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock = currentFunction.blocks.get(0);
 		it.units.forEach(unit -> {if (unit.varDef != null) unit.accept(this);});
 		register retVal = new register(new LLVMIntegerType(32), "_retVal", currentFunction);
-		currentBlock.push_back(new call(gScope.getMethodFunction("main", true), new ArrayList<>(), retVal));
+		currentBlock.push_back(new call(gScope.getMethodFunction("_g.main", true), new ArrayList<>(), retVal));
 		currentBlock.push_back(new ret(retVal));
 		currentFunction = null;
 		it.units.forEach(unit -> {if (unit.varDef == null) unit.accept(this);});

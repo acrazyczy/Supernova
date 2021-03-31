@@ -9,6 +9,8 @@ import Assembly.stackFrame;
 import LLVMIR.IREntry;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.*;
+import LLVMIR.TypeSystem.LLVMArrayType;
+import LLVMIR.TypeSystem.LLVMFirstClassType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.TypeSystem.LLVMStructureType;
 import LLVMIR.basicBlock;
@@ -67,7 +69,7 @@ public class instructionSelector implements pass {
 			else if (stmt_.src instanceof booleanConstant) currentBlock.addInst(new liInst(currentBlock, rd, new intImm(((booleanConstant) stmt_.src).val)));
 			else if (stmt_.src instanceof nullPointerConstant) currentBlock.addInst(new liInst(currentBlock, rd, new intImm(0)));
 			else if (stmt_.src instanceof register) currentBlock.addInst(new mvInst(currentBlock, rd, registerMapping((register) stmt_.src)));
-			else {
+			else if (!(stmt_.src instanceof undefinedValue)) {
 				assert stmt_.src instanceof globalVariable;
 				globalData glb = programAsmEntry.gblMapping.get(stmt_.src);
 				currentBlock.addInst(new luiInst(currentBlock, rd, new relocationImm(relocationImm.type.hi, glb)));
@@ -244,14 +246,19 @@ public class instructionSelector implements pass {
 			}
 			//1. member accessing
 			if (stmt_.idxes.size() > 1) {
-				idx = stmt_.idxes.get(1);
 				assert idx instanceof integerConstant;
-				assert ((LLVMPointerType) stmt_.pointer.type).pointeeType instanceof LLVMStructureType;
-				LLVMStructureType structType = (LLVMStructureType) ((LLVMPointerType) stmt_.pointer.type).pointeeType;
-				int offset_ = 0;
-				for (int i = 0;i < ((integerConstant) idx).val;++ i)
-					offset_ += structType.types.get(i).size() / 8;
-				currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
+				idx = stmt_.idxes.get(1);
+				LLVMPointerType ptr = (LLVMPointerType) stmt_.pointer.type;
+				if (ptr.pointeeType instanceof LLVMStructureType) {
+					LLVMStructureType structType = (LLVMStructureType) ptr.pointeeType;
+					int offset_ = 0;
+					for (int i = 0; i < ((integerConstant) idx).val; ++i)
+						offset_ += structType.types.get(i).size() / 8;
+					currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
+				} else {
+					assert ptr.pointeeType instanceof LLVMArrayType;
+					currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(((integerConstant) idx).val)));
+				}
 			}
 		} else if (stmt instanceof icmp) {
 			icmp stmt_ = (icmp) stmt;
@@ -479,6 +486,8 @@ public class instructionSelector implements pass {
 		for (globalVariable global: programIREntry.globals)
 			if (global.isString)
 				programAsmEntry.gblMapping.put(global, new globalData(global.name, global.val));
+			else if (global.val.equals("null"))
+				programAsmEntry.gblMapping.put(global, new globalData(global.name, 0));
 			else
 				programAsmEntry.gblMapping.put(global, new globalData(global.name, Integer.parseInt(global.val)));
 	}
