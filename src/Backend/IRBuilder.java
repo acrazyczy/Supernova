@@ -123,6 +123,7 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 4), arraySize, mallocSize));
 			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(mallocSize)), mallocPtr));
 			currentBlock.push_back(new bitcast(mallocPtr, arraySizePtr));
+			currentBlock.push_back(new binary(binary.instCode.ashr, arraySize , new integerConstant(32, 2), arraySize));
 			currentBlock.push_back(new store(arraySize, arraySizePtr));
 			currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
 			currentBlock.push_back(new bitcast(arraySizePtr, value));
@@ -232,6 +233,7 @@ public class IRBuilder implements ASTVisitor {
 		it.cond.falseBranch = dest;
 		currentBlock = cond;
 		it.cond.accept(this);
+		currentBlock.push_back(new br(body));
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
@@ -411,6 +413,7 @@ public class IRBuilder implements ASTVisitor {
 			it.cond.falseBranch = dest;
 			currentBlock = cond;
 			it.cond.accept(this);
+			currentBlock.push_back(new br(body));
 		} else {
 			cond = body;
 			currentBlock.push_back(new br(cond));
@@ -418,6 +421,7 @@ public class IRBuilder implements ASTVisitor {
 		if (it.incr != null) {
 			currentBlock = incr;
 			it.incr.accept(this);
+			if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 		} else incr = cond;
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
