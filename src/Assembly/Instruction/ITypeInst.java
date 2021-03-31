@@ -14,8 +14,10 @@ public class ITypeInst extends inst {
 	public ITypeInst(asmBlock belongTo, opType type, virtualReg rd, virtualReg rs1, Imm imm) {
 		super(belongTo);
 		this.type = type;
-		this.def.add(this.rd = rd);
-		this.use.add(this.rs1 = rs1);
+		this.defs.add(this.rd = rd);
+		this.uses.add(this.rs1 = rs1);
+		rd.defs.add(this);
+		rs1.uses.add(this);
 		this.imm = imm;
 	}
 

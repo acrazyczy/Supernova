@@ -25,6 +25,7 @@ public class IRBuilder implements ASTVisitor {
 	private classType currentClass = null;
 	private final IREntry programIREntry;
 	private int strConstCounter = 0;
+	private int currentLoopDepth = 0;
 
 	public IRBuilder(globalScope gScope, IREntry programIREntry) {
 		this.gScope = gScope;
@@ -220,9 +221,10 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(whileStmtNode it) {
-		basicBlock cond = new basicBlock("while.cond", currentFunction),
-			body = new basicBlock("while.body", currentFunction),
-			dest = new basicBlock("while.dest", currentFunction);
+		++ currentLoopDepth;
+		basicBlock cond = new basicBlock("while.cond", currentFunction, currentLoopDepth),
+			body = new basicBlock("while.body", currentFunction, currentLoopDepth),
+			dest = new basicBlock("while.dest", currentFunction, currentLoopDepth);
 		currentBlock.push_back(new br(cond));
 		it.cond.trueBranch = body;
 		it.cond.falseBranch = dest;
@@ -231,6 +233,8 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
+
+		-- currentLoopDepth;
 		currentBlock = dest;
 
 		currentFunction.blocks.add(cond);
@@ -290,11 +294,9 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(logicExprNode it) {
 		it.rhs.accept(this);
 		register value = new register(new LLVMIntegerType(8), "", currentFunction);
-		binary.instCode instCode = it.op == logicExprNode.opType.And ? binary.instCode.and : binary.instCode.or;
-//		currentBlock.push_back(new binary(instCode, it.lhs.val, it.rhs.val, value));
-		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction),
-			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction),
-			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
+		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction, currentLoopDepth),
+			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction, currentLoopDepth),
+			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction, currentLoopDepth);
 		currentBlock.push_back(new br(lhs));
 		currentBlock = lhs;
 		it.lhs.accept(this);
@@ -395,10 +397,11 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(forStmtNode it) {
 		if (it.init != null) it.init.accept(this);
-		basicBlock cond = new basicBlock("for.cond", currentFunction),
-			body = new basicBlock("for.body", currentFunction),
-			incr = new basicBlock("for.incr", currentFunction),
-			dest = new basicBlock("for.dest", currentFunction);
+		++ currentLoopDepth;
+		basicBlock cond = new basicBlock("for.cond", currentFunction, currentLoopDepth),
+			body = new basicBlock("for.body", currentFunction, currentLoopDepth),
+			incr = new basicBlock("for.incr", currentFunction, currentLoopDepth),
+			dest = new basicBlock("for.dest", currentFunction, currentLoopDepth);
 		if (it.cond != null) {
 			currentBlock.push_back(new br(cond));
 			it.cond.trueBranch = body;
@@ -416,6 +419,8 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
+
+		-- currentLoopDepth;
 		currentBlock = dest;
 
 		currentFunction.blocks.add(cond);
@@ -481,11 +486,11 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(ifStmtNode it) {
 		it.cond.accept(this);
-		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction),
-			falseBranch = new basicBlock("if.falseBranch", currentFunction);
+		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction, currentLoopDepth),
+			falseBranch = new basicBlock("if.falseBranch", currentFunction, currentLoopDepth);
 		currentBlock.push_back(new br(it.cond.val, trueBranch, falseBranch));
 
-		basicBlock destination = new basicBlock("if.dest", currentFunction);
+		basicBlock destination = new basicBlock("if.dest", currentFunction, currentLoopDepth);
 		currentBlock = trueBranch;
 		if (it.trueNode != null) it.trueNode.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));

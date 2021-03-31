@@ -14,8 +14,10 @@ public class szInst extends inst {
 	public szInst(asmBlock belongTo, opType type, virtualReg rd, virtualReg rs1) {
 		super(belongTo);
 		this.type = type;
-		this.def.add(this.rd = rd);
-		this.use.add(this.rs1 = rs1);
+		this.defs.add(this.rd = rd);
+		this.uses.add(this.rs1 = rs1);
+		rd.defs.add(this);
+		rs1.uses.add(this);
 	}
 
 	public boolean testMergeability(reg rd) {return rd == this.rd;}

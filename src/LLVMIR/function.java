@@ -19,7 +19,7 @@ public class function {
 		this.returnType = returnType;
 		this.functionName = functionName;
 		this.argValues = argValues;
-		this.blocks = is_builtin ? null : new ArrayList<>(Collections.singletonList(new basicBlock("entry", null)));
+		this.blocks = is_builtin ? null : new ArrayList<>(Collections.singletonList(new basicBlock("entry", null, 0)));
 	}
 
 	public int getBlockNameIndex(String blockName) {

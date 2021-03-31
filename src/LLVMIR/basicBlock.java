@@ -11,10 +11,12 @@ import java.util.ArrayList;
 public class basicBlock {
 	public ArrayList<statement> stmts = new ArrayList<>();
 	private terminalStmt tailStmt = null;
+	public final int loopDepth;
 	public String name;
 
-	public basicBlock(String name, function currentFunction) {
+	public basicBlock(String name, function currentFunction, int loopDepth) {
 		this.name = name;
+		this.loopDepth = loopDepth;
 		if (currentFunction != null) this.name = this.name + currentFunction.getBlockNameIndex(name);
 	}
 

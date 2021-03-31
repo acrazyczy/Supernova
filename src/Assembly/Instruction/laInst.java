@@ -9,7 +9,8 @@ public class laInst extends inst {
 
 	public laInst(asmBlock belongTo, virtualReg rd, globalData symbol) {
 		super(belongTo);
-		this.def.add(this.rd = rd);
+		this.defs.add(this.rd = rd);
+		rd.defs.add(this);
 		this.symbol = symbol;
 	}
 

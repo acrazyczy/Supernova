@@ -16,6 +16,7 @@ import LLVMIR.Instruction.*;
 import LLVMIR.function;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
@@ -31,18 +32,18 @@ public class instructionSelector implements pass {
 
 	private final HashMap<register, virtualReg> regMap = new HashMap<>();
 	private final HashMap<basicBlock, asmBlock> blkMap = new HashMap<>();
-	static virtualReg
-		sp = physicalReg.pRegToVReg.get("sp"),
-		a0 = physicalReg.pRegToVReg.get("a0"),
-		zero = physicalReg.pRegToVReg.get("zero");
+
+	static virtualReg sp = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("sp"));
+	static virtualReg a0 = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("a0"));
+	static virtualReg zero = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("zero"));
 
 	private virtualReg registerMapping(register reg) {
-		if (!regMap.containsKey(reg)) regMap.put(reg, new virtualReg(++ virtualRegCounter));
+		if (!regMap.containsKey(reg)) regMap.put(reg, createNewVirtualRegister());
 		return regMap.get(reg);
 	}
 
 	private asmBlock blockMapping(basicBlock blk) {
-		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter));
+		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter, blk.loopDepth));
 		return blkMap.get(blk);
 	}
 
@@ -51,41 +52,47 @@ public class instructionSelector implements pass {
 		this.programAsmEntry = programAsmEntry;
 	}
 
+	private virtualReg createNewVirtualRegister() {
+		virtualReg vReg = new virtualReg(++ virtualRegCounter);
+		currentFunction.virtualRegs.add(vReg);
+		return vReg;
+	}
+
 	private void buildAsmInst(statement stmt) {
 		if (stmt instanceof _move) {
 			_move stmt_ = (_move) stmt;
-			reg rd = registerMapping((register) stmt_.dest);
-			if (stmt_.src instanceof integerConstant) currentBlock.addInst(new liInst(rd, new intImm(((integerConstant) stmt_.src).val)));
-			else if (stmt_.src instanceof booleanConstant) currentBlock.addInst(new liInst(rd, new intImm(((booleanConstant) stmt_.src).val)));
-			else if (stmt_.src instanceof nullPointerConstant) currentBlock.addInst(new liInst(rd, new intImm(0)));
-			else if (stmt_.src instanceof register) currentBlock.addInst(new mvInst(rd, registerMapping((register) stmt_.src)));
+			virtualReg rd = registerMapping((register) stmt_.dest);
+			if (stmt_.src instanceof integerConstant) currentBlock.addInst(new liInst(currentBlock, rd, new intImm(((integerConstant) stmt_.src).val)));
+			else if (stmt_.src instanceof booleanConstant) currentBlock.addInst(new liInst(currentBlock, rd, new intImm(((booleanConstant) stmt_.src).val)));
+			else if (stmt_.src instanceof nullPointerConstant) currentBlock.addInst(new liInst(currentBlock, rd, new intImm(0)));
+			else if (stmt_.src instanceof register) currentBlock.addInst(new mvInst(currentBlock, rd, registerMapping((register) stmt_.src)));
 			else {
 				assert stmt_.src instanceof globalVariable;
 				globalData glb = programAsmEntry.gblMapping.get(stmt_.src);
-				currentBlock.addInst(new luiInst(rd, new relocationImm(relocationImm.type.hi, glb)));
-				currentBlock.addInst(new loadInst(loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
+				currentBlock.addInst(new luiInst(currentBlock, rd, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
 			}
 		} else if (stmt instanceof binary) {
 			binary stmt_ = (binary) stmt;
 			entity lhs = stmt_.op1, rhs = stmt_.op2;
-			reg rd = registerMapping((register) stmt_.dest);
+			virtualReg rd = registerMapping((register) stmt_.dest);
 			binary.instCode inst = stmt_.inst;
 			if (inst == binary.instCode.sub || inst == binary.instCode.sdiv || inst == binary.instCode.srem ||
 				inst == binary.instCode.shl || inst == binary.instCode.ashr || inst == binary.instCode.mul) {
-				reg rs1, rs2;
+				virtualReg rs1, rs2;
 				if (lhs instanceof register) rs1 = registerMapping((register) lhs);
 				else {
 					assert lhs instanceof integerConstant || lhs instanceof booleanConstant;
 					int val = lhs instanceof integerConstant ? ((integerConstant) lhs).val : ((booleanConstant) lhs).val;
-					rs1 = new virtualReg(++ virtualRegCounter);
-					currentBlock.addInst(new liInst(rs1, new intImm(val)));
+					rs1 = createNewVirtualRegister();
+					currentBlock.addInst(new liInst(currentBlock, rs1, new intImm(val)));
 				}
 				if (rhs instanceof register) rs2 = registerMapping((register) rhs);
 				else {
 					assert rhs instanceof integerConstant || rhs instanceof booleanConstant;
 					int val = rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val;
-					rs2 = new virtualReg(++ virtualRegCounter);
-					currentBlock.addInst(new liInst(rs2, new intImm(val)));
+					rs2 = createNewVirtualRegister();
+					currentBlock.addInst(new liInst(currentBlock, rs2, new intImm(val)));
 				}
 				RTypeInst.opType type = null;
 				switch (inst) {
@@ -96,7 +103,7 @@ public class instructionSelector implements pass {
 					case ashr -> type = RTypeInst.opType.sra;
 					case mul -> type = RTypeInst.opType.mul;
 				}
-				currentBlock.addInst(new RTypeInst(type, rd, rs1, rs2));
+				currentBlock.addInst(new RTypeInst(currentBlock, type, rd, rs1, rs2));
 			} else {
 				if (rhs instanceof register) {
 					entity tmp = lhs;
@@ -104,9 +111,9 @@ public class instructionSelector implements pass {
 					rhs = tmp;
 				}
 				if (lhs instanceof register) {
-					reg lhs_ = registerMapping((register) lhs);
+					virtualReg lhs_ = registerMapping((register) lhs);
 					if (rhs instanceof register) {
-						reg rhs_ = registerMapping((register) rhs);
+						virtualReg rhs_ = registerMapping((register) rhs);
 						RTypeInst.opType type = null;
 						switch (inst) {
 							case or -> type = RTypeInst.opType.or;
@@ -114,7 +121,7 @@ public class instructionSelector implements pass {
 							case and -> type = RTypeInst.opType.and;
 							case xor -> type = RTypeInst.opType.xor;
 						}
-						currentBlock.addInst(new RTypeInst(type, rd, lhs_, rhs_));
+						currentBlock.addInst(new RTypeInst(currentBlock, type, rd, lhs_, rhs_));
 					} else {
 						assert rhs instanceof integerConstant || rhs instanceof booleanConstant;
 						intImm intImm = new intImm(rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val);
@@ -125,7 +132,7 @@ public class instructionSelector implements pass {
 							case and -> type = ITypeInst.opType.andi;
 							case xor -> type = ITypeInst.opType.xori;
 						}
-						currentBlock.addInst(new ITypeInst(type, rd, lhs_, intImm));
+						currentBlock.addInst(new ITypeInst(currentBlock, type, rd, lhs_, intImm));
 					}
 				} else {
 					assert (lhs instanceof integerConstant || lhs instanceof booleanConstant) &&
@@ -133,65 +140,60 @@ public class instructionSelector implements pass {
 					int lhs_ = lhs instanceof integerConstant ? ((integerConstant) lhs).val : ((booleanConstant) lhs).val;
 					int rhs_ = rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val;
 					switch (inst) {
-						case add -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ + rhs_)));
-						case and -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ & rhs_)));
-						case or -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ | rhs_)));
-						case xor -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ ^ rhs_)));
+						case add -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ + rhs_)));
+						case and -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ & rhs_)));
+						case or -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ | rhs_)));
+						case xor -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ ^ rhs_)));
 					}
 				}
 			}
 		} else if (stmt instanceof bitcast) {
 			bitcast stmt_ = (bitcast) stmt;
-			reg rd = registerMapping((register) stmt_.dest);
-			if (stmt_.value instanceof globalVariable) currentBlock.addInst(new laInst(rd, programAsmEntry.gblMapping.get(stmt_.value)));
-			else currentBlock.addInst(new mvInst(rd, registerMapping((register) stmt_.value)));
+			virtualReg rd = registerMapping((register) stmt_.dest);
+			if (stmt_.value instanceof globalVariable) currentBlock.addInst(new laInst(currentBlock, rd, programAsmEntry.gblMapping.get(stmt_.value)));
+			else currentBlock.addInst(new mvInst(currentBlock, rd, registerMapping((register) stmt_.value)));
 		} else if (stmt instanceof br) {
 			br stmt_ = (br) stmt;
 			asmBlock trueBlk = blkMap.get(stmt_.trueBranch);
-			if (stmt_.cond == null) currentBlock.addInst(new jumpInst(trueBlk));
+			if (stmt_.cond == null) currentBlock.addInst(new jumpInst(currentBlock, trueBlk));
 			else {
 				asmBlock falseBlk = blkMap.get(stmt_.falseBranch);
 				if (stmt_.cond instanceof booleanConstant)
-					if (((booleanConstant) stmt_.cond).val == 1) currentBlock.addInst(new jumpInst(trueBlk));
-					else currentBlock.addInst(new jumpInst(falseBlk));
+					if (((booleanConstant) stmt_.cond).val == 1) currentBlock.addInst(new jumpInst(currentBlock, trueBlk));
+					else currentBlock.addInst(new jumpInst(currentBlock, falseBlk));
 				else {
-					reg cond = registerMapping((register) stmt_.cond);
+					virtualReg cond = registerMapping((register) stmt_.cond);
 					boolean merged = false;
 					inst tailInst = currentBlock.tailInst;
 					if (tailInst != null)
 						if (tailInst instanceof szInst) {
 							if (((szInst) tailInst).testMergeability(cond)) {
-								currentBlock.tailInst = new brInst(
+								currentBlock.tailInst = new brInst(currentBlock, 
 									((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
-									((szInst) tailInst).rs, null, falseBlk
+									tailInst.rs1, null, falseBlk
 								);
 								merged = true;
 							}
 						} else if (tailInst instanceof RTypeInst) {
 							if (((RTypeInst) tailInst).testMergeability(cond)) {
 								if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
-									currentBlock.tailInst = new brInst(
-										brInst.opType.bge,
-										((RTypeInst) tailInst).rs1, ((RTypeInst) tailInst).rs2, falseBlk
-									);
-								else currentBlock.tailInst = new brInst(
-										brInst.opType.bgeu,
-										((RTypeInst) tailInst).rs1, ((RTypeInst) tailInst).rs2, falseBlk
-									);
+									currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, tailInst.rs1, tailInst.rs2, falseBlk);
+								else
+									currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
 								merged = true;
 							}
 						} else if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
 							RTypeInst preInst = (RTypeInst) tailInst.pre;
 							if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
-								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
-								else currentBlock.tailInst = new brInst(brInst.opType.bltu, preInst.rs1, preInst.rs2, falseBlk);
+								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
+								else currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bltu, preInst.rs1, preInst.rs2, falseBlk);
 								currentBlock.tailInst.pre = preInst.pre;
 								if (preInst.pre != null) preInst.suf = currentBlock.tailInst;
 								else currentBlock.headInst = currentBlock.tailInst;
 								merged = true;
 							}
 						}
-					if (!merged) currentBlock.addInst(new brInst(brInst.opType.beqz, cond, null, falseBlk));
+					if (!merged) currentBlock.addInst(new brInst(currentBlock, brInst.opType.beqz, cond, null, falseBlk));
 				}
 			}
 		} else if (stmt instanceof call) {
@@ -202,40 +204,40 @@ public class instructionSelector implements pass {
 				virtualReg rs;
 				if (paraEntity instanceof register) rs = registerMapping((register) paraEntity);
 				else {
-					rs = new virtualReg(++ virtualRegCounter);
+					rs = createNewVirtualRegister();
 					if (paraEntity instanceof integerConstant)
-						currentBlock.addInst(new liInst(rs, new intImm(((integerConstant) paraEntity).val)));
+						currentBlock.addInst(new liInst(currentBlock, rs, new intImm(((integerConstant) paraEntity).val)));
 					else if (paraEntity instanceof booleanConstant)
-						currentBlock.addInst(new liInst(rs, new intImm(((booleanConstant) paraEntity).val)));
-					else currentBlock.addInst(new mvInst(rs, zero));
+						currentBlock.addInst(new liInst(currentBlock, rs, new intImm(((booleanConstant) paraEntity).val)));
+					else currentBlock.addInst(new mvInst(currentBlock, rs, zero));
 				}
 				if (i > 7) {
 					intImm offset = new intImm();
-					currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs, offset, sp));
+					currentBlock.addInst(new storeInst(currentBlock, storeInst.storeType.sw, rs, offset, sp));
 					argOffsets.add(offset);
-				} else currentBlock.addInst(new mvInst(physicalReg.pRegToVReg.get("a" + i), rs));
+				} else currentBlock.addInst(new mvInst(currentBlock, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("a" + i)), rs));
 			}
 			currentFunction.stkFrame.calleeParameterOffsets.put(stmt_.callee, argOffsets);
-			currentBlock.addInst(new callInst(programAsmEntry.asmFunctions.get(stmt_.callee)));
-			if (stmt_.dest != null) currentBlock.addInst(new mvInst(registerMapping((register) stmt_.dest), a0));
+			currentBlock.addInst(new callInst(currentBlock, programAsmEntry.asmFunctions.get(stmt_.callee)));
+			if (stmt_.dest != null) currentBlock.addInst(new mvInst(currentBlock, registerMapping((register) stmt_.dest), a0));
 		} else if (stmt instanceof getelementptr) {
 			getelementptr stmt_ = (getelementptr) stmt;
-			reg rd = registerMapping((register) stmt_.dest);
+			virtualReg rd = registerMapping((register) stmt_.dest);
 			//0. index addressing
-			reg rs1;
+			virtualReg rs1;
 			if (stmt_.pointer instanceof globalVariable) {
-				rs1 = new virtualReg(++ virtualRegCounter);
-				currentBlock.addInst(new laInst(rs1, programAsmEntry.gblMapping.get(stmt_.pointer)));
+				rs1 = createNewVirtualRegister();
+				currentBlock.addInst(new laInst(currentBlock, rs1, programAsmEntry.gblMapping.get(stmt_.pointer)));
 			} else rs1 = registerMapping((register) stmt_.pointer);
 			entity idx = stmt_.idxes.get(0);
 			if (idx instanceof register) {
-				reg offset = new virtualReg(++ virtualRegCounter);
-				currentBlock.addInst(new liInst(offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
-				currentBlock.addInst(new RTypeInst(RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
-				currentBlock.addInst(new RTypeInst(RTypeInst.opType.add, rd, rs1, offset));
+				virtualReg offset = createNewVirtualRegister();
+				currentBlock.addInst(new liInst(currentBlock, offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
+				currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
+				currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.add, rd, rs1, offset));
 			} else {
 				assert idx instanceof integerConstant;
-				currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rs1,
+				currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rs1,
 					new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() * ((integerConstant) idx).val)
 				));
 			}
@@ -248,12 +250,12 @@ public class instructionSelector implements pass {
 				int offset_ = 0;
 				for (int i = 0;i < ((integerConstant) idx).val;++ i)
 					offset_ += structType.types.get(i).size() / 8;
-				currentBlock.addInst(new ITypeInst(ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
+				currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
 			}
 		} else if (stmt instanceof icmp) {
 			icmp stmt_ = (icmp) stmt;
 			entity lhs = stmt_.op1, rhs = stmt_.op2;
-			reg rd = registerMapping((register) stmt_.dest);
+			virtualReg rd = registerMapping((register) stmt_.dest);
 			icmp.condCode cond = stmt_.cond;
 			if (rhs instanceof register) {
 				entity tmp = lhs;
@@ -271,37 +273,37 @@ public class instructionSelector implements pass {
 				}
 			}
 			if (lhs instanceof register) {
-				reg lhs_ = registerMapping((register) lhs);
+				virtualReg lhs_ = registerMapping((register) lhs);
 				if (rhs instanceof register) {
-					reg rhs_ = registerMapping((register) rhs);
+					virtualReg rhs_ = registerMapping((register) rhs);
 					switch (cond) {
 						case eq -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.xor, rd, lhs_, rhs_));
-							currentBlock.addInst(new szInst(szInst.opType.seqz, rd, rd));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.xor, rd, lhs_, rhs_));
+							currentBlock.addInst(new szInst(currentBlock, szInst.opType.seqz, rd, rd));
 						}
 						case ne -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.xor, rd, lhs_, rhs_));
-							currentBlock.addInst(new szInst(szInst.opType.snez, rd, rd));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.xor, rd, lhs_, rhs_));
+							currentBlock.addInst(new szInst(currentBlock, szInst.opType.snez, rd, rd));
 						}
-						case ugt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs_, lhs_));
+						case ugt -> currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, rhs_, lhs_));
 						case uge -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, lhs_, rhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
-						case ult -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, lhs_, rhs_));
+						case ult -> currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, lhs_, rhs_));
 						case ule -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs_, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, rhs_, lhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
-						case sgt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs_, lhs_));
+						case sgt -> currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, rhs_, lhs_));
 						case sge -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, lhs_, rhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
-						case slt -> currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, lhs_, rhs_));
+						case slt -> currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, lhs_, rhs_));
 						case sle -> {
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs_, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, rhs_, lhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 					}
 				} else {
@@ -309,43 +311,43 @@ public class instructionSelector implements pass {
 					intImm rhs_ = new intImm(((integerConstant) rhs).val);
 					switch (cond) {
 						case eq -> {
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, lhs_, rhs_));
-							currentBlock.addInst(new szInst(szInst.opType.seqz, rd, rd));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, lhs_, rhs_));
+							currentBlock.addInst(new szInst(currentBlock, szInst.opType.seqz, rd, rd));
 						}
 						case ne -> {
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, lhs_, rhs_));
-							currentBlock.addInst(new szInst(szInst.opType.snez, rd, rd));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, lhs_, rhs_));
+							currentBlock.addInst(new szInst(currentBlock, szInst.opType.snez, rd, rd));
 						}
 						case ugt -> {
-							reg rhs__ = new virtualReg(++ virtualRegCounter);
-							currentBlock.addInst(new liInst(rhs__, rhs_));
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs__, lhs_));
+							virtualReg rhs__ = createNewVirtualRegister();
+							currentBlock.addInst(new liInst(currentBlock, rhs__, rhs_));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, rhs__, lhs_));
 						}
 						case uge -> {
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.sltiu, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.sltiu, rd, lhs_, rhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
-						case ult -> currentBlock.addInst(new ITypeInst(ITypeInst.opType.sltiu, rd, lhs_, rhs_));
+						case ult -> currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.sltiu, rd, lhs_, rhs_));
 						case ule -> {
-							reg rhs__ = new virtualReg(++ virtualRegCounter);
-							currentBlock.addInst(new liInst(rhs__, rhs_));
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.sltu, rd, rhs__, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							virtualReg rhs__ = createNewVirtualRegister();
+							currentBlock.addInst(new liInst(currentBlock, rhs__, rhs_));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.sltu, rd, rhs__, lhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 						case sgt -> {
-							reg rhs__ = new virtualReg(++ virtualRegCounter);
-							currentBlock.addInst(new liInst(rhs__, rhs_));
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs__, lhs_));
+							virtualReg rhs__ = createNewVirtualRegister();
+							currentBlock.addInst(new liInst(currentBlock, rhs__, rhs_));
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, rhs__, lhs_));
 						}
 						case sge -> {
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.slti, rd, lhs_, rhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.slti, rd, lhs_, rhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
-						case slt -> currentBlock.addInst(new ITypeInst(ITypeInst.opType.slti, rd, lhs_, rhs_));
+						case slt -> currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.slti, rd, lhs_, rhs_));
 						case sle -> {
-							reg rhs__ = new virtualReg(++ virtualRegCounter);
-							currentBlock.addInst(new RTypeInst(RTypeInst.opType.slt, rd, rhs__, lhs_));
-							currentBlock.addInst(new ITypeInst(ITypeInst.opType.xori, rd, rd, new intImm(1)));
+							virtualReg rhs__ = createNewVirtualRegister();
+							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, rhs__, lhs_));
+							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
 					}
 				}
@@ -353,28 +355,28 @@ public class instructionSelector implements pass {
 				assert lhs instanceof integerConstant && rhs instanceof integerConstant;
 				int lhs_ = ((integerConstant) lhs).val, rhs_ = ((integerConstant) rhs).val;
 				switch (cond) {
-					case eq -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ == rhs_ ? 1 : 0)));
-					case ne -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ != rhs_ ? 1 : 0)));
-					case ugt -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) > 0 ? 1 : 0)));
-					case uge -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) >= 0 ? 1 : 0)));
-					case ult -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) < 0 ? 1 : 0)));
-					case ule -> currentBlock.addInst(new liInst(rd, new intImm(compareUnsigned(lhs_, rhs_) <= 0 ? 1 : 0)));
-					case sgt -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ > rhs_ ? 1 : 0)));
-					case sge -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ >= rhs_ ? 1 : 0)));
-					case slt -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ < rhs_ ? 1 : 0)));
-					case sle -> currentBlock.addInst(new liInst(rd, new intImm(lhs_ <= rhs_ ? 1 : 0)));
+					case eq -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ == rhs_ ? 1 : 0)));
+					case ne -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ != rhs_ ? 1 : 0)));
+					case ugt -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(compareUnsigned(lhs_, rhs_) > 0 ? 1 : 0)));
+					case uge -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(compareUnsigned(lhs_, rhs_) >= 0 ? 1 : 0)));
+					case ult -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(compareUnsigned(lhs_, rhs_) < 0 ? 1 : 0)));
+					case ule -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(compareUnsigned(lhs_, rhs_) <= 0 ? 1 : 0)));
+					case sgt -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ > rhs_ ? 1 : 0)));
+					case sge -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ >= rhs_ ? 1 : 0)));
+					case slt -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ < rhs_ ? 1 : 0)));
+					case sle -> currentBlock.addInst(new liInst(currentBlock, rd, new intImm(lhs_ <= rhs_ ? 1 : 0)));
 				}
 			}
 
 		} else if (stmt instanceof load) {
 			load stmt_ = (load) stmt;
-			reg rd = registerMapping((register) stmt_.dest);
+			virtualReg rd = registerMapping((register) stmt_.dest);
 			if (stmt_.pointer instanceof globalVariable) {
 				globalData glb = programAsmEntry.gblMapping.get(stmt_.pointer);
-				currentBlock.addInst(new luiInst(rd, new relocationImm(relocationImm.type.hi, glb)));
-				currentBlock.addInst(new loadInst(loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
+				currentBlock.addInst(new luiInst(currentBlock, rd, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, rd, rd, new relocationImm(relocationImm.type.lo, glb)));
 			} else {
-				currentBlock.addInst(new loadInst(
+				currentBlock.addInst(new loadInst(currentBlock, 
 					((LLVMPointerType) stmt_.pointer.type).pointeeType.size() == 8 ? loadInst.loadType.lbu : loadInst.loadType.lw,
 					rd, registerMapping((register) stmt_.pointer), new intImm(0)
 				));
@@ -383,38 +385,39 @@ public class instructionSelector implements pass {
 			ret stmt_ = (ret) stmt;
 			if (stmt_.value != null)
 				if (stmt_.value instanceof booleanConstant)
-					currentBlock.addInst(new luiInst(a0, new intImm(((booleanConstant) stmt_.value).val)));
+					currentBlock.addInst(new luiInst(currentBlock, a0, new intImm(((booleanConstant) stmt_.value).val)));
 				else if (stmt_.value instanceof integerConstant)
-					currentBlock.addInst(new luiInst(a0, new intImm(((integerConstant) stmt_.value).val)));
+					currentBlock.addInst(new luiInst(currentBlock, a0, new intImm(((integerConstant) stmt_.value).val)));
 				else if (stmt_.value instanceof nullPointerConstant)
-					currentBlock.addInst(new mvInst(a0, zero));
+					currentBlock.addInst(new mvInst(currentBlock, a0, zero));
 				else {
 					assert stmt_.value instanceof register;
-					currentBlock.addInst(new mvInst(a0, registerMapping((register) stmt_.value)));
+					currentBlock.addInst(new mvInst(currentBlock, a0, registerMapping((register) stmt_.value)));
 				}
-			currentBlock.addInst(new jumpInst(currentFunction.retBlock));
+			currentBlock.addInst(new jumpInst(currentBlock, currentFunction.retBlock));
+			currentBlock.addSuccessor(currentFunction.retBlock);
 		} else {
 			assert stmt instanceof store;
 			store stmt_ = (store) stmt;
-			reg rs2;
+			virtualReg rs2;
 			if (stmt_.value instanceof register) rs2 = registerMapping((register) stmt_.value);
 			else {
-				rs2 = new virtualReg(++ virtualRegCounter);
+				rs2 = createNewVirtualRegister();
 				if (stmt_.value instanceof booleanConstant)
-					currentBlock.addInst(new liInst(rs2, new intImm(((booleanConstant) stmt_.value).val)));
+					currentBlock.addInst(new liInst(currentBlock, rs2, new intImm(((booleanConstant) stmt_.value).val)));
 				else if (stmt_.value instanceof integerConstant)
-					currentBlock.addInst(new liInst(rs2, new intImm(((integerConstant) stmt_.value).val)));
-				else currentBlock.addInst(new mvInst(rs2, zero));
+					currentBlock.addInst(new liInst(currentBlock, rs2, new intImm(((integerConstant) stmt_.value).val)));
+				else currentBlock.addInst(new mvInst(currentBlock, rs2, zero));
 			}
 		if (stmt_.value instanceof integerConstant)
 			if (stmt_.pointer instanceof globalVariable) {
 				globalData glb = programAsmEntry.gblMapping.get(stmt_.pointer);
-				reg rs1 = new virtualReg(++ virtualRegCounter);
-				currentBlock.addInst(new luiInst(rs1, new relocationImm(relocationImm.type.hi, glb)));
-				currentBlock.addInst(new storeInst(storeInst.storeType.sw, rs2,
+				virtualReg rs1 = createNewVirtualRegister();
+				currentBlock.addInst(new luiInst(currentBlock, rs1, new relocationImm(relocationImm.type.hi, glb)));
+				currentBlock.addInst(new storeInst(currentBlock, storeInst.storeType.sw, rs2,
 					new relocationImm(relocationImm.type.lo, glb), rs1));
 			} else
-				currentBlock.addInst(new storeInst(
+				currentBlock.addInst(new storeInst(currentBlock, 
 					stmt_.value.type.size() == 8 ? storeInst.storeType.sb : storeInst.storeType.sw,
 					registerMapping((register) stmt_.pointer), new intImm(0), rs2
 				));
@@ -424,6 +427,7 @@ public class instructionSelector implements pass {
 	private void buildAsmBlock(basicBlock block) {
 		asmBlock asmBlk = blockMapping(block);
 		asmBlk.comment = block.name;
+		block.successors().forEach(blk -> asmBlk.addSuccessor(blockMapping(blk)));
 		currentFunction.asmBlocks.add(asmBlk);
 		currentBlock = asmBlk;
 		block.stmts.forEach(this::buildAsmInst);
@@ -435,31 +439,37 @@ public class instructionSelector implements pass {
 			programAsmEntry.asmFunctions.put(func, new asmFunction(func.functionName, null));
 		else {
 			ArrayList<virtualReg> paraVRegs = new ArrayList<>();
-			func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
 			asmFunction asmFunc = new asmFunction(func.functionName, paraVRegs);
+			currentFunction = asmFunc;
+			func.argValues.forEach(arg -> paraVRegs.add(registerMapping((register) arg)));
 			asmFunc.stkFrame = new stackFrame(asmFunc);
-			asmFunc.initBlock = new asmBlock(++ blockCounter);
+			asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
 			asmFunc.initBlock.comment = "init block of " + func.functionName;
+			currentBlock = asmFunc.initBlock;
 			ArrayList<intImm> argOffsets = new ArrayList<>();
 			func.argValues.stream().map(argv -> (register) argv).forEach(argv -> {
 				intImm offset = new intImm();
 				argOffsets.add(offset);
-				asmFunc.initBlock.addInst(new loadInst(loadInst.loadType.lw, registerMapping(argv), sp, offset));
+				asmFunc.initBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, registerMapping(argv), sp, offset));
 			});
 			asmFunc.stkFrame.callerParameterOffsets = argOffsets;
 			ArrayList<virtualReg> calleeSavers = new ArrayList<>();
 			for (int i = 0;i < 12;++ i) {
-				virtualReg calleeSaver = new virtualReg(++ virtualRegCounter);
+				virtualReg calleeSaver = createNewVirtualRegister();
 				calleeSavers.add(calleeSaver);
-				asmFunc.initBlock.addInst(new mvInst(calleeSaver, physicalReg.pRegToVReg.get("s" + i)));
+				asmFunc.initBlock.addInst(new mvInst(currentBlock, calleeSaver, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i))));
 			}
-			asmFunc.retBlock = new asmBlock(++ blockCounter);
+			currentBlock = null;
+			asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
 			asmFunc.retBlock.comment = "return block of " + func.functionName;
+			currentBlock = asmFunc.retBlock;
 			for (int i = 0;i < 12;++ i)
-				asmFunc.initBlock.addInst(new mvInst(physicalReg.pRegToVReg.get("s" + i), calleeSavers.get(i)));
+				asmFunc.retBlock.addInst(new mvInst(currentBlock, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i)), calleeSavers.get(i)));
+			asmFunc.retBlock.addInst(new retInst(currentBlock));
+			currentBlock = null;
 			programAsmEntry.asmFunctions.put(func, asmFunc);
-			currentFunction = asmFunc;
 			func.blocks.forEach(this::buildAsmBlock);
+			asmFunc.initBlock.addSuccessor(asmFunc.asmBlocks.get(0));
 			currentFunction = null;
 		}
 	}

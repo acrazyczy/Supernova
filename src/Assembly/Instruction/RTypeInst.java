@@ -14,9 +14,12 @@ public class RTypeInst extends inst {
 	public RTypeInst(asmBlock belongTo, opType type, virtualReg rd, virtualReg rs1, virtualReg rs2) {
 		super(belongTo);
 		this.type = type;
-		this.def.add(this.rd = rd);
-		this.use.add(this.rs1 = rs1);
-		this.use.add(this.rs2 = rs2);
+		this.defs.add(this.rd = rd);
+		this.uses.add(this.rs1 = rs1);
+		this.uses.add(this.rs2 = rs2);
+		rd.defs.add(this);
+		rs1.uses.add(this);
+		rs2.uses.add(this);
 	}
 
 	public boolean testMergeability(reg rd) {return this.rd == rd && (type == opType.slt || type == opType.sltu);}

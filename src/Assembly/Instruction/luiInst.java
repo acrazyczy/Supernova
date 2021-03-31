@@ -9,7 +9,8 @@ public class luiInst extends inst {
 
 	public luiInst(asmBlock belongTo, virtualReg rd, Imm imm) {
 		super(belongTo);
-		this.def.add(this.rd = rd);
+		this.defs.add(this.rd = rd);
+		rd.defs.add(this);
 		this.imm = imm;
 	}
 

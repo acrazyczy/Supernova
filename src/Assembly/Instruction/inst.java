@@ -9,17 +9,12 @@ import java.util.Set;
 abstract public class inst {
 	public inst pre = null, suf = null;
 	public virtualReg rd, rs1, rs2;
-	private String comment = null;
 
 	/* graph coloring information */
-	public Set<virtualReg> def = new HashSet<>(), use = new HashSet<>();
+	public Set<virtualReg> defs = new HashSet<>(), uses = new HashSet<>();
 	public asmBlock belongTo;
 
 	public inst(asmBlock belongTo) {this.belongTo = belongTo;}
-	public inst(String comment, asmBlock belongTo) {
-		this.comment = comment;
-		this.belongTo = belongTo;
-	}
 
 	public void linkBefore(inst newInst) {
 		if (pre != null) pre.suf = newInst;
@@ -35,14 +30,33 @@ abstract public class inst {
 		(newInst.pre = this).suf = newInst;
 	}
 
+	public void removeFromBlock() {
+		defs.forEach(def -> def.defs.remove(this));
+		uses.forEach(use -> use.uses.remove(this));
+		if (pre != null) pre.suf = suf;
+		else belongTo.headInst = suf;
+		if (suf != null) suf.pre = pre;
+		else belongTo.tailInst = pre;
+	}
+
 	public void replaceUse(virtualReg oldReg, virtualReg newReg) {
+		uses.remove(oldReg);
+		oldReg.uses.remove(this);
+		if (rs1 == oldReg || rs2 == oldReg) {
+			uses.add(newReg);
+			newReg.defs.add(this);
+			if (rs1 == oldReg) rs1 = newReg;
+			if (rs2 == oldReg) rs2 = newReg;
+		}
 	}
 
 	public void replaceDef(virtualReg oldReg, virtualReg newReg) {
+		defs.remove(oldReg);
+		oldReg.defs.remove(this);
 		if (rd == oldReg) {
+			defs.add(newReg);
+			newReg.defs.add(this);
 			rd = newReg;
-			def.remove(oldReg);
-			def.add(newReg);
 		}
 	}
 

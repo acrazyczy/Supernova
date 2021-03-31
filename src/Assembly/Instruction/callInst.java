@@ -11,7 +11,7 @@ public class callInst extends inst {
 		super(belongTo);
 		this.func = func;
 		physicalReg.callerSavePRegs.values().stream().
-			map(pReg -> physicalReg.pRegToVReg.get(pReg)).forEach(vReg -> def.add(vReg));
+			map(pReg -> physicalReg.pRegToVReg.get(pReg)).forEach(vReg -> {defs.add(vReg); vReg.defs.add(this);});
 	}
 
 	@Override public String toString() {return "call " + func;}

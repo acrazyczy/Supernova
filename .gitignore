@@ -1,4 +1,6 @@
 .idea/
 out/
 test.mx
+test.ll
+test.s
 Compiler-2021-testcases/

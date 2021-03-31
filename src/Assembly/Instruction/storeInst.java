@@ -15,9 +15,11 @@ public class storeInst extends inst {
 	public storeInst(asmBlock belongTo, storeType type, virtualReg rs2, Imm offset, virtualReg rs1) {
 		super(belongTo);
 		this.type = type;
-		this.use.add(this.rs2 = rs2);
 		this.offset = offset;
-		this.use.add(this.rs1 = rs1);
+		this.uses.add(this.rs2 = rs2);
+		this.uses.add(this.rs1 = rs1);
+		rs2.uses.add(this);
+		rs1.uses.add(this);
 	}
 
 	@Override public String toString() {return type + " " + rs2 + ", " + offset + "(" + rs1 + ")";}
