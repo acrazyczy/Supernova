@@ -426,7 +426,7 @@ public class instructionSelector implements pass {
 			} else
 				currentBlock.addInst(new storeInst(currentBlock,
 					stmt_.value.type.size() == 8 ? storeInst.storeType.sb : storeInst.storeType.sw,
-					registerMapping((register) stmt_.pointer), new intImm(0), rs2
+					rs2, new intImm(0), registerMapping((register) stmt_.pointer)
 				));
 		}
 	}
