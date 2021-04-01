@@ -421,17 +421,18 @@ public class IRBuilder implements ASTVisitor {
 			cond = body;
 			currentBlock.push_back(new br(cond));
 		}
-		currentFunction.blocks.add(body);
-		currentBlock = body;
-		if (it.stmt != null) it.stmt.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
 
+		currentFunction.blocks.add(body);
 		currentFunction.blocks.add(incr);
 		if (it.incr != null) {
 			currentBlock = incr;
 			it.incr.accept(this);
 			if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 		} else incr = cond;
+
+		currentBlock = body;
+		if (it.stmt != null) it.stmt.accept(this);
+		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
 
 		-- currentLoopDepth;
 		currentFunction.blocks.add(dest);
