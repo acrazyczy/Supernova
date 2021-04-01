@@ -170,8 +170,8 @@ public class instructionSelector implements pass {
 						if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
 							RTypeInst preInst = (RTypeInst) tailInst.pre;
 							if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
-								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
-								else currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bltu, preInst.rs1, preInst.rs2, falseBlk);
+								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, preInst.rs1, preInst.rs2, falseBlk);
+								else currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, preInst.rs2, preInst.rs1, falseBlk);
 								currentBlock.tailInst.pre = preInst.pre;
 								if (preInst.pre != null) preInst.suf = currentBlock.tailInst;
 								else currentBlock.headInst = currentBlock.tailInst;

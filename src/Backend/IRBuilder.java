@@ -298,21 +298,23 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(logicExprNode it) {
-		it.rhs.accept(this);
 		register value = new register(new LLVMIntegerType(8), "", currentFunction);
 		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction, currentLoopDepth),
 			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction, currentLoopDepth),
 			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction, currentLoopDepth);
 		currentBlock.push_back(new br(lhs));
+		currentFunction.blocks.add(lhs);
 		currentBlock = lhs;
 		it.lhs.accept(this);
 		currentBlock.push_back(new _move(it.lhs.val, value));
 		if (it.op == logicExprNode.opType.And) currentBlock.push_back(new br(it.lhs.val, rhs, dest));
 		else currentBlock.push_back(new br(it.lhs.val, dest, rhs));
+		currentFunction.blocks.add(rhs);
 		currentBlock = rhs;
 		it.rhs.accept(this);
 		currentBlock.push_back(new _move(it.rhs.val, value));
 		currentBlock.push_back(new br(dest));
+		currentFunction.blocks.add(dest);
 		currentBlock = dest;
 
 		if (it.trueBranch != null) {
