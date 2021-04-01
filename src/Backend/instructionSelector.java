@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
+import static java.lang.Integer.toOctalString;
 
 public class instructionSelector implements pass {
 	private final IREntry programIREntry;
@@ -173,8 +174,10 @@ public class instructionSelector implements pass {
 								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
 								else currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bltu, preInst.rs2, preInst.rs1, falseBlk);
 								currentBlock.tailInst.pre = preInst.pre;
-								if (preInst.pre != null) preInst.suf = currentBlock.tailInst;
+								if (preInst.pre != null) preInst.pre.suf = currentBlock.tailInst;
 								else currentBlock.headInst = currentBlock.tailInst;
+								preInst.removeFromBlockWithoutRelinking();
+								tailInst.removeFromBlockWithoutRelinking();
 								merged = true;
 							}
 						} else {
@@ -196,8 +199,11 @@ public class instructionSelector implements pass {
 									merged = true;
 								}
 							}
-							if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
-							else (currentBlock.tailInst.pre = preInst).suf = currentBlock.tailInst;
+							if (merged) {
+								if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
+								else (currentBlock.tailInst.pre = preInst).suf = currentBlock.tailInst;
+								tailInst.removeFromBlockWithoutRelinking();
+							}
 						}
 					if (!merged) currentBlock.addInst(new brInst(currentBlock, brInst.opType.beqz, cond, null, falseBlk));
 				}

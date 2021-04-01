@@ -39,12 +39,17 @@ abstract public class inst {
 		else belongTo.tailInst = pre;
 	}
 
+	public void removeFromBlockWithoutRelinking() {
+		defs.forEach(def -> def.defs.remove(this));
+		uses.forEach(use -> use.uses.remove(this));
+	}
+
 	public void replaceUse(virtualReg oldReg, virtualReg newReg) {
 		uses.remove(oldReg);
 		oldReg.uses.remove(this);
 		if (rs1 == oldReg || rs2 == oldReg) {
 			uses.add(newReg);
-			newReg.defs.add(this);
+			newReg.uses.add(this);
 			if (rs1 == oldReg) rs1 = newReg;
 			if (rs2 == oldReg) rs2 = newReg;
 		}

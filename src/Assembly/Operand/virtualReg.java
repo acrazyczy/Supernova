@@ -30,8 +30,10 @@ public class virtualReg extends reg {
 	public void initializationForGraphColoring() {
 		adjList = new HashSet<>();
 		moveList = new HashSet<>();
-		if (-32 > index || index >= 0) color = null;
-		deg = 0;
+		if (-32 > index || index >= 0) {
+			color = null;
+			deg = 0;
+		} else deg = Integer.MAX_VALUE >> 1;
 		spillCost = 0;
 	}
 

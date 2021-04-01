@@ -308,7 +308,10 @@ public class IRBuilder implements ASTVisitor {
 		it.lhs.accept(this);
 		currentBlock.push_back(new _move(it.lhs.val, value));
 		if (it.op == logicExprNode.opType.And) currentBlock.push_back(new br(it.lhs.val, rhs, dest));
-		else currentBlock.push_back(new br(it.lhs.val, dest, rhs));
+		else {
+			currentBlock.push_back(new binary(binary.instCode.xor, it.lhs.val, new booleanConstant(1), it.lhs.val));
+			currentBlock.push_back(new br(it.lhs.val, rhs, dest));
+		}
 		currentFunction.blocks.add(rhs);
 		currentBlock = rhs;
 		it.rhs.accept(this);
@@ -399,7 +402,12 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction = it.func;
 		currentBlock = it.func.blocks.get(0);
 		it.funcBody.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new ret(null));
+		if (!currentBlock.hasTerminalStmt())
+			currentBlock.push_back(new ret(currentFunction.returnType == null ? null :
+				currentFunction.returnType instanceof LLVMPointerType ? new nullPointerConstant() :
+					new integerConstant(currentFunction.returnType.size(), 0)));
+		currentBlock = null;
+		currentFunction = null;
 	}
 
 	@Override

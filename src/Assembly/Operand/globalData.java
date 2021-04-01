@@ -14,7 +14,9 @@ public class globalData extends operand {
 	public globalData(String name, String value) {
 		this.name = name;
 		this.int_val = 0;
-		this.str_val = value;
+		this.str_val = value.replace("\\", "\\\\").
+			replace("\n", "\\n").
+			replace("\"", "\\\"");
 	}
 
 	@Override public String toString() {

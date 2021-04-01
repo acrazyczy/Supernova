@@ -75,7 +75,6 @@ public class registerAllocator implements asmVisitor {
 
 		initial.forEach(virtualReg::initializationForGraphColoring);
 		precolored.forEach(virtualReg::initializationForGraphColoring);
-		precolored.forEach(vReg -> vReg.deg = Integer.MAX_VALUE >> 1);
 	}
 
 	private void runGraphColoring(asmFunction asmFunc) {
@@ -197,7 +196,7 @@ public class registerAllocator implements asmVisitor {
 
 	// remove a node whose degree is less than K from the interference graph
 	private void simplify() {
-		virtualReg n = simplifyWorkList.get(0);
+		virtualReg n = simplifyWorkList.iterator().next();
 		simplifyWorkList.remove(n);
 		selectStack.push(n);
 		adjacent(n).forEach(this::decrementDegree);
@@ -291,7 +290,7 @@ public class registerAllocator implements asmVisitor {
 	}
 	
 	private void freeze() {
-		virtualReg u = freezeWorkList.get(0);
+		virtualReg u = freezeWorkList.iterator().next();
 		freezeWorkList.remove(u);
 		simplifyWorkList.add(u);
 		freezeMoves(u);
