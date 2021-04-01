@@ -10,7 +10,6 @@ import LLVMIR.IREntry;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.*;
 import LLVMIR.TypeSystem.LLVMArrayType;
-import LLVMIR.TypeSystem.LLVMFirstClassType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 import LLVMIR.TypeSystem.LLVMStructureType;
 import LLVMIR.basicBlock;
@@ -18,7 +17,6 @@ import LLVMIR.Instruction.*;
 import LLVMIR.function;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
@@ -169,23 +167,7 @@ public class instructionSelector implements pass {
 					boolean merged = false;
 					inst tailInst = currentBlock.tailInst;
 					if (tailInst != null)
-						if (tailInst instanceof szInst) {
-							if (((szInst) tailInst).testMergeability(cond)) {
-								currentBlock.tailInst = new brInst(currentBlock, 
-									((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
-									tailInst.rs1, null, falseBlk
-								);
-								merged = true;
-							}
-						} else if (tailInst instanceof RTypeInst) {
-							if (((RTypeInst) tailInst).testMergeability(cond)) {
-								if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
-									currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, tailInst.rs1, tailInst.rs2, falseBlk);
-								else
-									currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
-								merged = true;
-							}
-						} else if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
+						if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
 							RTypeInst preInst = (RTypeInst) tailInst.pre;
 							if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
 								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
@@ -195,6 +177,27 @@ public class instructionSelector implements pass {
 								else currentBlock.headInst = currentBlock.tailInst;
 								merged = true;
 							}
+						} else {
+							inst preInst = tailInst.pre;
+							if (tailInst instanceof szInst) {
+								if (((szInst) tailInst).testMergeability(cond)) {
+									currentBlock.tailInst = new brInst(currentBlock,
+										((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
+										tailInst.rs1, null, falseBlk
+									);
+									merged = true;
+								}
+							} else if (tailInst instanceof RTypeInst) {
+								if (((RTypeInst) tailInst).testMergeability(cond)) {
+									if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, tailInst.rs1, tailInst.rs2, falseBlk);
+									else
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
+									merged = true;
+								}
+							}
+							if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
+							else (currentBlock.tailInst.pre = preInst).suf = currentBlock.tailInst;
 						}
 					if (!merged) currentBlock.addInst(new brInst(currentBlock, brInst.opType.beqz, cond, null, falseBlk));
 				}
@@ -458,7 +461,7 @@ public class instructionSelector implements pass {
 				intImm offset = new intImm();
 				argOffsets.add(offset);
 				asmFunc.initBlock.addInst(new loadInst(currentBlock, loadInst.loadType.lw, vReg, sp, offset));
-			}
+			} else asmFunc.initBlock.addInst(new mvInst(currentBlock, vReg, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("a" + i))));
 		}
 		asmFunc.stkFrame.callerParameterOffsets = argOffsets;
 		ArrayList<virtualReg> calleeSavers = new ArrayList<>();
@@ -494,9 +497,7 @@ public class instructionSelector implements pass {
 	@Override
 	public void run() {
 		registerGlobalVariable();
-		programIREntry.functions.forEach(IRFunc -> {
-			programAsmEntry.asmFunctions.put(IRFunc, new asmFunction(IRFunc.functionName, IRFunc.blocks == null ? null : new ArrayList<>()));
-		});
+		programIREntry.functions.forEach(IRFunc -> programAsmEntry.asmFunctions.put(IRFunc, new asmFunction(IRFunc.functionName, IRFunc.blocks == null ? null : new ArrayList<>())));
 		programIREntry.functions.stream().filter(IRFunc -> IRFunc.blocks != null).forEach(this::buildAsmFunction);
 	}
 }
