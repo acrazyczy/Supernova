@@ -438,7 +438,6 @@ public class instructionSelector implements pass {
 		asmBlock asmBlk = blockMapping(block);
 		asmBlk.comment = block.name;
 		block.successors().forEach(blk -> asmBlk.addSuccessor(blockMapping(blk)));
-		currentFunction.asmBlocks.add(asmBlk);
 		currentBlock = asmBlk;
 		block.stmts.forEach(this::buildAsmInst);
 		currentBlock = null;
@@ -471,6 +470,7 @@ public class instructionSelector implements pass {
 			asmFunc.initBlock.addInst(new mvInst(currentBlock, calleeSaver, physicalReg.pRegToVReg.get(physicalReg.pRegs.get("s" + i))));
 		}
 		currentBlock = null;
+		func.blocks.forEach(blk -> currentFunction.asmBlocks.add(blockMapping(blk)));
 		asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
 		asmFunc.retBlock.comment = "return block of " + func.functionName;
 		currentBlock = asmFunc.retBlock;

@@ -226,24 +226,26 @@ public class IRBuilder implements ASTVisitor {
 		basicBlock cond = new basicBlock("while.cond", currentFunction, currentLoopDepth),
 			body = new basicBlock("while.body", currentFunction, currentLoopDepth),
 			dest = new basicBlock("while.dest", currentFunction, currentLoopDepth);
+
 		it.bodyBlock = body;
 		it.destBlock = dest;
 		currentBlock.push_back(new br(cond));
 		it.cond.trueBranch = body;
 		it.cond.falseBranch = dest;
+
+		currentFunction.blocks.add(cond);
 		currentBlock = cond;
 		it.cond.accept(this);
 		currentBlock.push_back(new br(body));
+
+		currentFunction.blocks.add(body);
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 
 		-- currentLoopDepth;
-		currentBlock = dest;
-
-		currentFunction.blocks.add(cond);
-		currentFunction.blocks.add(body);
 		currentFunction.blocks.add(dest);
+		currentBlock = dest;
 	}
 
 	@Override
@@ -407,6 +409,7 @@ public class IRBuilder implements ASTVisitor {
 			dest = new basicBlock("for.dest", currentFunction, currentLoopDepth);
 		it.destBlock = dest;
 		it.incrBlock = incr;
+		currentFunction.blocks.add(cond);
 		if (it.cond != null) {
 			currentBlock.push_back(new br(cond));
 			it.cond.trueBranch = body;
@@ -418,22 +421,20 @@ public class IRBuilder implements ASTVisitor {
 			cond = body;
 			currentBlock.push_back(new br(cond));
 		}
+		currentFunction.blocks.add(incr);
 		if (it.incr != null) {
 			currentBlock = incr;
 			it.incr.accept(this);
 			if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
 		} else incr = cond;
+		currentFunction.blocks.add(body);
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
 
 		-- currentLoopDepth;
-		currentBlock = dest;
-
-		currentFunction.blocks.add(cond);
-		currentFunction.blocks.add(body);
-		currentFunction.blocks.add(incr);
 		currentFunction.blocks.add(dest);
+		currentBlock = dest;
 	}
 
 	@Override
@@ -494,21 +495,20 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(ifStmtNode it) {
 		it.cond.accept(this);
 		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction, currentLoopDepth),
-			falseBranch = new basicBlock("if.falseBranch", currentFunction, currentLoopDepth);
+			falseBranch = new basicBlock("if.falseBranch", currentFunction, currentLoopDepth),
+			destination = new basicBlock("if.dest", currentFunction, currentLoopDepth);
 		currentBlock.push_back(new br(it.cond.val, trueBranch, falseBranch));
 
-		basicBlock destination = new basicBlock("if.dest", currentFunction, currentLoopDepth);
+		currentFunction.blocks.add(trueBranch);
 		currentBlock = trueBranch;
 		if (it.trueNode != null) it.trueNode.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
+		currentFunction.blocks.add(falseBranch);
 		currentBlock = falseBranch;
 		if (it.falseNode != null) it.falseNode.accept(this);
 		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
-		currentBlock = destination;
-
-		currentFunction.blocks.add(trueBranch);
-		currentFunction.blocks.add(falseBranch);
 		currentFunction.blocks.add(destination);
+		currentBlock = destination;
 	}
 
 	@Override public void visit(typeNode it) {}
