@@ -399,6 +399,7 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction = it.func;
 		currentBlock = it.func.blocks.get(0);
 		it.funcBody.accept(this);
+		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new ret(null));
 	}
 
 	@Override
