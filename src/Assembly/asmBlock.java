@@ -42,7 +42,10 @@ public class asmBlock {
 
 	public Set<virtualReg> uses() {
 		Set<virtualReg> ret = new HashSet<>();
-		for (inst i = headInst;i != null;i = i.suf) ret.addAll(i.uses);
+		for (inst i = tailInst;i != null;i = i.pre) {
+			ret.removeAll(i.defs);
+			ret.addAll(i.uses);
+		}
 		return ret;
 	}
 

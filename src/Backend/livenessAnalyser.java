@@ -5,9 +5,7 @@ import Assembly.asmBlock;
 import Assembly.asmEntry;
 import Assembly.asmFunction;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class livenessAnalyser implements asmVisitor {
 	private final asmEntry programEntry;
@@ -18,15 +16,20 @@ public class livenessAnalyser implements asmVisitor {
 
 	private void livenessComputation(asmFunction asmFunc) {
 		ArrayList<asmBlock> dfsOrder = asmFunc.dfsOrderComputation();
-		dfsOrder.forEach(blk -> {blk.liveIn = new HashSet<>();blk.liveOut = new HashSet<>();});
+		Map<asmBlock, Set<virtualReg>> blkUses = new HashMap<>(), blkDefs = new HashMap<>();
+		dfsOrder.forEach(blk -> {
+			blk.liveIn = new HashSet<>();blk.liveOut = new HashSet<>();
+			blkUses.put(blk, blk.uses());
+			blkDefs.put(blk, blk.defs());
+		});
 		boolean changed;
 		do {
 			changed = false;
 			for (int i = dfsOrder.size() - 1; i >= 0; --i) {
 				asmBlock blk = dfsOrder.get(i);
 				Set<virtualReg> oldLiveIn = new HashSet<>(blk.liveIn), oldLiveOut = new HashSet<>(blk.liveOut);
-				blk.liveIn = blk.uses();
-				blk.liveOut.removeAll(blk.defs());
+				blk.liveIn = blkUses.get(blk);
+				blk.liveOut.removeAll(blkDefs.get(blk));
 				blk.liveIn.addAll(blk.liveOut);
 				blk.liveOut = new HashSet<>();
 				blk.successors.forEach(s -> blk.liveOut.addAll(s.liveIn));
