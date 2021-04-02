@@ -7,7 +7,7 @@ import LLVMIR.TypeSystem.LLVMPointerType;
 public class globalVariable extends entity {
 	public final String name;
 	public boolean isConstant, isString;
-	public String val = null;
+	public String val;
 
 	public globalVariable(LLVMFirstClassType type, String name, boolean isConstant, boolean isString) {
 		super(new LLVMPointerType(type));

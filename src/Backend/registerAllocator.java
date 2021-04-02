@@ -57,7 +57,7 @@ public class registerAllocator implements asmVisitor {
 		this.programAsmEntry = programAsmEntry;
 	}
 	
-	private void initialization(asmFunction asmFunc) {
+	private void initialization() {
 		simplifyWorkList = new ArrayList<>();
 		freezeWorkList = new ArrayList<>();
 		spillWorkList = new ArrayList<>();
@@ -83,7 +83,7 @@ public class registerAllocator implements asmVisitor {
 		initial.removeAll(precolored);
 
 		while (true) {
-			initialization(asmFunc);
+			initialization();
 			spillCostComputation(asmFunc);
 			new livenessAnalyser(programAsmEntry).run();
 			build(asmFunc);
@@ -323,12 +323,12 @@ public class registerAllocator implements asmVisitor {
 	}
 
 	private double getSpillCostOfVirtualRegister(virtualReg v) {
-		return (generatedBySpill(v) ? Double.POSITIVE_INFINITY : v.spillCost) / v.deg;
+		return generatedBySpill(v) ? Double.POSITIVE_INFINITY : (v.spillCost / v.deg);
 	}
 
 	private virtualReg selectVirtualRegisterToSpill() {
-		//noinspection OptionalGetWithoutIsPresent
-		return spillWorkList.stream().min(Comparator.comparing(this::getSpillCostOfVirtualRegister)).get();
+		// return spillWorkList.stream().min(Comparator.comparing(this::getSpillCostOfVirtualRegister)).get();  # somehow it does not work
+		return spillWorkList.iterator().next();
 	}
 	
 	private void assignColors() {

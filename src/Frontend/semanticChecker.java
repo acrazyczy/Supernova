@@ -310,7 +310,9 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>()
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		// size method of array will be implemented in IR builder
+		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+			new ArrayList<>(Collections.singletonList(new register(new LLVMPointerType(new LLVMIntegerType(8)))))
+		);
 
 		registerAllMethods(it);
 

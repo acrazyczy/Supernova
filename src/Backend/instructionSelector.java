@@ -248,7 +248,9 @@ public class instructionSelector implements pass {
 				currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.add, rd, rs1, offset));
 			} else {
 				assert idx instanceof integerConstant;
-				currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rs1,
+				if (((integerConstant) idx).val == 0)
+					currentBlock.addInst(new mvInst(currentBlock, rd, rs1));
+				else currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rs1,
 					new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8 * ((integerConstant) idx).val)
 				));
 			}
@@ -256,16 +258,18 @@ public class instructionSelector implements pass {
 			if (stmt_.idxes.size() > 1) {
 				assert idx instanceof integerConstant;
 				idx = stmt_.idxes.get(1);
-				LLVMPointerType ptr = (LLVMPointerType) stmt_.pointer.type;
-				if (ptr.pointeeType instanceof LLVMStructureType) {
-					LLVMStructureType structType = (LLVMStructureType) ptr.pointeeType;
-					int offset_ = 0;
-					for (int i = 0; i < ((integerConstant) idx).val; ++i)
-						offset_ += structType.types.get(i).size() / 8;
-					currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
-				} else {
-					assert ptr.pointeeType instanceof LLVMArrayType;
-					currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(((integerConstant) idx).val)));
+				if (((integerConstant) idx).val != 0) {
+					LLVMPointerType ptr = (LLVMPointerType) stmt_.pointer.type;
+					if (ptr.pointeeType instanceof LLVMStructureType) {
+						LLVMStructureType structType = (LLVMStructureType) ptr.pointeeType;
+						int offset_ = 0;
+						for (int i = 0; i < ((integerConstant) idx).val; ++i)
+							offset_ += structType.types.get(i).size() / 8;
+						currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(offset_)));
+					} else {
+						assert ptr.pointeeType instanceof LLVMArrayType;
+						currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rd, new intImm(((integerConstant) idx).val)));
+					}
 				}
 			}
 		} else if (stmt instanceof icmp) {

@@ -7,7 +7,7 @@ public class whileStmtNode extends stmtNode {
 	public exprStmtNode cond;
 	public stmtNode stmt;
 
-	public basicBlock destBlock, bodyBlock;
+	public basicBlock destBlock, condBlock;
 
 	public whileStmtNode(position pos, exprStmtNode cond, stmtNode stmt) {
 		super(pos);

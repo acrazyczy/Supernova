@@ -21,8 +21,8 @@ public class typeCalculator {
 	}
 
 	static public boolean isEqualType(Type lhs, Type rhs) {
-		if (lhs == null) return rhs == null || !rhs.is_bool && !rhs.is_int;
-		if (rhs == null) return !lhs.is_bool && !lhs.is_int;
+		if (lhs == null) return rhs == null || !rhs.is_bool && !rhs.is_int && !rhs.is_void;
+		if (rhs == null) return !lhs.is_bool && !lhs.is_int && !lhs.is_void;
 		if (lhs instanceof arrayType) {
 			if (!(rhs instanceof arrayType)) return false;
 			return ((arrayType) lhs).dim == ((arrayType) rhs).dim && isEqualType(((arrayType) lhs).elementType, ((arrayType) rhs).elementType);
@@ -41,6 +41,7 @@ public class typeCalculator {
 		else if (type instanceof arrayType) return new LLVMPointerType(calcLLVMSingleValueType(gScope, ((arrayType) type).subType()));
 		else if (type.is_bool) return new LLVMIntegerType(8);
 		else if (type.is_string) return new LLVMPointerType(new LLVMIntegerType(8));
+		else if (type.is_void) return null;
 		else {
 			assert type.is_int;
 			return new LLVMIntegerType(32);

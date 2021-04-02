@@ -11,13 +11,11 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 public class IRPrinter implements pass {
-	private final OutputStream out;
 	private final IREntry programIREntry;
 	private final PrintWriter pWriter;
 
 	public IRPrinter(IREntry programIREntry, OutputStream out) {
 		this.programIREntry = programIREntry;
-		this.out = out;
 		this.pWriter = new PrintWriter(out);
 	}
 

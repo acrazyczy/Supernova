@@ -41,13 +41,14 @@ public class IRBuilder implements ASTVisitor {
 		classType type = (classType) it.resultType;
 		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(type);
 		entity classSize = new integerConstant(32, baseType.size() >> 3);
-		register value = it.val != null ? (register) it.val : new register(new LLVMPointerType(baseType), "_classMallocPtr", currentFunction);
+		register value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_classMallocPtr", currentFunction);
+		it.val = new register(new LLVMPointerType(baseType), "_classPtr", currentFunction);
 		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
+		currentBlock.push_back(new bitcast(value, it.val));
 		String constructorName = type.className + "." + type.className;
 		if (gScope.containMethod(constructorName , true))
-			currentBlock.push_back(new call(gScope.getMethodFunction(constructorName, true), new ArrayList<>(Collections.singletonList(value))));
-		it.val = value;
+			currentBlock.push_back(new call(gScope.getMethodFunction(constructorName, true), new ArrayList<>(Collections.singletonList(it.val))));
 	}
 
 	@Override
@@ -78,7 +79,7 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(funcCallExprNode it) {
 		function func = it.func;
-		if (it.func == null) {
+		if (it.func.functionName.equals("builtin.array.size")) {
 			assert it.thisEntity != null && it.funcName.equals("size");
 			register arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType(32)), "_arraySizePtr", currentFunction);
 			currentBlock.push_back(new bitcast(it.thisEntity, arraySizePtr));
@@ -106,7 +107,7 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(continueStmtNode it) {
-		if (it.loopNode instanceof whileStmtNode) currentBlock.push_back(new br(((whileStmtNode) it.loopNode).bodyBlock));
+		if (it.loopNode instanceof whileStmtNode) currentBlock.push_back(new br(((whileStmtNode) it.loopNode).condBlock));
 		else currentBlock.push_back(new br(((forStmtNode) it.loopNode).incrBlock));
 	}
 
@@ -117,25 +118,6 @@ public class IRBuilder implements ASTVisitor {
 		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		LLVMSingleValueType ptr = baseType;
 		assert it.dims.size() >= 1;
-		/*for (int i = it.dims.size() - 1;i >= 0;-- i) {
-			exprStmtNode idxNode = it.dims.get(i);
-			idxNode.accept(this);
-			value = new register(new LLVMPointerType(ptr), "", currentFunction);
-			register arraySize = new register(new LLVMIntegerType(32), "_arraySize", currentFunction),
-				mallocSize = new register(new LLVMIntegerType(32), "_arrayMallocSize", currentFunction),
-				mallocPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayMallocPtr", currentFunction),
-				arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType(32)), "_arraySizePtr", currentFunction);
-			currentBlock.push_back(new _move(new integerConstant(32, ptr.size() >> 3), arraySize));
-			currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
-			currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 4), arraySize, mallocSize));
-			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(mallocSize)), mallocPtr));
-			currentBlock.push_back(new bitcast(mallocPtr, arraySizePtr));
-			currentBlock.push_back(new binary(binary.instCode.ashr, arraySize , new integerConstant(32, 2), arraySize));
-			currentBlock.push_back(new store(arraySize, arraySizePtr));
-			currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
-			currentBlock.push_back(new bitcast(arraySizePtr, value));
-			ptr = new LLVMPointerType(ptr);
-		}*/
 		for (int i = it.dims.size() - 1;i >= 0;-- i) ptr = new LLVMPointerType(ptr);
 		it.val = arrayCreator(mallocFunc, it.dims, it.dims.size() - 1, (LLVMPointerType) ptr);
 	}
@@ -293,7 +275,7 @@ public class IRBuilder implements ASTVisitor {
 			body = new basicBlock("while.body", currentFunction, currentLoopDepth),
 			dest = new basicBlock("while.dest", currentFunction, currentLoopDepth);
 
-		it.bodyBlock = body;
+		it.condBlock = cond;
 		it.destBlock = dest;
 		currentBlock.push_back(new br(cond));
 		it.cond.trueBranch = body;
@@ -307,7 +289,7 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction.blocks.add(body);
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
+		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(cond));
 
 		-- currentLoopDepth;
 		currentFunction.blocks.add(dest);
@@ -475,7 +457,7 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction = it.func;
 		currentBlock = it.func.blocks.get(0);
 		it.funcBody.accept(this);
-		if (!currentBlock.hasTerminalStmt())
+		if (currentBlock.hasNoTerminalStmt())
 			currentBlock.push_back(new ret(currentFunction.returnType == null ? null :
 				currentFunction.returnType instanceof LLVMPointerType ? new nullPointerConstant() :
 					new integerConstant(currentFunction.returnType.size(), 0)));
@@ -506,12 +488,12 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction.blocks.add(body);
 		currentBlock = body;
 		if (it.stmt != null) it.stmt.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(incr));
+		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(incr));
 
 		currentFunction.blocks.add(incr);
 		currentBlock = incr;
 		if (it.incr != null) it.incr.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(cond));
+		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(cond));
 
 		-- currentLoopDepth;
 		currentFunction.blocks.add(dest);
@@ -583,11 +565,11 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction.blocks.add(trueBranch);
 		currentBlock = trueBranch;
 		if (it.trueNode != null) it.trueNode.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
+		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(destination));
 		currentFunction.blocks.add(falseBranch);
 		currentBlock = falseBranch;
 		if (it.falseNode != null) it.falseNode.accept(this);
-		if (!currentBlock.hasTerminalStmt()) currentBlock.push_back(new br(destination));
+		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(destination));
 		currentFunction.blocks.add(destination);
 		currentBlock = destination;
 	}

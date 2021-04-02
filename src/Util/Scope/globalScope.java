@@ -25,7 +25,7 @@ public class globalScope extends Scope {
 
 	public Type getTypeFromName(String name, position pos) {
 		if (name == null) return null;
-		if (types.containsKey(name)) return types.get(name);
+		else if (types.containsKey(name)) return types.get(name);
 		throw new semanticError("no such type: " + name + ".", pos);
 	}
 

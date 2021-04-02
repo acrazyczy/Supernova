@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class position {
-	private int row, col;
+	private final int row, col;
 
 	public position(int row, int col) {
 		this.row = row;

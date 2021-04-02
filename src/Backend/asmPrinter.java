@@ -10,12 +10,10 @@ import java.io.PrintWriter;
 
 public class asmPrinter implements asmVisitor {
 	private final asmEntry programAsmEntry;
-	private final OutputStream out;
 	private final PrintWriter pWriter;
 
 	public asmPrinter(asmEntry programAsmEntry, OutputStream out) {
 		this.programAsmEntry = programAsmEntry;
-		this.out = out;
 		this.pWriter = new PrintWriter(out);
 	}
 

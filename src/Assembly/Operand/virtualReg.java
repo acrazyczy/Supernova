@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class virtualReg extends reg {
-	private int index;
+	private final int index;
 
 	/*graph coloring information*/
 	public Set<virtualReg> adjList;

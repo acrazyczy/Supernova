@@ -3,8 +3,6 @@ package LLVMIR;
 import LLVMIR.Instruction.br;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Instruction.terminalStmt;
-import Util.error.internalError;
-import Util.position;
 
 import java.util.ArrayList;
 
@@ -35,7 +33,7 @@ public class basicBlock {
 		return ret;
 	}
 
-	public boolean hasTerminalStmt() {return tailStmt != null;}
+	public boolean hasNoTerminalStmt() {return tailStmt == null;}
 
 	@Override public String toString() {return name;}
 }

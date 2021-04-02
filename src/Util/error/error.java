@@ -3,8 +3,8 @@ package Util.error;
 import Util.position;
 
 abstract public class error extends RuntimeException {
-	private String message;
-	private position pos;
+	private final String message;
+	private final position pos;
 
 	public error(String message, position pos) {
 		this.message = message;

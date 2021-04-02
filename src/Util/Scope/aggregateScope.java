@@ -5,7 +5,7 @@ import LLVMIR.function;
 import Util.Type.Type;
 
 public class aggregateScope extends Scope {
-	private String className;
+	private final String className;
 
 	public aggregateScope(Scope parentScope, String className) {
 		super(parentScope);

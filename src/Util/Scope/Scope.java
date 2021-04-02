@@ -2,15 +2,11 @@ package Util.Scope;
 
 import java.util.HashMap;
 
-import AST.funcDefNode;
 import LLVMIR.Operand.entity;
-import LLVMIR.TypeSystem.LLVMSingleValueType;
 import LLVMIR.function;
 import Util.Type.Type;
-import Util.Type.functionType;
 import Util.error.semanticError;
 import Util.position;
-import Util.typeCalculator;
 
 public class Scope {
 	protected HashMap<String, Type> vars = new HashMap<>(), meths = new HashMap<>();
