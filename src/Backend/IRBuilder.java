@@ -17,6 +17,7 @@ import Util.typeCalculator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 
 public class IRBuilder implements ASTVisitor {
 	private final globalScope gScope;
@@ -27,6 +28,8 @@ public class IRBuilder implements ASTVisitor {
 	private int strConstCounter = 0;
 	private int currentLoopDepth = 0;
 
+	private final HashMap<String, globalVariable> globalStrMap = new HashMap<>();
+
 	public IRBuilder(globalScope gScope, IREntry programIREntry) {
 		this.gScope = gScope;
 		this.programIREntry = programIREntry;
@@ -34,11 +37,16 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(classLiteralNode it) {
-		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(it.resultType);
+		assert it.resultType instanceof classType;
+		classType type = (classType) it.resultType;
+		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(type);
 		entity classSize = new integerConstant(32, baseType.size() >> 3);
 		register value = it.val != null ? (register) it.val : new register(new LLVMPointerType(baseType), "_classMallocPtr", currentFunction);
 		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
+		String constructorName = type.className + "." + type.className;
+		if (gScope.containMethod(constructorName , true))
+			currentBlock.push_back(new call(gScope.getMethodFunction(constructorName, true), new ArrayList<>(Collections.singletonList(value))));
 		it.val = value;
 	}
 
@@ -144,10 +152,15 @@ public class IRBuilder implements ASTVisitor {
 				globalVariable gVar = (globalVariable) it.varEntities.get(0);
 				if (it.init.resultType != null && it.init.resultType.is_string) {
 					String str = ((constExprNode) it.init).value;
-					globalVariable gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
-					++ strConstCounter;
-					gStr.val = str;
-					programIREntry.globals.add(gStr);
+					globalVariable gStr;
+					if (globalStrMap.containsKey(str)) gStr = globalStrMap.get(str);
+					else {
+						gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
+						++strConstCounter;
+						gStr.val = str;
+						globalStrMap.put(str, gStr);
+						programIREntry.globals.add(gStr);
+					}
 					register strPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_strPtr");
 					currentBlock.push_back(new getelementptr(gStr,
 						new ArrayList<>(Arrays.asList(new integerConstant(32, 0), new integerConstant(32, 0))),
@@ -342,10 +355,15 @@ public class IRBuilder implements ASTVisitor {
 		} else {
 			assert it.type.equals("string");
 			value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_string", currentFunction);
-			globalVariable gStr = new globalVariable(new LLVMArrayType(it.value.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
-			++ strConstCounter;
-			gStr.val = it.value;
-			programIREntry.globals.add(gStr);
+			globalVariable gStr;
+			if (globalStrMap.containsKey(it.value)) gStr = globalStrMap.get(it.value);
+			else {
+				gStr = new globalVariable(new LLVMArrayType(it.value.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
+				++ strConstCounter;
+				gStr.val = it.value;
+				globalStrMap.put(it.value, gStr);
+				programIREntry.globals.add(gStr);
+			}
 			currentBlock.push_back(new getelementptr(gStr,
 				new ArrayList<>(Arrays.asList(new integerConstant(32, 0), new integerConstant(32, 0))),
 				value
@@ -374,12 +392,14 @@ public class IRBuilder implements ASTVisitor {
 			LLVMSingleValueType varLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, it.resultType);
 			register varPtr = new register(new LLVMPointerType(varLLVMType), "_varPtr", currentFunction);
 			currentBlock.push_back(new getelementptr(currentFunction.argValues.get(0),
-				new ArrayList<>(Collections.singletonList(
+				new ArrayList<>(Arrays.asList(
+					new integerConstant(32, 0),
 					new integerConstant(32, currentClass.memberVariablesIndex.get(it.varName))
 				)), varPtr));
 			register value = new register(varLLVMType, "", currentFunction);
 			currentBlock.push_back(new load(varPtr, value));
 			it.val = value;
+			it.ptr = varPtr;
 		} else if (it.varEntity instanceof globalVariable) {
 			assert it.varEntity.type instanceof LLVMPointerType;
 			LLVMSingleValueType varLLVMType = (LLVMSingleValueType) ((LLVMPointerType) it.varEntity.type).pointeeType;

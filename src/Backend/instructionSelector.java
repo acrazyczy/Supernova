@@ -250,7 +250,7 @@ public class instructionSelector implements pass {
 			} else {
 				assert idx instanceof integerConstant;
 				currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.addi, rd, rs1,
-					new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() * ((integerConstant) idx).val)
+					new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8 * ((integerConstant) idx).val)
 				));
 			}
 			//1. member accessing

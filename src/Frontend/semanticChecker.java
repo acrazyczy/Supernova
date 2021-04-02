@@ -649,7 +649,7 @@ public class semanticChecker implements ASTVisitor {
 		String funcName = it.name;
 		if (currentClass != null) {
 			funcName = currentClassName + "." + funcName;
-			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass)));
+			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass), "._this"));
 		} else funcName = "_g." + funcName;
 		gScope.registerMethod(it, funcName, currentClass != null);
 		for (int i = 0;i < it.paraName.size();++ i) {
