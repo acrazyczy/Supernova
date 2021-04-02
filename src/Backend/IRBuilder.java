@@ -116,9 +116,8 @@ public class IRBuilder implements ASTVisitor {
 		for (int i = it.totalDim - it.dims.size();i >= 1;-- i) baseType = new LLVMPointerType(baseType);
 		function mallocFunc = gScope.getMethodFunction("malloc", true);
 		LLVMSingleValueType ptr = baseType;
-		register value = null;
 		assert it.dims.size() >= 1;
-		for (int i = it.dims.size() - 1;i >= 0;-- i) {
+		/*for (int i = it.dims.size() - 1;i >= 0;-- i) {
 			exprStmtNode idxNode = it.dims.get(i);
 			idxNode.accept(this);
 			value = new register(new LLVMPointerType(ptr), "", currentFunction);
@@ -126,7 +125,7 @@ public class IRBuilder implements ASTVisitor {
 				mallocSize = new register(new LLVMIntegerType(32), "_arrayMallocSize", currentFunction),
 				mallocPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayMallocPtr", currentFunction),
 				arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType(32)), "_arraySizePtr", currentFunction);
-			currentBlock.push_back(new binary(binary.instCode.ashr, new integerConstant(32, ptr.size()) , new integerConstant(32, 3), arraySize));
+			currentBlock.push_back(new _move(new integerConstant(32, ptr.size() >> 3), arraySize));
 			currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
 			currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 4), arraySize, mallocSize));
 			currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(mallocSize)), mallocPtr));
@@ -136,8 +135,62 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
 			currentBlock.push_back(new bitcast(arraySizePtr, value));
 			ptr = new LLVMPointerType(ptr);
+		}*/
+		for (int i = it.dims.size() - 1;i >= 0;-- i) ptr = new LLVMPointerType(ptr);
+		it.val = arrayCreator(mallocFunc, it.dims, it.dims.size() - 1, (LLVMPointerType) ptr);
+	}
+
+	private register arrayCreator(function mallocFunc, ArrayList<exprStmtNode> idxNodes, int currentDim, LLVMPointerType currentType) {
+		basicBlock initBlock = new basicBlock("_new.loop.init", currentFunction, currentLoopDepth);
+		currentBlock.push_back(new br(initBlock));
+		currentFunction.blocks.add(initBlock);
+		currentBlock = initBlock;
+		exprStmtNode idxNode = idxNodes.get(currentDim);
+		idxNode.accept(this);
+		register ptr = new register(currentType, "_subArrayPtr", currentFunction);
+		register arraySize = new register(new LLVMIntegerType(32), "_arraySize", currentFunction),
+			mallocSize = new register(new LLVMIntegerType(32), "_arrayMallocSize", currentFunction),
+			mallocPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayMallocPtr", currentFunction),
+			arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType(32)), "_arraySizePtr", currentFunction);
+		currentBlock.push_back(new _move(new integerConstant(32, currentType.pointeeType.size() >> 3), arraySize));
+		currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
+		currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 4), arraySize, mallocSize));
+		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(mallocSize)), mallocPtr));
+		currentBlock.push_back(new bitcast(mallocPtr, arraySizePtr));
+		currentBlock.push_back(new binary(binary.instCode.ashr, arraySize , new integerConstant(32, 2), arraySize));
+		currentBlock.push_back(new store(arraySize, arraySizePtr));
+		currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
+		currentBlock.push_back(new bitcast(arraySizePtr, ptr));
+		if (currentDim != 0) {
+			register arrayShiftPtr = new register(currentType, "_arrayShiftPtr", currentFunction), itr = new register(new LLVMIntegerType(32), "_i");
+			currentBlock.push_back(new _move(ptr, arrayShiftPtr));
+			currentBlock.push_back(new _move(new integerConstant(32, 0), itr));
+			++ currentLoopDepth;
+			basicBlock condBlock = new basicBlock("_new.loop.cond", currentFunction, currentLoopDepth);
+			currentBlock.push_back(new br(condBlock));
+			currentFunction.blocks.add(condBlock);
+			currentBlock = condBlock;
+			basicBlock bodyBlock = new basicBlock("_new.loop.body", currentFunction, currentLoopDepth),
+				destBlock = new basicBlock("_new.loop.dest", currentFunction, currentLoopDepth),
+				incrBlock = new basicBlock("_new.loop.incr", currentFunction, currentLoopDepth);
+			register cond = new register(new LLVMIntegerType(8), "_cond", currentFunction);
+			currentBlock.push_back(new icmp(icmp.condCode.slt, itr, idxNode.val, cond));
+			currentBlock.push_back(new br(cond, bodyBlock, destBlock));
+			currentFunction.blocks.add(bodyBlock);
+			currentBlock = bodyBlock;
+			register subArrayPtr = arrayCreator(mallocFunc, idxNodes, currentDim - 1, (LLVMPointerType) currentType.pointeeType);
+			currentBlock.push_back(new br(incrBlock));
+			currentFunction.blocks.add(incrBlock);
+			currentBlock = incrBlock;
+			currentBlock.push_back(new store(subArrayPtr, arrayShiftPtr));
+			currentBlock.push_back(new getelementptr(arrayShiftPtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arrayShiftPtr));
+			currentBlock.push_back(new binary(binary.instCode.add, itr, new integerConstant(32, 1), itr));
+			currentBlock.push_back(new br(condBlock));
+			currentFunction.blocks.add(destBlock);
+			currentBlock = destBlock;
+			-- currentLoopDepth;
 		}
-		it.val = value;
+		return ptr;
 	}
 
 	@Override
@@ -156,7 +209,7 @@ public class IRBuilder implements ASTVisitor {
 					if (globalStrMap.containsKey(str)) gStr = globalStrMap.get(str);
 					else {
 						gStr = new globalVariable(new LLVMArrayType(str.length() + 1, new LLVMIntegerType(8)), "._strConst." + strConstCounter, true, true);
-						++strConstCounter;
+						++ strConstCounter;
 						gStr.val = str;
 						globalStrMap.put(str, gStr);
 						programIREntry.globals.add(gStr);

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static java.lang.Integer.compareUnsigned;
-import static java.lang.Integer.toOctalString;
 
 public class instructionSelector implements pass {
 	private final IREntry programIREntry;
