@@ -1,11 +1,10 @@
 package LLVMIR;
 
 import LLVMIR.Operand.entity;
+import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 public class function {
 	public LLVMSingleValueType returnType;
@@ -14,6 +13,8 @@ public class function {
 	public ArrayList<basicBlock> blocks;
 	private final HashMap<String, Integer> blockNameCounter = new HashMap<>();
 	private final HashMap<String, Integer> registerNameCounter = new HashMap<>();
+
+	private Set<basicBlock> visited;
 
 	public function(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues, boolean is_builtin) {
 		this.returnType = returnType;
@@ -56,6 +57,26 @@ public class function {
 			if (!argv.toString().equals("")) ret.append(" ").append(argv);
 		}
 		return ret.toString();
+	}
+
+	private void dfsBlock(basicBlock blk, ArrayList<basicBlock> dfsOrder) {
+		dfsOrder.add(blk);
+		visited.add(blk);
+		blk.successors().stream().filter(sucBlk -> !visited.contains(sucBlk)).forEach(sucBlk -> dfsBlock(sucBlk, dfsOrder));
+	}
+
+	public ArrayList<basicBlock> dfsOrderComputation() {
+		assert !blocks.isEmpty();
+		ArrayList<basicBlock> ret = new ArrayList<>();
+		visited = new HashSet<>();
+		dfsBlock(blocks.get(0), ret);
+		return ret;
+	}
+
+	public Set<register> variables() {
+		Set<register> ret = new HashSet<>();
+		blocks.forEach(blk -> ret.addAll(blk.variables()));
+		return ret;
 	}
 
 	public String functionToString(ArrayList<entity> argList) {

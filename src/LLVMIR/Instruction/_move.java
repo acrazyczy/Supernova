@@ -2,8 +2,12 @@ package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.integerConstant;
+import LLVMIR.Operand.register;
 import LLVMIR.Operand.undefinedValue;
 import LLVMIR.TypeSystem.LLVMPointerType;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class _move extends statement {
 	public entity src;
@@ -11,6 +15,14 @@ public class _move extends statement {
 	public _move(entity src, entity dest) {
 		super(dest);
 		this.src = src;
+	}
+
+	@Override
+	public Set<register> variables() {
+		Set<register> ret = new HashSet<>();
+		if (src instanceof register) ret.add((register) src);
+		if (dest instanceof register) ret.add((register) dest);
+		return ret;
 	}
 
 	@Override

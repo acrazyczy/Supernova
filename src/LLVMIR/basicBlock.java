@@ -3,8 +3,11 @@ package LLVMIR;
 import LLVMIR.Instruction.br;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Instruction.terminalStmt;
+import LLVMIR.Operand.register;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class basicBlock {
 	public ArrayList<statement> stmts = new ArrayList<>();
@@ -34,6 +37,12 @@ public class basicBlock {
 	}
 
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}
+
+	public Set<register> variables() {
+		Set<register> ret = new HashSet<>();
+		stmts.forEach(stmt -> ret.addAll(stmt.variables()));
+		return ret;
+	}
 
 	@Override public String toString() {return name;}
 }
