@@ -1,7 +1,12 @@
 package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
+import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class br extends terminalStmt {
 	public final entity cond;
@@ -19,6 +24,16 @@ public class br extends terminalStmt {
 		this.cond = cond;
 		this.trueBranch = trueBranch;
 		this.falseBranch = falseBranch;
+	}
+
+	@Override
+	public Set<register> variables() {
+		return cond instanceof register ? new HashSet<>(Collections.singleton((register) cond)) : new HashSet<>();
+	}
+
+	@Override
+	public Set<register> uses() {
+		return cond instanceof register ? new HashSet<>(Collections.singleton((register) cond)) : new HashSet<>();
 	}
 
 	@Override public String toString() {

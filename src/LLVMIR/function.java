@@ -1,5 +1,6 @@
 package LLVMIR;
 
+import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
@@ -73,10 +74,8 @@ public class function {
 		return ret;
 	}
 
-	public Set<register> variables() {
-		Set<register> ret = new HashSet<>();
-		blocks.forEach(blk -> ret.addAll(blk.variables()));
-		return ret;
+	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
+		blocks.forEach(blk -> blk.variablesAnalysis(variables, uses, defs, usePoses, defPoses));
 	}
 
 	public String functionToString(ArrayList<entity> argList) {

@@ -5,6 +5,7 @@ import LLVMIR.function;
 
 public class register extends entity {
 	public String name;
+	public register reachingDef;
 
 	public register(LLVMSingleValueType type) {
 		super(type);

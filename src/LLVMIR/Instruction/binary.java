@@ -27,7 +27,15 @@ public class binary extends statement {
 		Set<register> ret = new HashSet<>();
 		if (op1 instanceof register) ret.add((register) op1);
 		if (op2 instanceof register) ret.add((register) op2);
-		if (dest instanceof register) ret.add((register) dest);
+		ret.add((register) dest);
+		return ret;
+	}
+
+	@Override
+	public Set<register> uses() {
+		Set<register> ret = new HashSet<>();
+		if (op1 instanceof register) ret.add((register) op1);
+		if (op2 instanceof register) ret.add((register) op2);
 		return ret;
 	}
 

@@ -1,16 +1,16 @@
 package LLVMIR;
 
 import LLVMIR.Instruction.br;
+import LLVMIR.Instruction.phi;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Instruction.terminalStmt;
 import LLVMIR.Operand.register;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class basicBlock {
-	public ArrayList<statement> stmts = new ArrayList<>();
+	public Map<register, phi> phiCollections = new HashMap<>();
+	public List<statement> stmts = new LinkedList<>();
 	private terminalStmt tailStmt = null;
 	public final int loopDepth;
 	public String name;
@@ -38,11 +38,28 @@ public class basicBlock {
 
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}
 
-	public Set<register> variables() {
-		Set<register> ret = new HashSet<>();
-		stmts.forEach(stmt -> ret.addAll(stmt.variables()));
-		return ret;
+	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
+		stmts.forEach(stmt -> {
+			if (variables != null) variables.addAll(stmt.variables());
+			if (uses != null) uses.addAll(stmt.uses());
+			if (defs != null) defs.addAll(stmt.defs());
+			if (usePoses != null) stmt.uses().forEach(r -> {
+				if (usePoses.containsKey(r)) usePoses.get(r).add(this);
+				else usePoses.put(r, new HashSet<>(Collections.singleton(this)));
+			});
+			if (defPoses != null) stmt.defs().forEach(r -> {
+				if (defPoses.containsKey(r)) defPoses.get(r).add(this);
+				else defPoses.put(r, new HashSet<>(Collections.singleton(this)));
+			});
+		});
 	}
 
 	@Override public String toString() {return name;}
+
+	public void addPhiFunction(register v, basicBlock x) {
+		if (!phiCollections.containsKey(v)) {
+			phiCollections.put(v, new phi(this, new ArrayList<>(), new ArrayList<>(), v));
+		}
+		phiCollections.get(v).add(v, x);
+	}
 }

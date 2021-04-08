@@ -6,6 +6,7 @@ import LLVMIR.Operand.register;
 import LLVMIR.Operand.undefinedValue;
 import LLVMIR.TypeSystem.LLVMPointerType;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,8 +22,13 @@ public class _move extends statement {
 	public Set<register> variables() {
 		Set<register> ret = new HashSet<>();
 		if (src instanceof register) ret.add((register) src);
-		if (dest instanceof register) ret.add((register) dest);
+		ret.add((register) dest);
 		return ret;
+	}
+
+	@Override
+	public Set<register> uses() {
+		return src instanceof register ? new HashSet<>(Collections.singleton((register) src)) : new HashSet<>();
 	}
 
 	@Override
