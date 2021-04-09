@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class br extends terminalStmt {
-	public final entity cond;
+	public entity cond;
 	public basicBlock trueBranch, falseBranch;
 
 	public br(basicBlock nextBlock) {
@@ -35,6 +35,8 @@ public class br extends terminalStmt {
 	public Set<register> uses() {
 		return cond instanceof register ? new HashSet<>(Collections.singleton((register) cond)) : new HashSet<>();
 	}
+
+	@Override public void replaceUse(register oldReg, register newReg) {if (cond == oldReg) cond = newReg;}
 
 	@Override public String toString() {
 		if (this.cond == null) return "br label " + trueBranch;

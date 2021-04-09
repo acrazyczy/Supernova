@@ -5,7 +5,6 @@ import LLVMIR.Operand.register;
 import LLVMIR.function;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +36,13 @@ public class call extends statement {
 	public Set<register> uses() {
 		return parameters.stream().filter(p -> p instanceof register)
 			.map(p -> (register) p).collect(Collectors.toSet());
+	}
+
+	@Override
+	public void replaceUse(register oldReg, register newReg) {
+		for (int i = 0;i < parameters.size();++ i)
+			if (parameters.get(i) == oldReg)
+				parameters.set(i, newReg);
 	}
 
 	@Override public String toString() {

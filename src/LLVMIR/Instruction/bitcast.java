@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class bitcast extends statement {
-	public final entity value;
+	public entity value;
 
 	public bitcast(entity value, entity dest) {
 		super(dest);
@@ -27,6 +27,8 @@ public class bitcast extends statement {
 	public Set<register> uses() {
 		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
 	}
+
+	@Override public void replaceUse(register oldReg, register newReg) {if (value == oldReg) value = newReg;}
 
 	@Override public String toString() {return dest + " = bitcast " + value.type + " " + value + " to " + dest.type;}
 }

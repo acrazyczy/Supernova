@@ -1,11 +1,13 @@
 package LLVMIR.Operand;
 
+import LLVMIR.Instruction.statement;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 import LLVMIR.function;
 
 public class register extends entity {
 	public String name;
 	public register reachingDef;
+	public statement def = null;
 
 	public register(LLVMSingleValueType type) {
 		super(type);

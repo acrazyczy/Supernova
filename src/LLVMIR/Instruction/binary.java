@@ -12,7 +12,7 @@ public class binary extends statement {
 	}
 
 	public final instCode inst;
-	public final entity op1, op2;
+	public entity op1, op2;
 
 	public binary(instCode inst, entity op1, entity op2, entity dest) {
 		super(dest);
@@ -37,6 +37,12 @@ public class binary extends statement {
 		if (op1 instanceof register) ret.add((register) op1);
 		if (op2 instanceof register) ret.add((register) op2);
 		return ret;
+	}
+
+	@Override
+	public void replaceUse(register oldReg, register newReg) {
+		if (op1 == oldReg) op1 = newReg;
+		if (op2 == oldReg) op2 = newReg;
 	}
 
 	@Override public String toString() {return dest + " = " + inst + " " + op1.type + " " + op1 + ", " + op2;}

@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class getelementptr extends statement {
-	public final entity pointer;
+	public entity pointer;
 	public final ArrayList<entity> idxes;
 
 	public getelementptr(entity pointer, ArrayList<entity> idxes, entity dest) {
@@ -33,6 +33,14 @@ public class getelementptr extends statement {
 			.map(idx -> (register) idx).collect(Collectors.toSet());
 		if (pointer instanceof register) ret.add((register) pointer);
 		return ret;
+	}
+
+	@Override
+	public void replaceUse(register oldReg, register newReg) {
+		if (pointer == oldReg) pointer = newReg;
+		for (int i = 0;i < idxes.size();++ i)
+			if (idxes.get(i) == oldReg)
+				idxes.set(i, newReg);
 	}
 
 	@Override

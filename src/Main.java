@@ -21,6 +21,7 @@ public class Main {
 	private static final String SYNTAX = "-fsyntax-only";
 //	private static final String OPTIMIZATION = "-O2";
 	private static final String LLVM = "-emit-llvm";
+	private static final String NO_ASM = "-S";
 //	private static final String SSA_DESTRUCT = "-fno-ssa";
 	private static final String INPUT_FILE = "-i";
 
@@ -63,6 +64,7 @@ public class Main {
 						LLVMGeneratingFlag = true;
 						assemblyGeneratingFlag = true;
 					}
+					case NO_ASM -> assemblyGeneratingFlag = false;
 //					case OPTIMIZATION -> optimizationFlag = true;
 					case INPUT_FILE -> {
 						if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no input file specified");
@@ -103,6 +105,7 @@ public class Main {
 			IREntry programIREntry = new IREntry();
 			new semanticChecker(gScope, programIREntry).visit(ASTRoot);
 			new IRBuilder(gScope, programIREntry).visit(ASTRoot);
+			new SSAConstructor(programIREntry).run();
 
 			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 			if (assemblyGeneratingFlag) {

@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ret extends terminalStmt {
-	public final entity value;
+	public entity value;
 
 	public ret(entity value) {
 		super();
@@ -24,6 +24,8 @@ public class ret extends terminalStmt {
 	public Set<register> uses() {
 		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
 	}
+
+	@Override public void replaceUse(register oldReg, register newReg) {if (value == oldReg) value = newReg;}
 
 	@Override public String toString() {return value == null ? "ret void" : "ret " + value.type + " " + value;}
 }

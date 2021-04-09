@@ -9,22 +9,26 @@ import java.util.HashSet;
 import java.util.Set;
 
 abstract public class statement {
-	public final entity dest;
-	public final basicBlock belongTo;
+	public entity dest;
+	public basicBlock belongTo;
 
-	public statement(basicBlock belongTo) {
+	public statement() {
 		this.dest = null;
-		this.belongTo = belongTo;
 	}
 
-	public statement(basicBlock belongTo, entity dest) {
+	public statement(entity dest) {
 		assert dest instanceof register;
 		this.dest = dest;
-		this.belongTo = belongTo;
 	}
 
 	abstract public Set<register> variables();
 	abstract public Set<register> uses();
+
+	abstract public void replaceUse(register oldReg, register newReg);
+
+	public void replaceDef(register oldReg, register newReg) {
+		if (dest == oldReg) dest = newReg;
+	}
 
 	public Set<register> defs() {
 		return dest == null ? new HashSet<>() : Collections.singleton((register) dest);

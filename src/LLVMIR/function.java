@@ -1,23 +1,23 @@
 package LLVMIR;
 
-import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class function {
 	public LLVMSingleValueType returnType;
 	public String functionName;
-	public ArrayList<entity> argValues;
+	public ArrayList<register> argValues;
 	public ArrayList<basicBlock> blocks;
 	private final HashMap<String, Integer> blockNameCounter = new HashMap<>();
 	private final HashMap<String, Integer> registerNameCounter = new HashMap<>();
 
 	private Set<basicBlock> visited;
 
-	public function(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues, boolean is_builtin) {
+	public function(LLVMSingleValueType returnType, String functionName, ArrayList<register> argValues, boolean is_builtin) {
 		this.returnType = returnType;
 		this.functionName = functionName;
 		this.argValues = argValues;
@@ -79,7 +79,7 @@ public class function {
 	}
 
 	public String functionToString(ArrayList<entity> argList) {
-		return (returnType == null ? "void" : returnType) + " " + "@" + functionName + "(" + functionArgListToString(argList == null ? argValues : argList) + ")";
+		return (returnType == null ? "void" : returnType) + " " + "@" + functionName + "(" + functionArgListToString(argList == null ? new ArrayList<>(argValues.stream().map(argv -> (entity) argv).collect(Collectors.toList())) : argList) + ")";
 	}
 
 	@Override public String toString() {return functionToString(null);}

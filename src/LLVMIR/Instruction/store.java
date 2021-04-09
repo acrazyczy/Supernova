@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class store extends statement {
-	public final entity value, pointer;
+	public entity value, pointer;
 
 	public store(entity value, entity pointer) {
 		super();
@@ -29,6 +29,12 @@ public class store extends statement {
 		if (value instanceof register) ret.add((register) value);
 		if (pointer instanceof register) ret.add((register) pointer);
 		return ret;
+	}
+
+	@Override
+	public void replaceUse(register oldReg, register newReg) {
+		if (value == oldReg) value = newReg;
+		if (pointer == oldReg) pointer = newReg;
 	}
 
 	@Override public String toString() {return "store " + value.type + " " + value + ", " + pointer.type + " " + pointer;}

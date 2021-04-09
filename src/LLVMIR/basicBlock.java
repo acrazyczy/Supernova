@@ -10,7 +10,7 @@ import java.util.*;
 
 public class basicBlock {
 	public Map<register, phi> phiCollections = new HashMap<>();
-	public List<statement> stmts = new LinkedList<>();
+	public LinkedList<statement> stmts = new LinkedList<>();
 	private terminalStmt tailStmt = null;
 	public final int loopDepth;
 	public String name;
@@ -24,6 +24,7 @@ public class basicBlock {
 	public void push_back(statement stmt) {
 		if (tailStmt != null) return;
 		stmts.add(stmt);
+		stmt.belongTo = this;
 		if (stmt instanceof terminalStmt) tailStmt = (terminalStmt) stmt;
 	}
 
@@ -58,7 +59,10 @@ public class basicBlock {
 
 	public void addPhiFunction(register v, basicBlock x) {
 		if (!phiCollections.containsKey(v)) {
-			phiCollections.put(v, new phi(this, new ArrayList<>(), new ArrayList<>(), v));
+			phi phiInst = new phi(new ArrayList<>(), new ArrayList<>(), v);
+			phiInst.belongTo = this;
+			phiCollections.put(v, phiInst);
+			stmts.addFirst(phiInst);
 		}
 		phiCollections.get(v).add(v, x);
 	}

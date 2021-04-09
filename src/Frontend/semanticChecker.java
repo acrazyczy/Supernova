@@ -35,7 +35,7 @@ public class semanticChecker implements ASTVisitor {
 		this.programIREntry = programIREntry;
 	}
 
-	private void bindBuiltinFunction(LLVMSingleValueType returnType, String functionName, ArrayList<entity> argValues) {
+	private void bindBuiltinFunction(LLVMSingleValueType returnType, String functionName, ArrayList<register> argValues) {
 		function func = new function(returnType, functionName, argValues, true);
 		gScope.bindMethodToFunction(functionName, func);
 		programIREntry.functions.add(func);
@@ -647,7 +647,7 @@ public class semanticChecker implements ASTVisitor {
 	}
 
 	private void bindFunction(funcDefNode it) {
-		ArrayList<entity> argValues = new ArrayList<>();
+		ArrayList<register> argValues = new ArrayList<>();
 		String funcName = it.name;
 		if (currentClass != null) {
 			funcName = currentClassName + "." + funcName;
