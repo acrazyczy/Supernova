@@ -27,11 +27,6 @@ public class SSAConstructor implements pass {
 
 	@Override
 	public void run() {
-		dom = new HashMap<>();
-		idom = new HashMap<>();
-		DF = new HashMap<>();
-		children = new HashMap<>();
-		predecessors = new HashMap<>();
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(func -> {
 			initialization(func);
 			dominanceAnalysis(func);
@@ -42,8 +37,13 @@ public class SSAConstructor implements pass {
 	}
 
 	private void initialization(function func) {
+		dom = new HashMap<>();
+		idom = new HashMap<>();
+		DF = new HashMap<>();
+		children = new HashMap<>();
+		predecessors = new HashMap<>();
 		func.blocks.forEach(blk -> {
-			dom.put(blk, blk.name.equals("entry") ? new HashSet<>() : new HashSet<>(func.blocks));
+			dom.put(blk, blk.name.equals("entry") ? new HashSet<>(Collections.singleton(blk)) : new HashSet<>(func.blocks));
 			predecessors.put(blk, new ArrayList<>());
 		});
 		func.blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
@@ -61,8 +61,10 @@ public class SSAConstructor implements pass {
 		do {
 			changed = false;
 			for (basicBlock blk: dfsOrder) {
-				Set<basicBlock> temp = new HashSet<>(Collections.singleton(blk));
-				predecessors.get(blk).forEach(preBlk -> temp.addAll(dom.get(preBlk)));
+				if (blk.name.equals("entry")) continue;
+				Set<basicBlock> temp = new HashSet<>(dfsOrder);
+				predecessors.get(blk).forEach(preBlk -> temp.retainAll(dom.get(preBlk)));
+				temp.add(blk);
 				if (!temp.equals(dom.get(blk))) {
 					dom.put(blk, temp);
 					changed = true;
@@ -74,13 +76,14 @@ public class SSAConstructor implements pass {
 				idom.put(blk, null);
 				continue;
 			}
-			Set<basicBlock> domSet = dom.get(blk), visited = new HashSet<>(Collections.singleton(blk));
+			Set<basicBlock> domSet = new HashSet<>(dom.get(blk)), visited = new HashSet<>(Collections.singleton(blk));
+			domSet.remove(blk);
 			Queue<basicBlock> queue = new ArrayDeque<>(Collections.singletonList(blk));
 			while (!queue.isEmpty()) {
 				basicBlock top = queue.remove();
 				if (domSet.contains(top)) {
 					idom.put(blk, top);
-					children.put(top, new HashSet<>(Collections.singleton(blk)));
+					children.get(top).add(blk);
 					break;
 				}
 				predecessors.get(top).stream().filter(pred -> !visited.contains(pred)).forEach(pred -> {

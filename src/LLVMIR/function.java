@@ -75,6 +75,13 @@ public class function {
 	}
 
 	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
+		if (variables != null) variables.addAll(argValues);
+		if (defs != null) defs.addAll(argValues);
+		if (defPoses != null)
+			argValues.forEach(argv -> {
+				if (defPoses.containsKey(argv)) defPoses.get(argv).add(blocks.get(0));
+				else defPoses.put(argv, new HashSet<>(Collections.singleton(blocks.get(0))));
+			});
 		blocks.forEach(blk -> blk.variablesAnalysis(variables, uses, defs, usePoses, defPoses));
 	}
 
