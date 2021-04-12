@@ -1,9 +1,10 @@
 package Backend;
 
 import LLVMIR.IREntry;
+import LLVMIR.Instruction._move;
 import LLVMIR.Instruction.phi;
-import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.register;
+import LLVMIR.Operand.undefinedValue;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
 
@@ -11,6 +12,7 @@ import java.util.*;
 
 public class SSAConstructor implements pass {
 	private final IREntry programIREntry;
+
 	private Map<basicBlock, List<basicBlock>> predecessors;
 	private Map<basicBlock, Set<basicBlock>> dom;
 	private Map<basicBlock, basicBlock> idom;
@@ -26,7 +28,7 @@ public class SSAConstructor implements pass {
 	}
 
 	@Override
-	public void run() {
+	public boolean run() {
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(func -> {
 			initialization(func);
 			dominanceAnalysis(func);
@@ -34,6 +36,7 @@ public class SSAConstructor implements pass {
 			phiInsertion(func);
 			variableRenaming(func);
 		});
+		return true;
 	}
 
 	private void initialization(function func) {
@@ -112,6 +115,9 @@ public class SSAConstructor implements pass {
 		Map<register, Set<basicBlock>> defs = new HashMap<>();
 		vars = new HashSet<>();
 		func.variablesAnalysis(vars, null, null, null, defs);
+		Set<register> vars_ = new HashSet<>(vars);
+		func.argValues.forEach(vars_::remove);
+		vars_.forEach(v -> func.blocks.get(0).push_front(new _move(new undefinedValue(v.type), v)));
 		vars.forEach(v -> {
 			renamingCounter.put(v, 0);
 			Set<basicBlock> F = new HashSet<>(), W = new HashSet<>(defs.get(v));
@@ -119,7 +125,7 @@ public class SSAConstructor implements pass {
 				basicBlock x = W.iterator().next();
 				W.remove(x);
 				DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
-					y.addPhiFunction(v, x);
+					y.addPhiFunction(v, new ArrayList<>(predecessors.get(y)));
 					F.add(y);
 					if (!defs.get(v).contains(y)) W.add(y);
 				});
@@ -130,7 +136,7 @@ public class SSAConstructor implements pass {
 	private void variableRenaming(function func) {
 		vars.forEach(v -> v.reachingDef = null);
 		for (int i = 0;i < func.argValues.size();++ i) {
-			register argv = func.argValues.get(i), argv_ = new register(argv.type, argv.name + "." + renamingCounter.get(argv));
+			register argv = func.argValues.get(i), argv_ = new register(argv.type, "_r." + argv.name + "." + renamingCounter.get(argv));
 			renamingCounter.put(argv, renamingCounter.get(argv) + 1);
 			func.argValues.set(i, argv_);
 			argv_.reachingDef = argv.reachingDef;
@@ -140,12 +146,12 @@ public class SSAConstructor implements pass {
 			blk.stmts.forEach(i -> {
 				if (!(i instanceof phi))
 					i.uses().forEach(v -> {
-						updateReachingDef(v, i);
+						updateReachingDef(v, i.belongTo);
 						i.replaceUse(v, v.reachingDef);
 					});
 				i.defs().forEach(v -> {
-					updateReachingDef(v, i);
-					register v_ = new register(v.type, v.name + "." + renamingCounter.get(v));
+					updateReachingDef(v, i.belongTo);
+					register v_ = new register(v.type, "_r." + v.name + "." + renamingCounter.get(v));
 					renamingCounter.put(v, renamingCounter.get(v) + 1);
 					i.replaceDef(v, v_);
 					v_.def = i;
@@ -155,16 +161,16 @@ public class SSAConstructor implements pass {
 			});
 			blk.successors().forEach(sucBlk -> sucBlk.phiCollections.forEach((u, phiInst) ->
 				phiInst.uses().forEach(v -> {
-					updateReachingDef(v, phiInst);
+					updateReachingDef(v, blk);
 					phiInst.replaceUse(v, v.reachingDef, blk);
 				})
 			));
 		});
 	}
 
-	private void updateReachingDef(register v, statement i) {
+	private void updateReachingDef(register v, basicBlock b) {
 		register r = v.reachingDef;
-		while (!(r == null || r.def == null || dom.get(i.belongTo).contains(r.def.belongTo)))
+		while (!(r == null || r.def == null || dom.get(b).contains(r.def.belongTo)))
 			r = r.reachingDef;
 		v.reachingDef = r;
 	}

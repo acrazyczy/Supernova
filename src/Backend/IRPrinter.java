@@ -43,12 +43,13 @@ public class IRPrinter implements pass {
 	}
 
 	@Override
-	public void run() {
+	public boolean run() {
 		programIREntry.classes.forEach(this::printClass);
 		pWriter.println();
 		programIREntry.globals.forEach(this::printGlobalVariable);
 		pWriter.println();
 		programIREntry.functions.forEach(this::printFunction);
 		pWriter.flush();
+		return true;
 	}
 }

@@ -455,7 +455,7 @@ public class instructionSelector implements pass {
 	private void buildAsmFunction(function func) {
 		asmFunction asmFunc = programAsmEntry.asmFunctions.get(func);
 		currentFunction = asmFunc;
-		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping((register) arg)));
+		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping(arg)));
 		asmFunc.stkFrame = new stackFrame(asmFunc);
 		asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
 		asmFunc.initBlock.comment = "init block of " + func.functionName;
@@ -464,7 +464,7 @@ public class instructionSelector implements pass {
 		asmFunc.initBlock.addInst(new mvInst(currentBlock, returnAddress, ra));
 		ArrayList<intImm> argOffsets = new ArrayList<>();
 		for (int i = 0;i < func.argValues.size();++ i) {
-			virtualReg vReg = registerMapping((register) func.argValues.get(i));
+			virtualReg vReg = registerMapping(func.argValues.get(i));
 			if (i > 7) {
 				intImm offset = new intImm();
 				argOffsets.add(offset);
@@ -504,9 +504,10 @@ public class instructionSelector implements pass {
 	}
 
 	@Override
-	public void run() {
+	public boolean run() {
 		registerGlobalVariable();
 		programIREntry.functions.forEach(IRFunc -> programAsmEntry.asmFunctions.put(IRFunc, new asmFunction(IRFunc.functionName, IRFunc.blocks == null ? null : new ArrayList<>())));
 		programIREntry.functions.stream().filter(IRFunc -> IRFunc.blocks != null).forEach(this::buildAsmFunction);
+		return true;
 	}
 }

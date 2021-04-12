@@ -1,9 +1,10 @@
 package LLVMIR.Instruction;
 
+import LLVMIR.Operand.booleanConstant;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.integerConstant;
 import LLVMIR.Operand.register;
-import LLVMIR.Operand.undefinedValue;
+import LLVMIR.TypeSystem.LLVMIntegerType;
 import LLVMIR.TypeSystem.LLVMPointerType;
 
 import java.util.Collections;
@@ -35,8 +36,8 @@ public class _move extends statement {
 
 	@Override
 	public String toString() {
-		if (src instanceof undefinedValue) return dest + " = " + src;
 		if (src.type instanceof LLVMPointerType) return dest + " = getelementptr " + ((LLVMPointerType) src.type).pointeeType + ", " + src.type + " " + src + ", i32 0";
+		if (((LLVMIntegerType) src.type).is_boolean) return (new binary(binary.instCode.xor, new booleanConstant(0), src, dest)).toString();
 		return (new binary(binary.instCode.add, new integerConstant(src.type.size(), 0), src, dest)).toString();
 	}
 }

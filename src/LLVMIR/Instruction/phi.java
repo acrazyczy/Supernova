@@ -7,12 +7,13 @@ import LLVMIR.basicBlock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class phi extends statement {
 	private final ArrayList<basicBlock> blocks;
-	private final ArrayList<register> values;
+	private final ArrayList<entity> values;
 
-	public phi(ArrayList<basicBlock> blocks, ArrayList<register> values, entity dest) {
+	public phi(ArrayList<basicBlock> blocks, ArrayList<entity> values, entity dest) {
 		super(dest);
 		this.blocks = blocks;
 		this.values = values;
@@ -21,12 +22,16 @@ public class phi extends statement {
 
 	@Override
 	public Set<register> variables() {
-		Set<register> ret = new HashSet<>(values);
+		Set<register> ret = values.stream().filter(val -> val instanceof register)
+			.map(val -> (register) val).collect(Collectors.toSet());
 		ret.add((register) dest);
 		return ret;
 	}
 
-	@Override public Set<register> uses() {return new HashSet<>(values);}
+	@Override public Set<register> uses() {
+		return values.stream().filter(val -> val instanceof register)
+			.map(val -> (register) val).collect(Collectors.toSet());
+	}
 
 	@Override
 	public String toString() {
@@ -45,10 +50,5 @@ public class phi extends statement {
 				if (values.get(i) == oldReg) values.set(i, newReg);
 				break;
 			}
-	}
-
-	public void add(register v, basicBlock x) {
-		blocks.add(x);
-		values.add(v);
 	}
 }

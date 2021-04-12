@@ -6,6 +6,7 @@ import Frontend.classGenerator;
 import Frontend.semanticChecker;
 import Frontend.symbolCollector;
 import LLVMIR.IREntry;
+import Optimization.IR.IROptimizer;
 import Util.error.error;
 import Util.Scope.globalScope;
 import Util.MxStarErrorListener;
@@ -19,7 +20,7 @@ import java.io.*;
 
 public class Main {
 	private static final String SYNTAX = "-fsyntax-only";
-//	private static final String OPTIMIZATION = "-O2";
+	private static final String OPTIMIZATION = "-O2";
 	private static final String LLVM = "-emit-llvm";
 	private static final String NO_ASM = "-S";
 //	private static final String SSA_DESTRUCT = "-fno-ssa";
@@ -29,7 +30,7 @@ public class Main {
 	private OutputStream LLVMOs, asmOs;
 	private boolean LLVMGeneratingFlag;
 	private boolean assemblyGeneratingFlag;
-//	private boolean optimizationFlag;
+	private boolean optimizationFlag;
 //	private boolean ssaDestructFlag;
 
 	public void error(String errorMessage) {
@@ -43,7 +44,7 @@ public class Main {
 		asmOs = new FileOutputStream("output.s");
 		LLVMGeneratingFlag = false;
 		assemblyGeneratingFlag = true;
-//		optimizationFlag = false;
+		optimizationFlag = false;
 //		ssaDestructFlag = false;
 		boolean hasBeenSpecified = false;
 		for (int i = 0; i < args.length; ++i) {
@@ -65,7 +66,7 @@ public class Main {
 						assemblyGeneratingFlag = true;
 					}
 					case NO_ASM -> assemblyGeneratingFlag = false;
-//					case OPTIMIZATION -> optimizationFlag = true;
+					case OPTIMIZATION -> optimizationFlag = true;
 					case INPUT_FILE -> {
 						if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no input file specified");
 						try {
@@ -106,6 +107,10 @@ public class Main {
 			new semanticChecker(gScope, programIREntry).visit(ASTRoot);
 			new IRBuilder(gScope, programIREntry).visit(ASTRoot);
 			new SSAConstructor(programIREntry).run();
+
+			if (optimizationFlag) {
+				new IROptimizer(programIREntry).run();
+			}
 
 			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 			if (assemblyGeneratingFlag) {

@@ -11,6 +11,8 @@ void printInt(int n) {printf("%d", n);}
 
 void printlnInt(int n) {printf("%d\n", n);}
 
+void *_malloc(int n) {return malloc(n);}
+
 const char *getString()
 {
 	char *buf = malloc(sizeof(char) * 1024);

@@ -47,7 +47,7 @@ public class semanticChecker implements ASTVisitor {
 		String funcName;
 
 		// a main function for initialization
-		programIREntry.functions.add(new function(new LLVMIntegerType(32), "main", new ArrayList<>(), false));
+		programIREntry.functions.add(new function(new LLVMIntegerType(), "main", new ArrayList<>(), false));
 
 		funcName = "print";
 		func = new functionType(
@@ -81,7 +81,7 @@ public class semanticChecker implements ASTVisitor {
 		gScope.defineMethod(funcName, func, it.pos);
 		bindBuiltinFunction(null, funcName,
 			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
+				new register(new LLVMIntegerType())
 			))
 		);
 
@@ -93,7 +93,7 @@ public class semanticChecker implements ASTVisitor {
 		gScope.defineMethod(funcName, func, it.pos);
 		bindBuiltinFunction(null, funcName,
 			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
+				new register(new LLVMIntegerType())
 			))
 		);
 
@@ -113,7 +113,7 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>()
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(32),
+		bindBuiltinFunction(new LLVMIntegerType(),
 			funcName, new ArrayList<>()
 		);
 
@@ -125,15 +125,15 @@ public class semanticChecker implements ASTVisitor {
 		gScope.defineMethod(funcName, func, it.pos);
 		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
 			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(32))
+				new register(new LLVMIntegerType())
 			))
 		);
 
-		funcName = "malloc";
+		funcName = "_malloc";
 		//not a keyword function in MxStar,
 		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
 			new ArrayList<>(Collections.singletonList(
-				new register(new LLVMIntegerType(64))
+				new register(new LLVMIntegerType(32))
 			))
 		);
 
@@ -163,7 +163,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -179,7 +179,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -195,7 +195,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -211,7 +211,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -227,7 +227,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -243,7 +243,7 @@ public class semanticChecker implements ASTVisitor {
 			))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(8), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(8, true), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
@@ -256,7 +256,7 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>()
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(), funcName,
 			new ArrayList<>(Collections.singletonList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
 			))
@@ -274,8 +274,8 @@ public class semanticChecker implements ASTVisitor {
 		bindBuiltinFunction(new LLVMPointerType(new LLVMIntegerType(8)), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMIntegerType(32)),
-				new register(new LLVMIntegerType(32))
+				new register(new LLVMIntegerType()),
+				new register(new LLVMIntegerType())
 			))
 		);
 
@@ -285,7 +285,7 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>()
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(), funcName,
 			new ArrayList<>(Collections.singletonList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8)))
 			))
@@ -297,10 +297,10 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>(Collections.singletonList(gScope.getTypeFromName("int", it.pos)))
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(), funcName,
 			new ArrayList<>(Arrays.asList(
 				new register(new LLVMPointerType(new LLVMIntegerType(8))),
-				new register(new LLVMIntegerType(32))
+				new register(new LLVMIntegerType())
 			))
 		);
 
@@ -310,7 +310,7 @@ public class semanticChecker implements ASTVisitor {
 			new ArrayList<>()
 		);
 		gScope.defineMethod(funcName, func, it.pos);
-		bindBuiltinFunction(new LLVMIntegerType(32), funcName,
+		bindBuiltinFunction(new LLVMIntegerType(), funcName,
 			new ArrayList<>(Collections.singletonList(new register(new LLVMPointerType(new LLVMIntegerType(8)))))
 		);
 
@@ -662,6 +662,7 @@ public class semanticChecker implements ASTVisitor {
 		function func = new function(
 			typeCalculator.calcLLVMSingleValueType(gScope, typeCalculator.calcType(gScope, it.returnType)),
 			funcName, argValues, false);
+		func.argValues.forEach(v -> v.name = v.name + func.getRegisterNameIndex(v.name));
 		gScope.bindMethodToFunction(funcName, func);
 		programIREntry.functions.add(func);
 		it.func = func;

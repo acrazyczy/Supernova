@@ -4,6 +4,7 @@ import LLVMIR.Instruction.br;
 import LLVMIR.Instruction.phi;
 import LLVMIR.Instruction.statement;
 import LLVMIR.Instruction.terminalStmt;
+import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 
 import java.util.*;
@@ -19,6 +20,12 @@ public class basicBlock {
 		this.name = name;
 		this.loopDepth = loopDepth;
 		if (currentFunction != null) this.name = this.name + currentFunction.getBlockNameIndex(name);
+	}
+
+	public void push_front(statement stmt) {
+		assert !(stmt instanceof terminalStmt);
+		stmts.addFirst(stmt);
+		stmt.belongTo = this;
 	}
 
 	public void push_back(statement stmt) {
@@ -55,15 +62,15 @@ public class basicBlock {
 		});
 	}
 
-	@Override public String toString() {return name;}
+	@Override public String toString() {return "%" + name;}
 
-	public void addPhiFunction(register v, basicBlock x) {
-		if (!phiCollections.containsKey(v)) {
-			phi phiInst = new phi(new ArrayList<>(), new ArrayList<>(), v);
-			phiInst.belongTo = this;
-			phiCollections.put(v, phiInst);
-			stmts.addFirst(phiInst);
-		}
-		phiCollections.get(v).add(v, x);
+	public void addPhiFunction(register v, ArrayList<basicBlock> blocks) {
+		assert !phiCollections.containsKey(v);
+		ArrayList<entity> values = new ArrayList<>();
+		for (int i = 0;i < blocks.size();++ i) values.add(v);
+		phi phiInst = new phi(blocks, values, v);
+		phiInst.belongTo = this;
+		phiCollections.put(v, phiInst);
+		stmts.addFirst(phiInst);
 	}
 }

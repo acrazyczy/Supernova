@@ -59,6 +59,18 @@ printlnInt:                             # @printlnInt
 	.size	printlnInt, .Lfunc_end3-printlnInt
 	.cfi_endproc
                                         # -- End function
+	.globl	_malloc                 # -- Begin function _malloc
+	.p2align	2
+	.type	_malloc,@function
+_malloc:                                # @_malloc
+	.cfi_startproc
+# %bb.0:                                # %entry
+	srai	a1, a0, 31
+	tail	malloc
+.Lfunc_end4:
+	.size	_malloc, .Lfunc_end4-_malloc
+	.cfi_endproc
+                                        # -- End function
 	.globl	getString               # -- Begin function getString
 	.p2align	2
 	.type	getString,@function
@@ -84,8 +96,8 @@ getString:                              # @getString
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end4:
-	.size	getString, .Lfunc_end4-getString
+.Lfunc_end5:
+	.size	getString, .Lfunc_end5-getString
 	.cfi_endproc
                                         # -- End function
 	.globl	getInt                  # -- Begin function getInt
@@ -106,8 +118,8 @@ getInt:                                 # @getInt
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end5:
-	.size	getInt, .Lfunc_end5-getInt
+.Lfunc_end6:
+	.size	getInt, .Lfunc_end6-getInt
 	.cfi_endproc
                                         # -- End function
 	.globl	toString                # -- Begin function toString
@@ -140,8 +152,8 @@ toString:                               # @toString
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end6:
-	.size	toString, .Lfunc_end6-toString
+.Lfunc_end7:
+	.size	toString, .Lfunc_end7-toString
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.add      # -- Begin function builtin.string.add
@@ -176,8 +188,8 @@ builtin.string.add:                     # @builtin.string.add
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	tail	strcat
-.Lfunc_end7:
-	.size	builtin.string.add, .Lfunc_end7-builtin.string.add
+.Lfunc_end8:
+	.size	builtin.string.add, .Lfunc_end8-builtin.string.add
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isEqual  # -- Begin function builtin.string.isEqual
@@ -195,8 +207,8 @@ builtin.string.isEqual:                 # @builtin.string.isEqual
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end8:
-	.size	builtin.string.isEqual, .Lfunc_end8-builtin.string.isEqual
+.Lfunc_end9:
+	.size	builtin.string.isEqual, .Lfunc_end9-builtin.string.isEqual
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isNotEqual # -- Begin function builtin.string.isNotEqual
@@ -214,8 +226,8 @@ builtin.string.isNotEqual:              # @builtin.string.isNotEqual
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end9:
-	.size	builtin.string.isNotEqual, .Lfunc_end9-builtin.string.isNotEqual
+.Lfunc_end10:
+	.size	builtin.string.isNotEqual, .Lfunc_end10-builtin.string.isNotEqual
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isLessThan # -- Begin function builtin.string.isLessThan
@@ -233,8 +245,8 @@ builtin.string.isLessThan:              # @builtin.string.isLessThan
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end10:
-	.size	builtin.string.isLessThan, .Lfunc_end10-builtin.string.isLessThan
+.Lfunc_end11:
+	.size	builtin.string.isLessThan, .Lfunc_end11-builtin.string.isLessThan
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isGreaterThan # -- Begin function builtin.string.isGreaterThan
@@ -252,8 +264,8 @@ builtin.string.isGreaterThan:           # @builtin.string.isGreaterThan
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end11:
-	.size	builtin.string.isGreaterThan, .Lfunc_end11-builtin.string.isGreaterThan
+.Lfunc_end12:
+	.size	builtin.string.isGreaterThan, .Lfunc_end12-builtin.string.isGreaterThan
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isLessThanOrEqual # -- Begin function builtin.string.isLessThanOrEqual
@@ -271,8 +283,8 @@ builtin.string.isLessThanOrEqual:       # @builtin.string.isLessThanOrEqual
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end12:
-	.size	builtin.string.isLessThanOrEqual, .Lfunc_end12-builtin.string.isLessThanOrEqual
+.Lfunc_end13:
+	.size	builtin.string.isLessThanOrEqual, .Lfunc_end13-builtin.string.isLessThanOrEqual
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.isGreaterThanOrEqual # -- Begin function builtin.string.isGreaterThanOrEqual
@@ -291,8 +303,8 @@ builtin.string.isGreaterThanOrEqual:    # @builtin.string.isGreaterThanOrEqual
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end13:
-	.size	builtin.string.isGreaterThanOrEqual, .Lfunc_end13-builtin.string.isGreaterThanOrEqual
+.Lfunc_end14:
+	.size	builtin.string.isGreaterThanOrEqual, .Lfunc_end14-builtin.string.isGreaterThanOrEqual
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.length   # -- Begin function builtin.string.length
@@ -309,8 +321,8 @@ builtin.string.length:                  # @builtin.string.length
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end14:
-	.size	builtin.string.length, .Lfunc_end14-builtin.string.length
+.Lfunc_end15:
+	.size	builtin.string.length, .Lfunc_end15-builtin.string.length
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.substring # -- Begin function builtin.string.substring
@@ -351,8 +363,8 @@ builtin.string.substring:               # @builtin.string.substring
 	lw	ra, 28(sp)
 	addi	sp, sp, 32
 	ret
-.Lfunc_end15:
-	.size	builtin.string.substring, .Lfunc_end15-builtin.string.substring
+.Lfunc_end16:
+	.size	builtin.string.substring, .Lfunc_end16-builtin.string.substring
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.parseInt # -- Begin function builtin.string.parseInt
@@ -373,8 +385,8 @@ builtin.string.parseInt:                # @builtin.string.parseInt
 	lw	ra, 12(sp)
 	addi	sp, sp, 16
 	ret
-.Lfunc_end16:
-	.size	builtin.string.parseInt, .Lfunc_end16-builtin.string.parseInt
+.Lfunc_end17:
+	.size	builtin.string.parseInt, .Lfunc_end17-builtin.string.parseInt
 	.cfi_endproc
                                         # -- End function
 	.globl	builtin.string.ord      # -- Begin function builtin.string.ord
@@ -386,8 +398,8 @@ builtin.string.ord:                     # @builtin.string.ord
 	add	a0, a0, a1
 	lb	a0, 0(a0)
 	ret
-.Lfunc_end17:
-	.size	builtin.string.ord, .Lfunc_end17-builtin.string.ord
+.Lfunc_end18:
+	.size	builtin.string.ord, .Lfunc_end18-builtin.string.ord
 	.cfi_endproc
                                         # -- End function
 	.type	.L.str,@object          # @.str

@@ -1,5 +1,5 @@
 package Backend;
 
 public interface pass {
-	void run();
+	boolean run();
 }
