@@ -21,6 +21,7 @@ public class br extends terminalStmt {
 
 	public br(entity cond, basicBlock trueBranch, basicBlock falseBranch) {
 		super();
+		assert trueBranch != null && falseBranch != null;
 		this.cond = cond;
 		this.trueBranch = trueBranch;
 		this.falseBranch = falseBranch;
@@ -36,12 +37,10 @@ public class br extends terminalStmt {
 		return cond instanceof register ? new HashSet<>(Collections.singleton((register) cond)) : new HashSet<>();
 	}
 
-	@Override public void replaceUse(register oldReg, register newReg) {if (cond == oldReg) cond = newReg;}
+	@Override public void replaceUse(entity oldReg, entity newReg) {if (cond == oldReg) cond = newReg;}
 
 	@Override public String toString() {
 		if (this.cond == null) return "br label " + trueBranch;
-		String ret = "br " + cond.type + " " + cond + ", label " + trueBranch;
-		if (this.falseBranch != null) ret += ", label " + falseBranch;
-		return ret;
+		return "br " + cond.type + " " + cond + ", label " + trueBranch + ", label " + falseBranch;
 	}
 }

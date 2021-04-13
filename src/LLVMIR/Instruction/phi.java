@@ -4,16 +4,15 @@ import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class phi extends statement {
-	private final ArrayList<basicBlock> blocks;
-	private final ArrayList<entity> values;
+	public final LinkedList<basicBlock> blocks;
+	public final LinkedList<entity> values;
 
-	public phi(ArrayList<basicBlock> blocks, ArrayList<entity> values, entity dest) {
+	public phi(LinkedList<basicBlock> blocks, LinkedList<entity> values, entity dest) {
 		super(dest);
 		this.blocks = blocks;
 		this.values = values;
@@ -42,9 +41,9 @@ public class phi extends statement {
 	}
 
 	// only replace uses in a specified block
-	@Override public void replaceUse(register oldReg, register newReg) {}
+	@Override public void replaceUse(entity oldReg, entity newReg) {}
 
-	public void replaceUse(register oldReg, register newReg, basicBlock blk) {
+	public void replaceUse(entity oldReg, entity newReg, basicBlock blk) {
 		for (int i = 0;i < blocks.size();++ i)
 			if (blk == blocks.get(i)) {
 				if (values.get(i) == oldReg) values.set(i, newReg);

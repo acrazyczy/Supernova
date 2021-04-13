@@ -32,7 +32,7 @@ public class store extends statement {
 	}
 
 	@Override
-	public void replaceUse(register oldReg, register newReg) {
+	public void replaceUse(entity oldReg, entity newReg) {
 		if (value == oldReg) value = newReg;
 		if (pointer == oldReg) pointer = newReg;
 	}

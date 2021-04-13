@@ -24,7 +24,7 @@ abstract public class statement {
 	abstract public Set<register> variables();
 	abstract public Set<register> uses();
 
-	abstract public void replaceUse(register oldReg, register newReg);
+	abstract public void replaceUse(entity oldReg, entity newReg);
 
 	public void replaceDef(register oldReg, register newReg) {
 		if (dest == oldReg) dest = newReg;

@@ -11,7 +11,7 @@ public class function {
 	public LLVMSingleValueType returnType;
 	public String functionName;
 	public ArrayList<register> argValues;
-	public ArrayList<basicBlock> blocks;
+	public LinkedList<basicBlock> blocks;
 	private final HashMap<String, Integer> blockNameCounter = new HashMap<>();
 	private final HashMap<String, Integer> registerNameCounter = new HashMap<>();
 
@@ -21,7 +21,7 @@ public class function {
 		this.returnType = returnType;
 		this.functionName = functionName;
 		this.argValues = argValues;
-		this.blocks = is_builtin ? null : new ArrayList<>(Collections.singletonList(new basicBlock("entry", null, 0)));
+		this.blocks = is_builtin ? null : new LinkedList<>(Collections.singletonList(new basicBlock("entry", null, 0)));
 	}
 
 	public int getBlockNameIndex(String blockName) {

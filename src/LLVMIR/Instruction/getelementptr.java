@@ -36,7 +36,7 @@ public class getelementptr extends statement {
 	}
 
 	@Override
-	public void replaceUse(register oldReg, register newReg) {
+	public void replaceUse(entity oldReg, entity newReg) {
 		if (pointer == oldReg) pointer = newReg;
 		for (int i = 0;i < idxes.size();++ i)
 			if (idxes.get(i) == oldReg)

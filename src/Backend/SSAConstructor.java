@@ -125,7 +125,7 @@ public class SSAConstructor implements pass {
 				basicBlock x = W.iterator().next();
 				W.remove(x);
 				DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
-					y.addPhiFunction(v, new ArrayList<>(predecessors.get(y)));
+					y.addPhiFunction(v, new LinkedList<>(predecessors.get(y)));
 					F.add(y);
 					if (!defs.get(v).contains(y)) W.add(y);
 				});

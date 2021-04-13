@@ -39,9 +39,32 @@ public class basicBlock {
 		ArrayList<basicBlock> ret = new ArrayList<>();
 		if (tailStmt instanceof br) {
 			ret.add(((br) tailStmt).trueBranch);
-			if (((br) tailStmt).falseBranch != null) ret.add(((br) tailStmt).falseBranch);
+			if (((br) tailStmt).falseBranch != null && ((br) tailStmt).trueBranch != ((br) tailStmt).falseBranch) ret.add(((br) tailStmt).falseBranch);
 		}
 		return ret;
+	}
+
+	public void removeSuccessor(basicBlock sucBlk) {
+		assert tailStmt instanceof br;
+		if (((br) tailStmt).trueBranch == sucBlk)
+			((br) tailStmt).trueBranch = ((br) tailStmt).falseBranch;
+		((br) tailStmt).falseBranch = null;
+		((br) tailStmt).cond = null;
+	}
+
+	public void removeBlockFromPhi(basicBlock preBlk) {
+		phiCollections.values().forEach(phiInst -> {
+			Iterator<basicBlock> blkItr = phiInst.blocks.iterator();
+			Iterator<entity> valItr = phiInst.values.iterator();
+			for (int i = 0;i < phiInst.blocks.size();++ i) {
+				valItr.next();
+				if (blkItr.next() == preBlk) {
+					valItr.remove();
+					blkItr.remove();
+					break;
+				}
+			}
+		});
 	}
 
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}
@@ -64,9 +87,9 @@ public class basicBlock {
 
 	@Override public String toString() {return "%" + name;}
 
-	public void addPhiFunction(register v, ArrayList<basicBlock> blocks) {
+	public void addPhiFunction(register v, LinkedList<basicBlock> blocks) {
 		assert !phiCollections.containsKey(v);
-		ArrayList<entity> values = new ArrayList<>();
+		LinkedList<entity> values = new LinkedList<>();
 		for (int i = 0;i < blocks.size();++ i) values.add(v);
 		phi phiInst = new phi(blocks, values, v);
 		phiInst.belongTo = this;

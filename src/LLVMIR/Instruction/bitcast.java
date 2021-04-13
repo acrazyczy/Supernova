@@ -28,7 +28,7 @@ public class bitcast extends statement {
 		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
 	}
 
-	@Override public void replaceUse(register oldReg, register newReg) {if (value == oldReg) value = newReg;}
+	@Override public void replaceUse(entity oldReg, entity newReg) {if (value == oldReg) value = newReg;}
 
 	@Override public String toString() {return dest + " = bitcast " + value.type + " " + value + " to " + dest.type;}
 }

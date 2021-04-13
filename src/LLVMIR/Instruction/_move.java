@@ -32,7 +32,7 @@ public class _move extends statement {
 		return src instanceof register ? new HashSet<>(Collections.singleton((register) src)) : new HashSet<>();
 	}
 
-	@Override public void replaceUse(register oldReg, register newReg) {if (src == oldReg) src = newReg;}
+	@Override public void replaceUse(entity oldReg, entity newReg) {if (src == oldReg) src = newReg;}
 
 	@Override
 	public String toString() {

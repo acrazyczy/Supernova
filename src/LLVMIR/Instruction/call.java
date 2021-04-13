@@ -39,7 +39,7 @@ public class call extends statement {
 	}
 
 	@Override
-	public void replaceUse(register oldReg, register newReg) {
+	public void replaceUse(entity oldReg, entity newReg) {
 		for (int i = 0;i < parameters.size();++ i)
 			if (parameters.get(i) == oldReg)
 				parameters.set(i, newReg);

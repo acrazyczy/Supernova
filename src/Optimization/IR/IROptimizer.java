@@ -12,7 +12,6 @@ public class IROptimizer {
 		do {
 			flag = false;
 			flag |= new SCCP(programIREntry).run();
-			flag |= new valueNumbering(programIREntry).run();
 		} while (flag);
 	}
 }

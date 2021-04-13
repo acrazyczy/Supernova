@@ -40,7 +40,7 @@ public class icmp extends statement {
 	}
 
 	@Override
-	public void replaceUse(register oldReg, register newReg) {
+	public void replaceUse(entity oldReg, entity newReg) {
 		if (op1 == oldReg) op1 = newReg;
 		if (op2 == oldReg) op2 = newReg;
 	}

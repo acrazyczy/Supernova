@@ -27,7 +27,7 @@ public class load extends statement {
 		return pointer instanceof register ? new HashSet<>(Collections.singleton((register) pointer)) : new HashSet<>();
 	}
 
-	@Override public void replaceUse(register oldReg, register newReg) {if (pointer == oldReg) pointer = newReg;}
+	@Override public void replaceUse(entity oldReg, entity newReg) {if (pointer == oldReg) pointer = newReg;}
 
 	@Override public String toString() {return dest + " = load " + dest.type + ", " + pointer.type + " " + pointer;}
 }
