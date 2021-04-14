@@ -40,8 +40,10 @@ public class phi extends statement {
 		return ret.toString();
 	}
 
-	// only replace uses in a specified block
-	@Override public void replaceUse(entity oldReg, entity newReg) {}
+	public void replaceUse(entity oldReg, entity newReg) {
+		for (int i = 0;i < values.size();++ i)
+			if (values.get(i) == oldReg) values.set(i, newReg);
+	}
 
 	public void replaceUse(entity oldReg, entity newReg, basicBlock blk) {
 		for (int i = 0;i < blocks.size();++ i)
