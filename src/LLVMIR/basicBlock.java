@@ -11,14 +11,15 @@ import java.util.*;
 
 public class basicBlock {
 	public Map<register, phi> phiCollections = new HashMap<>();
+	private Map<phi, register> phiMapping = new HashMap<>();
 	public LinkedList<statement> stmts = new LinkedList<>();
-	private terminalStmt tailStmt = null;
-	public final int loopDepth;
+	public terminalStmt tailStmt = null;
 	public String name;
 
-	public basicBlock(String name, function currentFunction, int loopDepth) {
+	public basicBlock() {}
+
+	public basicBlock(String name, function currentFunction) {
 		this.name = name;
-		this.loopDepth = loopDepth;
 		if (currentFunction != null) this.name = this.name + currentFunction.getBlockNameIndex(name);
 	}
 
@@ -67,6 +68,14 @@ public class basicBlock {
 		});
 	}
 
+	public void removeInstruction(statement stmt) {
+		stmts.remove(stmt);
+		if (stmt instanceof phi) {
+			phiCollections.remove(phiMapping.get(stmt));
+			phiMapping.remove(stmt);
+		}
+	}
+
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}
 
 	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
@@ -94,6 +103,7 @@ public class basicBlock {
 		phi phiInst = new phi(blocks, values, v);
 		phiInst.belongTo = this;
 		phiCollections.put(v, phiInst);
+		phiMapping.put(phiInst, v);
 		stmts.addFirst(phiInst);
 	}
 }

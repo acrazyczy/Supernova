@@ -11,8 +11,8 @@ public class IROptimizer {
 		boolean flag;
 		do {
 			flag = false;
-//			flag |= new SCCP(programIREntry).run();
-			flag |= new PRE(programIREntry).run();
+			flag |= new SCCP(programIREntry).run();
+			flag |= new ADCE(programIREntry).run();
 		} while (flag);
 	}
 }

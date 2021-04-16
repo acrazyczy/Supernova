@@ -15,13 +15,11 @@ public class function {
 	private final HashMap<String, Integer> blockNameCounter = new HashMap<>();
 	private final HashMap<String, Integer> registerNameCounter = new HashMap<>();
 
-	private Set<basicBlock> visited;
-
 	public function(LLVMSingleValueType returnType, String functionName, ArrayList<register> argValues, boolean is_builtin) {
 		this.returnType = returnType;
 		this.functionName = functionName;
 		this.argValues = argValues;
-		this.blocks = is_builtin ? null : new LinkedList<>(Collections.singletonList(new basicBlock("entry", null, 0)));
+		this.blocks = is_builtin ? null : new LinkedList<>(Collections.singletonList(new basicBlock("entry", null)));
 	}
 
 	public int getBlockNameIndex(String blockName) {
@@ -58,20 +56,6 @@ public class function {
 			if (!argv.toString().equals("")) ret.append(" ").append(argv);
 		}
 		return ret.toString();
-	}
-
-	private void dfsBlock(basicBlock blk, ArrayList<basicBlock> dfsOrder) {
-		dfsOrder.add(blk);
-		visited.add(blk);
-		blk.successors().stream().filter(sucBlk -> !visited.contains(sucBlk)).forEach(sucBlk -> dfsBlock(sucBlk, dfsOrder));
-	}
-
-	public ArrayList<basicBlock> dfsOrderComputation() {
-		assert !blocks.isEmpty();
-		ArrayList<basicBlock> ret = new ArrayList<>();
-		visited = new HashSet<>();
-		dfsBlock(blocks.get(0), ret);
-		return ret;
 	}
 
 	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {

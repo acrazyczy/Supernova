@@ -7,18 +7,14 @@ import LLVMIR.Operand.register;
 import LLVMIR.Operand.undefinedValue;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
+import Optimization.IR.dominanceAnalyser;
 
 import java.util.*;
 
 public class SSAConstructor implements pass {
 	private final IREntry programIREntry;
 
-	private Map<basicBlock, List<basicBlock>> predecessors;
-	private Map<basicBlock, Set<basicBlock>> dom;
-	private Map<basicBlock, basicBlock> idom;
-	private Map<basicBlock, Set<basicBlock>> children;
-	private Map<basicBlock, Set<basicBlock>> DF;
-	private ArrayList<basicBlock> dfsPreOrder;
+	private dominanceAnalyser domProperty;
 
 	private Set<register> vars;
 	private final Map<register, Integer> renamingCounter = new HashMap<>();
@@ -30,85 +26,13 @@ public class SSAConstructor implements pass {
 	@Override
 	public boolean run() {
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(func -> {
-			initialization(func);
-			dominanceAnalysis(func);
-			DFComputation();
+			domProperty = new dominanceAnalyser(func.blocks.get(0), new HashSet<>(func.blocks));
+			func.blocks.forEach(u -> u.successors().forEach(v -> domProperty.addEdge(u, v)));
+			domProperty.dominanceAnalysis(true);
 			phiInsertion(func);
 			variableRenaming(func);
 		});
 		return true;
-	}
-
-	private void initialization(function func) {
-		dom = new HashMap<>();
-		idom = new HashMap<>();
-		DF = new HashMap<>();
-		children = new HashMap<>();
-		predecessors = new HashMap<>();
-		func.blocks.forEach(blk -> {
-			dom.put(blk, blk.name.equals("entry") ? new HashSet<>(Collections.singleton(blk)) : new HashSet<>(func.blocks));
-			predecessors.put(blk, new ArrayList<>());
-		});
-		func.blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
-	}
-
-	private void dfsDominatorTree(basicBlock blk) {
-		dfsPreOrder.add(blk);
-		children.get(blk).forEach(this::dfsDominatorTree);
-	}
-
-	private void dominanceAnalysis(function func) {
-		boolean changed;
-		ArrayList<basicBlock> dfsOrder = func.dfsOrderComputation();
-		dfsOrder.forEach(blk -> children.put(blk, new HashSet<>()));
-		do {
-			changed = false;
-			for (basicBlock blk: dfsOrder) {
-				if (blk.name.equals("entry")) continue;
-				Set<basicBlock> temp = new HashSet<>(dfsOrder);
-				predecessors.get(blk).forEach(preBlk -> temp.retainAll(dom.get(preBlk)));
-				temp.add(blk);
-				if (!temp.equals(dom.get(blk))) {
-					dom.put(blk, temp);
-					changed = true;
-				}
-			}
-		} while (changed);
-		for (basicBlock blk: dfsOrder) {
-			if (blk.name.equals("entry")) {
-				idom.put(blk, null);
-				continue;
-			}
-			Set<basicBlock> domSet = new HashSet<>(dom.get(blk)), visited = new HashSet<>(Collections.singleton(blk));
-			domSet.remove(blk);
-			Queue<basicBlock> queue = new ArrayDeque<>(Collections.singletonList(blk));
-			while (!queue.isEmpty()) {
-				basicBlock top = queue.remove();
-				if (domSet.contains(top)) {
-					idom.put(blk, top);
-					children.get(top).add(blk);
-					break;
-				}
-				predecessors.get(top).stream().filter(pred -> !visited.contains(pred)).forEach(pred -> {
-					queue.add(pred); visited.add(pred);
-				});
-			}
-		}
-		dfsPreOrder = new ArrayList<>();
-		dfsDominatorTree(func.blocks.get(0));
-	}
-
-	private void DFComputation() {
-		dfsPreOrder.forEach(blk -> DF.put(blk, new HashSet<>()));
-		dfsPreOrder.forEach(blk -> {
-			List<basicBlock> predecessor = predecessors.get(blk);
-			if (predecessor.size() > 1) {
-				predecessor.forEach(p -> {
-					for (basicBlock runner = p;runner != idom.get(blk);runner = idom.get(runner))
-						DF.get(runner).add(blk);
-				});
-			}
-		});
 	}
 
 	private void phiInsertion(function func) {
@@ -124,8 +48,8 @@ public class SSAConstructor implements pass {
 			while (!W.isEmpty()) {
 				basicBlock x = W.iterator().next();
 				W.remove(x);
-				DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
-					y.addPhiFunction(v, new LinkedList<>(predecessors.get(y)));
+				domProperty.DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
+					y.addPhiFunction(v, new LinkedList<>(domProperty.radj.get(y)));
 					F.add(y);
 					if (!defs.get(v).contains(y)) W.add(y);
 				});
@@ -142,7 +66,7 @@ public class SSAConstructor implements pass {
 			argv_.reachingDef = argv.reachingDef;
 			argv.reachingDef = argv_;
 		}
-		dfsPreOrder.forEach(blk -> {
+		domProperty.getPreOrderOfTree().forEach(blk -> {
 			blk.stmts.forEach(i -> {
 				if (!(i instanceof phi))
 					i.uses().forEach(v -> {
@@ -170,7 +94,7 @@ public class SSAConstructor implements pass {
 
 	private void updateReachingDef(register v, basicBlock b) {
 		register r = v.reachingDef;
-		while (!(r == null || r.def == null || dom.get(b).contains(r.def.belongTo)))
+		while (!(r == null || r.def == null || domProperty.dom.get(b).contains(r.def.belongTo)))
 			r = r.reachingDef;
 		v.reachingDef = r;
 	}

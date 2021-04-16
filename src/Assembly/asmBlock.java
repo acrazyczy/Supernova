@@ -13,12 +13,10 @@ public class asmBlock {
 	public inst headInst, tailInst;
 	public ArrayList<asmBlock> predecessors, successors;
 	public Set<virtualReg> liveOut, liveIn;
-	public int loopDepth;
 
-	public asmBlock(int index, int loopDepth) {
+	public asmBlock(int index) {
 		this.index = index;
 		this.headInst = this.tailInst = null;
-		this.loopDepth = loopDepth;
 		this.predecessors = new ArrayList<>();
 		this.successors = new ArrayList<>();
 	}

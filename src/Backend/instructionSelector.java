@@ -44,7 +44,7 @@ public class instructionSelector implements pass {
 	}
 
 	private asmBlock blockMapping(basicBlock blk) {
-		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter, blk.loopDepth));
+		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter));
 		return blkMap.get(blk);
 	}
 
@@ -457,7 +457,7 @@ public class instructionSelector implements pass {
 		currentFunction = asmFunc;
 		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping(arg)));
 		asmFunc.stkFrame = new stackFrame(asmFunc);
-		asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
+		asmFunc.initBlock = new asmBlock(++ blockCounter);
 		asmFunc.initBlock.comment = "init block of " + func.functionName;
 		currentBlock = asmFunc.initBlock;
 		virtualReg returnAddress = createNewVirtualRegister();
@@ -480,7 +480,7 @@ public class instructionSelector implements pass {
 		}
 		currentBlock = null;
 		func.blocks.forEach(blk -> currentFunction.asmBlocks.add(blockMapping(blk)));
-		asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
+		asmFunc.retBlock = new asmBlock(++ blockCounter);
 		asmFunc.retBlock.comment = "return block of " + func.functionName;
 		currentBlock = asmFunc.retBlock;
 		for (int i = 0;i < 12;++ i)

@@ -26,7 +26,6 @@ public class IRBuilder implements ASTVisitor {
 	private classType currentClass = null;
 	private final IREntry programIREntry;
 	private int strConstCounter = 0;
-	private int currentLoopDepth = 0;
 
 	private final HashMap<String, globalVariable> globalStrMap = new HashMap<>();
 
@@ -123,7 +122,7 @@ public class IRBuilder implements ASTVisitor {
 	}
 
 	private register arrayCreator(function mallocFunc, ArrayList<exprStmtNode> idxNodes, int currentDim, LLVMPointerType currentType) {
-		basicBlock initBlock = new basicBlock("_new.loop.init", currentFunction, currentLoopDepth);
+		basicBlock initBlock = new basicBlock("_new.loop.init", currentFunction);
 		currentBlock.push_back(new br(initBlock));
 		currentFunction.blocks.add(initBlock);
 		currentBlock = initBlock;
@@ -147,14 +146,13 @@ public class IRBuilder implements ASTVisitor {
 			register arrayShiftPtr = new register(currentType, "_arrayShiftPtr", currentFunction), itr = new register(new LLVMIntegerType(), "_i", currentFunction);
 			currentBlock.push_back(new _move(ptr, arrayShiftPtr));
 			currentBlock.push_back(new _move(new integerConstant(32, 0), itr));
-			++ currentLoopDepth;
-			basicBlock condBlock = new basicBlock("_new.loop.cond", currentFunction, currentLoopDepth);
+			basicBlock condBlock = new basicBlock("_new.loop.cond", currentFunction);
 			currentBlock.push_back(new br(condBlock));
 			currentFunction.blocks.add(condBlock);
 			currentBlock = condBlock;
-			basicBlock bodyBlock = new basicBlock("_new.loop.body", currentFunction, currentLoopDepth),
-				destBlock = new basicBlock("_new.loop.dest", currentFunction, currentLoopDepth),
-				incrBlock = new basicBlock("_new.loop.incr", currentFunction, currentLoopDepth);
+			basicBlock bodyBlock = new basicBlock("_new.loop.body", currentFunction),
+				destBlock = new basicBlock("_new.loop.dest", currentFunction),
+				incrBlock = new basicBlock("_new.loop.incr", currentFunction);
 			register cond = new register(new LLVMIntegerType(8, true), "_cond", currentFunction);
 			currentBlock.push_back(new icmp(icmp.condCode.slt, itr, idxNode.val, cond));
 			currentBlock.push_back(new br(cond, bodyBlock, destBlock));
@@ -170,7 +168,6 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new br(condBlock));
 			currentFunction.blocks.add(destBlock);
 			currentBlock = destBlock;
-			-- currentLoopDepth;
 		}
 		return ptr;
 	}
@@ -272,10 +269,9 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(whileStmtNode it) {
-		++ currentLoopDepth;
-		basicBlock cond = new basicBlock("while.cond", currentFunction, currentLoopDepth),
-			body = new basicBlock("while.body", currentFunction, currentLoopDepth),
-			dest = new basicBlock("while.dest", currentFunction, currentLoopDepth);
+		basicBlock cond = new basicBlock("while.cond", currentFunction),
+			body = new basicBlock("while.body", currentFunction),
+			dest = new basicBlock("while.dest", currentFunction);
 
 		it.condBlock = cond;
 		it.destBlock = dest;
@@ -293,7 +289,6 @@ public class IRBuilder implements ASTVisitor {
 		if (it.stmt != null) it.stmt.accept(this);
 		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(cond));
 
-		-- currentLoopDepth;
 		currentFunction.blocks.add(dest);
 		currentBlock = dest;
 	}
@@ -349,9 +344,9 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(logicExprNode it) {
 		register value = new register(new LLVMIntegerType(8, true), "", currentFunction);
-		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction, currentLoopDepth),
-			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction, currentLoopDepth),
-			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction, currentLoopDepth);
+		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction),
+			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction),
+			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
 		currentBlock.push_back(new br(lhs));
 		currentFunction.blocks.add(lhs);
 		currentBlock = lhs;
@@ -473,11 +468,11 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(forStmtNode it) {
 		if (it.init != null) it.init.accept(this);
-		++ currentLoopDepth;
-		basicBlock cond = new basicBlock("for.cond", currentFunction, currentLoopDepth),
-			body = new basicBlock("for.body", currentFunction, currentLoopDepth),
-			incr = new basicBlock("for.incr", currentFunction, currentLoopDepth),
-			dest = new basicBlock("for.dest", currentFunction, currentLoopDepth);
+
+		basicBlock cond = new basicBlock("for.cond", currentFunction),
+			body = new basicBlock("for.body", currentFunction),
+			incr = new basicBlock("for.incr", currentFunction),
+			dest = new basicBlock("for.dest", currentFunction);
 		it.destBlock = dest;
 		it.incrBlock = incr;
 		currentFunction.blocks.add(cond);
@@ -500,7 +495,6 @@ public class IRBuilder implements ASTVisitor {
 		if (it.incr != null) it.incr.accept(this);
 		if (currentBlock.hasNoTerminalStmt()) currentBlock.push_back(new br(cond));
 
-		-- currentLoopDepth;
 		currentFunction.blocks.add(dest);
 		currentBlock = dest;
 	}
@@ -564,9 +558,9 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(ifStmtNode it) {
 		it.cond.accept(this);
-		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction, currentLoopDepth),
-			falseBranch = new basicBlock("if.falseBranch", currentFunction, currentLoopDepth),
-			destination = new basicBlock("if.dest", currentFunction, currentLoopDepth);
+		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction),
+			falseBranch = new basicBlock("if.falseBranch", currentFunction),
+			destination = new basicBlock("if.dest", currentFunction);
 		currentBlock.push_back(new br(it.cond.val, trueBranch, falseBranch));
 
 		currentFunction.blocks.add(trueBranch);
