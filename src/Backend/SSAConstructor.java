@@ -14,7 +14,7 @@ import java.util.*;
 public class SSAConstructor implements pass {
 	private final IREntry programIREntry;
 
-	private dominanceAnalyser domProperty;
+	private dominanceAnalyser dominanceProperty;
 
 	private Set<register> vars;
 	private final Map<register, Integer> renamingCounter = new HashMap<>();
@@ -26,9 +26,9 @@ public class SSAConstructor implements pass {
 	@Override
 	public boolean run() {
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(func -> {
-			domProperty = new dominanceAnalyser(func.blocks.get(0), new HashSet<>(func.blocks));
-			func.blocks.forEach(u -> u.successors().forEach(v -> domProperty.addEdge(u, v)));
-			domProperty.dominanceAnalysis(true);
+			dominanceProperty = new dominanceAnalyser(func.blocks.get(0), new HashSet<>(func.blocks));
+			func.blocks.forEach(u -> u.successors().forEach(v -> dominanceProperty.addEdge(u, v)));
+			dominanceProperty.dominanceAnalysis(true);
 			phiInsertion(func);
 			variableRenaming(func);
 		});
@@ -48,8 +48,8 @@ public class SSAConstructor implements pass {
 			while (!W.isEmpty()) {
 				basicBlock x = W.iterator().next();
 				W.remove(x);
-				domProperty.DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
-					y.addPhiFunction(v, new LinkedList<>(domProperty.radj.get(y)));
+				dominanceProperty.DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
+					y.addPhiFunction(v, new LinkedList<>(dominanceProperty.radj.get(y)));
 					F.add(y);
 					if (!defs.get(v).contains(y)) W.add(y);
 				});
@@ -66,7 +66,7 @@ public class SSAConstructor implements pass {
 			argv_.reachingDef = argv.reachingDef;
 			argv.reachingDef = argv_;
 		}
-		domProperty.getPreOrderOfTree().forEach(blk -> {
+		dominanceProperty.getPreOrderOfTree().forEach(blk -> {
 			blk.stmts.forEach(i -> {
 				if (!(i instanceof phi))
 					i.uses().forEach(v -> {
@@ -94,7 +94,7 @@ public class SSAConstructor implements pass {
 
 	private void updateReachingDef(register v, basicBlock b) {
 		register r = v.reachingDef;
-		while (!(r == null || r.def == null || domProperty.dom.get(b).contains(r.def.belongTo)))
+		while (!(r == null || r.def == null || dominanceProperty.isDominatedBy(b, r.def.belongTo)))
 			r = r.reachingDef;
 		v.reachingDef = r;
 	}

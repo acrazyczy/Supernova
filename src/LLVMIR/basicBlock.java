@@ -10,8 +10,8 @@ import LLVMIR.Operand.register;
 import java.util.*;
 
 public class basicBlock {
-	public Map<register, phi> phiCollections = new HashMap<>();
-	private Map<phi, register> phiMapping = new HashMap<>();
+	public final Map<register, phi> phiCollections = new HashMap<>();
+	private final Map<phi, register> phiMapping = new HashMap<>();
 	public LinkedList<statement> stmts = new LinkedList<>();
 	public terminalStmt tailStmt = null;
 	public String name;
@@ -68,11 +68,32 @@ public class basicBlock {
 		});
 	}
 
+	public void replaceInstruction(statement oldInst, statement newInst) {
+		assert !(oldInst instanceof phi) && !(oldInst instanceof terminalStmt);
+		newInst.belongTo = this;
+		for (int i = 0;i < stmts.size();++ i)
+			if (stmts.get(i) == oldInst)
+				stmts.set(i, newInst);
+	}
+
 	public void removeInstruction(statement stmt) {
+		if (stmt instanceof terminalStmt) tailStmt = null;
 		stmts.remove(stmt);
 		if (stmt instanceof phi) {
 			phiCollections.remove(phiMapping.get(stmt));
 			phiMapping.remove(stmt);
+		}
+	}
+
+	public void insertInstructionAfter(statement inst, statement afterInst) {
+		inst.belongTo = this;
+		stmts.add(stmts.indexOf(afterInst) + 1, inst);
+		if (inst instanceof phi) {
+			phiCollections.put((register) inst.dest, (phi) inst);
+			phiMapping.put((phi) inst, (register) inst.dest);
+		} else if (inst instanceof terminalStmt) {
+			assert tailStmt == null;
+			tailStmt = (terminalStmt) inst;
 		}
 	}
 

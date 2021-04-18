@@ -27,14 +27,14 @@ public class dominanceAnalyser {
 		order.add(blk);
 	}
 
-	private ArrayList<basicBlock> getPostOrderOfGraph() {
+	public ArrayList<basicBlock> getPostOrderOfGraph() {
 		ArrayList<basicBlock> order = new ArrayList<>();
 		Set<basicBlock> isVisited = new HashSet<>();
 		getPostOrderOfGraph(root, isVisited, order);
 		return order;
 	}
 
-	private ArrayList<basicBlock> getReversePostOrderOfGraph() {
+	public ArrayList<basicBlock> getReversePostOrderOfGraph() {
 		ArrayList<basicBlock> order = getPostOrderOfGraph();
 		Collections.reverse(order);
 		return order;
@@ -119,4 +119,6 @@ public class dominanceAnalyser {
 		getPreOrderOfTree(root, order);
 		return order;
 	}
+
+	public boolean isDominatedBy(basicBlock u, basicBlock v) {return dom.get(u).contains(v);}
 }

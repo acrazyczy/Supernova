@@ -3,12 +3,15 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-abstract public class statement {
+abstract public class statement implements Cloneable {
 	public entity dest;
 	public basicBlock belongTo;
 
@@ -35,4 +38,12 @@ abstract public class statement {
 	}
 
 	@Override abstract public String toString();
+
+	abstract public void testAndReplaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef);
+
+	abstract public boolean testOperand(TriPredicate<Set<statement>, basicBlock, entity> tester, Set<statement> SCC, basicBlock hdr);
+
+	public Object clone() throws CloneNotSupportedException {
+		return super.clone();
+	}
 }
