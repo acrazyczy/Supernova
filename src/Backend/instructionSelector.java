@@ -240,7 +240,7 @@ public class instructionSelector implements pass {
 				rs1 = createNewVirtualRegister();
 				currentBlock.addInst(new laInst(currentBlock, rs1, programAsmEntry.gblMapping.get(stmt_.pointer)));
 			} else rs1 = registerMapping((register) stmt_.pointer);
-			entity idx = stmt_.idxes.get(0);
+			entity idx = stmt_.idxes.iterator().next();
 			if (idx instanceof register) {
 				virtualReg offset = createNewVirtualRegister();
 				currentBlock.addInst(new liInst(currentBlock, offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
@@ -489,7 +489,7 @@ public class instructionSelector implements pass {
 		asmFunc.retBlock.addInst(new retInst(currentBlock));
 		currentBlock = null;
 		func.blocks.forEach(this::buildAsmBlock);
-		asmFunc.initBlock.addSuccessor(asmFunc.asmBlocks.get(0));
+		asmFunc.initBlock.addSuccessor(asmFunc.asmBlocks.iterator().next());
 		currentFunction = null;
 	}
 

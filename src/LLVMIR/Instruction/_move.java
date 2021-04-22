@@ -6,6 +6,10 @@ import LLVMIR.Operand.integerConstant;
 import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMIntegerType;
 import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,6 +37,18 @@ public class _move extends statement {
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (src == oldReg) src = newReg;}
+
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		src = replacer.apply(expr, newDef, src);
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		return tester.test(SCC, hdr, src);
+	}
+
+	@Override public statement clone() {return new _move(src, dest);}
 
 	@Override
 	public String toString() {

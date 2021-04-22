@@ -59,8 +59,8 @@ public class SCCP implements pass {
 
 		vars.forEach(v -> latticeType.put(v, valType.undetermined));
 		func.argValues.forEach(argv -> latticeType.put(argv, valType.nonConstant));
-		executableBlocks.add(func.blocks.get(0));
-		blockWorkList.add(func.blocks.get(0));
+		executableBlocks.add(func.blocks.iterator().next());
+		blockWorkList.add(func.blocks.iterator().next());
 		while (!blockWorkList.isEmpty() || !variableWorkList.isEmpty()) {
 			if (!blockWorkList.isEmpty()) {
 				basicBlock blk = blockWorkList.iterator().next();
@@ -83,7 +83,7 @@ public class SCCP implements pass {
 			for (statement stmt : stmts) {
 				if (!changed)
 					changed = stmt.variables().stream().anyMatch(v -> latticeType.get(v) == valType.determined);
-				if (stmt.dest != null && latticeType.get(stmt.dest) == valType.determined) blk.stmts.remove(stmt);
+				if (stmt.dest != null && latticeType.get(stmt.dest) == valType.determined) blk.removeInstruction(stmt);
 				else stmt.uses().stream().filter(v -> latticeType.get(v) == valType.determined)
 					.forEach(v -> stmt.replaceUse(v, ((LLVMIntegerType) v.type).is_boolean ? new booleanConstant(latticeValue.get(v)) : new integerConstant(v.type.size(), latticeValue.get(v))));
 			}

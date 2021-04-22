@@ -2,7 +2,11 @@ package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
+import LLVMIR.basicBlock;
 import LLVMIR.function;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -44,6 +48,19 @@ public class call extends statement {
 			if (parameters.get(i) == oldReg)
 				parameters.set(i, newReg);
 	}
+
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		assert false; // Oops!
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		assert false; // Oops!
+		return false;
+	}
+
+	@Override public statement clone() {return dest == null ? new call(callee, new ArrayList<>(parameters)) : new call(callee, new ArrayList<>(parameters), dest);}
 
 	@Override public String toString() {
 		String ret = "";

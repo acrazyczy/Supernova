@@ -86,8 +86,22 @@ public class basicBlock {
 	}
 
 	public void insertInstructionAfter(statement inst, statement afterInst) {
+		assert !(inst instanceof phi) || afterInst instanceof phi;
+		if (afterInst == null) insertInstructionAfterPhi(inst);
+		else if (afterInst instanceof phi) insertInstructionAfterPhi(inst);
+		else {
+			inst.belongTo = this;
+			stmts.add(stmts.indexOf(afterInst) + 1, inst);
+			if (inst instanceof terminalStmt) {
+				assert tailStmt == null;
+				tailStmt = (terminalStmt) inst;
+			}
+		}
+	}
+
+	public void insertInstructionAfterPhi(statement inst) {
 		inst.belongTo = this;
-		stmts.add(stmts.indexOf(afterInst) + 1, inst);
+		stmts.add(phiCollections.size(), inst);
 		if (inst instanceof phi) {
 			phiCollections.put((register) inst.dest, (phi) inst);
 			phiMapping.put((phi) inst, (register) inst.dest);

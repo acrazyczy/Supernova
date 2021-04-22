@@ -96,12 +96,15 @@ public class dominanceAnalyser {
 		}));
 	}
 
-	public void dominanceAnalysis(boolean DFComputationFlag) {
+	public boolean dominanceAnalysis(boolean DFComputationFlag) {
+		boolean ret = true;
 		ArrayList<basicBlock> RPO = getReversePostOrderOfGraph();
+		if (RPO.size() != V.size()) ret = false;
 		domComputation(RPO);
 		idomComputation(RPO);
 		dominatorTreeConstruction(RPO);
 		if (DFComputationFlag) DFComputation(RPO);
+		return ret;
 	}
 
 	public void addEdge(basicBlock u, basicBlock v) {
@@ -121,4 +124,6 @@ public class dominanceAnalyser {
 	}
 
 	public boolean isDominatedBy(basicBlock u, basicBlock v) {return dom.get(u).contains(v);}
+
+	public boolean isStrictlyDominatedBy(basicBlock u, basicBlock v) {return u != v && isDominatedBy(u, v);}
 }

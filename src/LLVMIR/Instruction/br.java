@@ -3,6 +3,9 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,6 +41,19 @@ public class br extends terminalStmt {
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (cond == oldReg) cond = newReg;}
+
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		assert false; // Oops!
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		assert false; // Oops!
+		return false;
+	}
+
+	@Override public statement clone() {return cond == null ? new br(trueBranch) : new br(cond, trueBranch, falseBranch);}
 
 	@Override public String toString() {
 		if (this.cond == null) return "br label " + trueBranch;

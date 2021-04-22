@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-abstract public class statement implements Cloneable {
+abstract public class statement {
 	public entity dest;
 	public basicBlock belongTo;
 
@@ -39,11 +39,9 @@ abstract public class statement implements Cloneable {
 
 	@Override abstract public String toString();
 
-	abstract public void testAndReplaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef);
+	abstract public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef);
 
-	abstract public boolean testOperand(TriPredicate<Set<statement>, basicBlock, entity> tester, Set<statement> SCC, basicBlock hdr);
+	abstract public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr);
 
-	public Object clone() throws CloneNotSupportedException {
-		return super.clone();
-	}
+	abstract public statement clone();
 }

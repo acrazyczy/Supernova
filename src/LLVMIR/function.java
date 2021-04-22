@@ -47,7 +47,7 @@ public class function {
 	private String functionArgListToString(ArrayList<entity> argList) {
 		StringBuilder ret = new StringBuilder();
 		if (argList.isEmpty()) return ret.toString();
-		entity argv = argList.get(0);
+		entity argv = argList.iterator().next();
 		ret.append(argv.type);
 		if (!argv.toString().equals("")) ret.append(" ").append(argv);
 		for (int i = 1;i < argList.size();++ i) {
@@ -63,8 +63,8 @@ public class function {
 		if (defs != null) defs.addAll(argValues);
 		if (defPoses != null)
 			argValues.forEach(argv -> {
-				if (defPoses.containsKey(argv)) defPoses.get(argv).add(blocks.get(0));
-				else defPoses.put(argv, new HashSet<>(Collections.singleton(blocks.get(0))));
+				if (defPoses.containsKey(argv)) defPoses.get(argv).add(blocks.iterator().next());
+				else defPoses.put(argv, new HashSet<>(Collections.singleton(blocks.iterator().next())));
 			});
 		blocks.forEach(blk -> blk.variablesAnalysis(variables, uses, defs, usePoses, defPoses));
 	}

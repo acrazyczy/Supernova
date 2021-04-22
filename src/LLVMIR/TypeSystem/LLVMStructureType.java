@@ -1,6 +1,7 @@
 package LLVMIR.TypeSystem;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class LLVMStructureType extends LLVMAggregateType {
 	public final ArrayList<LLVMSingleValueType> types;
@@ -30,10 +31,23 @@ public class LLVMStructureType extends LLVMAggregateType {
 	public String classDefString() {
 		StringBuilder ret = new StringBuilder(this + " = type <{");
 		if (!types.isEmpty()) {
-			ret.append(" ").append(types.get(0));
+			ret.append(" ").append(types.iterator().next());
 			for (int i = 1;i < types.size();++ i) ret.append(", ").append(types.get(i));
 		}
 		ret.append(" }>");
 		return ret.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		LLVMStructureType that = (LLVMStructureType) o;
+		return size == that.size && name.equals(that.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, size);
 	}
 }

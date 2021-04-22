@@ -2,6 +2,10 @@ package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
+import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +23,7 @@ public class binary extends statement {
 		this.inst = inst;
 		this.op1 = op1;
 		this.op2 = op2;
-		assert op1.type == op2.type;
+		assert op1.type.equals(op2.type);
 	}
 
 	@Override
@@ -44,6 +48,19 @@ public class binary extends statement {
 		if (op1 == oldReg) op1 = newReg;
 		if (op2 == oldReg) op2 = newReg;
 	}
+
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		op1 = replacer.apply(expr, newDef, op1);
+		op2 = replacer.apply(expr, newDef, op2);
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		return tester.test(SCC, hdr, op1) && tester.test(SCC, hdr, op2);
+	}
+
+	@Override public statement clone() {return new binary(inst, op1, op2, dest);}
 
 	@Override public String toString() {return dest + " = " + inst + " " + op1.type + " " + op1 + ", " + op2;}
 }

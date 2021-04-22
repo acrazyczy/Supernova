@@ -10,9 +10,10 @@ public class IROptimizer {
 	public void run() {
 		boolean flag;
 		do {
-			flag = false;
-			flag |= new SCCP(programIREntry).run();
+			flag = new SCCP(programIREntry).run();
 			flag |= new ADCE(programIREntry).run();
+			flag |= new OSR(programIREntry).run();
+//			break;
 		} while (flag);
 	}
 }

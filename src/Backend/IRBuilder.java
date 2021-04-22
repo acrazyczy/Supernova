@@ -90,7 +90,7 @@ public class IRBuilder implements ASTVisitor {
 			ArrayList<entity> parameters = new ArrayList<>();
 			if (it.thisEntity != null) parameters.add(it.thisEntity);
 			else if (currentClass != null && func.functionName.indexOf(currentClass.className + ".") == 0)
-				parameters.add(currentFunction.argValues.get(0));
+				parameters.add(currentFunction.argValues.iterator().next());
 			it.argList.forEach(argv -> {
 				argv.accept(this);
 				parameters.add(argv.val);
@@ -181,7 +181,7 @@ public class IRBuilder implements ASTVisitor {
 		} else {
 			assert it.names.size() == 1;
 			if (currentFunction.functionName.equals("main")) {
-				globalVariable gVar = (globalVariable) it.varEntities.get(0);
+				globalVariable gVar = (globalVariable) it.varEntities.iterator().next();
 				if (it.init.resultType != null && it.init.resultType.is_string) {
 					String str = ((constExprNode) it.init).value;
 					globalVariable gStr;
@@ -207,7 +207,7 @@ public class IRBuilder implements ASTVisitor {
 				}
 			} else {
 				it.init.accept(this);
-				currentBlock.push_back(new _move(it.init.val, it.varEntities.get(0)));
+				currentBlock.push_back(new _move(it.init.val, it.varEntities.iterator().next()));
 			}
 		}
 		if (!currentFunction.functionName.equals("main"))
@@ -413,7 +413,7 @@ public class IRBuilder implements ASTVisitor {
 		else currentBlock.push_back(new br(((forStmtNode) it.loopNode).destBlock));
 	}
 
-	@Override public void visit(thisExprNode it) {it.val = currentFunction.argValues.get(0);}
+	@Override public void visit(thisExprNode it) {it.val = currentFunction.argValues.iterator().next();}
 
 	@Override public void visit(classDefNode it) {
 		currentClass = (classType) gScope.getTypeFromName(it.name, new position(0, 0));
@@ -426,7 +426,7 @@ public class IRBuilder implements ASTVisitor {
 		if (it.varEntity == null) {
 			LLVMSingleValueType varLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, it.resultType);
 			register varPtr = new register(new LLVMPointerType(varLLVMType), "_varPtr", currentFunction);
-			currentBlock.push_back(new getelementptr(currentFunction.argValues.get(0),
+			currentBlock.push_back(new getelementptr(currentFunction.argValues.iterator().next(),
 				new ArrayList<>(Arrays.asList(
 					new integerConstant(32, 0),
 					new integerConstant(32, currentClass.memberVariablesIndex.get(it.varName))
@@ -455,7 +455,7 @@ public class IRBuilder implements ASTVisitor {
 	@Override
 	public void visit(funcDefNode it) {
 		currentFunction = it.func;
-		currentBlock = it.func.blocks.get(0);
+		currentBlock = it.func.blocks.iterator().next();
 		it.funcBody.accept(this);
 		if (currentBlock.hasNoTerminalStmt())
 			currentBlock.push_back(new ret(currentFunction.returnType == null ? null :
@@ -578,8 +578,8 @@ public class IRBuilder implements ASTVisitor {
 	@Override public void visit(typeNode it) {}
 
 	@Override public void visit(rootNode it) {
-		currentFunction = programIREntry.functions.get(0);
-		currentBlock = currentFunction.blocks.get(0);
+		currentFunction = programIREntry.functions.iterator().next();
+		currentBlock = currentFunction.blocks.iterator().next();
 		it.units.forEach(unit -> {if (unit.varDef != null) unit.accept(this);});
 		register retVal = new register(new LLVMIntegerType(), "_retVal", currentFunction);
 		currentBlock.push_back(new call(gScope.getMethodFunction("_g.main", true), new ArrayList<>(), retVal));

@@ -534,7 +534,6 @@ public class semanticChecker implements ASTVisitor {
 			if (currentScope.containVariable(name, false))
 				throw new semanticError("redefinition of variable " + name + ".", it.pos);
 			currentScope.defineVariable(name, type, it.pos);
-			assert currentClass == null;
 		}
 		if (currentScope instanceof globalScope) for (String name: it.names) {
 			globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type), "_g." + name, false, false);
@@ -651,7 +650,7 @@ public class semanticChecker implements ASTVisitor {
 		String funcName = it.name;
 		if (currentClass != null) {
 			funcName = currentClassName + "." + funcName;
-			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass), "._this"));
+			argValues.add(new register(typeCalculator.calcLLVMSingleValueType(gScope, currentClass), "_this"));
 		} else funcName = "_g." + funcName;
 		gScope.registerMethod(it, funcName, currentClass != null);
 		for (int i = 0;i < it.paraName.size();++ i) {

@@ -3,6 +3,10 @@ package LLVMIR.Instruction;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMPointerType;
+import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -42,6 +46,19 @@ public class getelementptr extends statement {
 			if (idxes.get(i) == oldReg)
 				idxes.set(i, newReg);
 	}
+
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		assert false; // Oops!
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		assert false; // Oops!
+		return false;
+	}
+
+	@Override public statement clone() {return new getelementptr(pointer, new ArrayList<>(idxes), dest);}
 
 	@Override
 	public String toString() {

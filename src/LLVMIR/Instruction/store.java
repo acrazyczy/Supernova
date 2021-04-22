@@ -2,6 +2,10 @@ package LLVMIR.Instruction;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
+import LLVMIR.basicBlock;
+import Optimization.IR.OSR;
+import Util.TriFunction;
+import Util.TriPredicate;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -37,5 +41,18 @@ public class store extends statement {
 		if (pointer == oldReg) pointer = newReg;
 	}
 
+	@Override
+	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
+		assert false; // Oops!
+	}
+
+	@Override
+	public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr) {
+		assert false; // Oops!
+		return false;
+	}
+
 	@Override public String toString() {return "store " + value.type + " " + value + ", " + pointer.type + " " + pointer;}
+
+	@Override public statement clone() {return new store(value, pointer);}
 }
