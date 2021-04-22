@@ -114,6 +114,7 @@ public class Main {
 
 			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 			if (assemblyGeneratingFlag) {
+				new SSADestructor(programIREntry).run();
 				asmEntry programAsmEntry = new asmEntry();
 				new instructionSelector(programIREntry, programAsmEntry).run();
 				new registerAllocator(programAsmEntry).run();

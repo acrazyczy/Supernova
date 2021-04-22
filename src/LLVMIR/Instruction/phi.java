@@ -7,9 +7,8 @@ import Optimization.IR.OSR;
 import Util.TriFunction;
 import Util.TriPredicate;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Set;
+import javax.imageio.ImageTranscoder;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class phi extends statement {
@@ -37,22 +36,25 @@ public class phi extends statement {
 	}
 
 	public void replaceUse(entity oldReg, entity newReg) {
-		for (int i = 0;i < values.size();++ i)
-			if (values.get(i) == oldReg) values.set(i, newReg);
+		for (ListIterator<entity> valItr = values.listIterator();valItr.hasNext();)
+			if (valItr.next() == oldReg) valItr.set(newReg);
 	}
 
 	public void replaceUse(entity oldReg, entity newReg, basicBlock blk) {
-		for (int i = 0;i < blocks.size();++ i)
-			if (blk == blocks.get(i)) {
-				if (values.get(i) == oldReg) values.set(i, newReg);
+		Iterator<basicBlock> blkItr = blocks.iterator();
+		for (ListIterator<entity> valItr = values.listIterator();valItr.hasNext();) {
+			entity v = valItr.next();
+			if (blkItr.next() == blk) {
+				if (v == oldReg) valItr.set(newReg);
 				break;
 			}
+		}
 	}
 
 	@Override
 	public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef) {
-		for (int i = 0;i < values.size();++ i)
-			values.set(i, replacer.apply(expr, newDef, values.get(i)));
+		for (ListIterator<entity> valItr = values.listIterator();valItr.hasNext();)
+			valItr.set(replacer.apply(expr, newDef, valItr.next()));
 	}
 
 	@Override

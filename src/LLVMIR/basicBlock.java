@@ -45,6 +45,28 @@ public class basicBlock {
 		return ret;
 	}
 
+	public void replaceSuccessor(basicBlock oldSuc, basicBlock newSuc) {
+		assert tailStmt instanceof br;
+		if (((br) tailStmt).trueBranch == oldSuc) ((br) tailStmt).trueBranch = newSuc;
+		if (((br) tailStmt).falseBranch == oldSuc) ((br) tailStmt).falseBranch = newSuc;
+		newSuc.phiCollections.values().forEach(phiInst -> {
+			for (ListIterator<basicBlock> blkItr = phiInst.blocks.listIterator();blkItr.hasNext();)
+				if (blkItr.next() == oldSuc) {
+					blkItr.set(newSuc);
+					break;
+				}
+		});
+	}
+
+	public void removeAllPhi() {
+		phiCollections.clear();
+		phiMapping.clear();
+		for (ListIterator<statement> instItr = stmts.listIterator();instItr.hasNext();) {
+			if (!(instItr.next() instanceof phi)) break;
+			instItr.remove();
+		}
+	}
+
 	public void removeSuccessor(basicBlock sucBlk) {
 		assert tailStmt instanceof br;
 		if (((br) tailStmt).trueBranch == sucBlk)

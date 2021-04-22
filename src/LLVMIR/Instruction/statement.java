@@ -30,6 +30,7 @@ abstract public class statement {
 	abstract public void replaceUse(entity oldReg, entity newReg);
 
 	public void replaceDef(register oldReg, register newReg) {
+		assert !(this instanceof phi);
 		if (dest == oldReg) dest = newReg;
 	}
 
