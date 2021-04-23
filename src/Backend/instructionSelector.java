@@ -307,8 +307,13 @@ public class instructionSelector implements pass {
 			}
 			if (lhs instanceof register) {
 				virtualReg lhs_ = registerMapping((register) lhs);
-				if (rhs instanceof register) {
-					virtualReg rhs_ = registerMapping((register) rhs);
+				if (rhs instanceof register || rhs instanceof integerConstant && !new intImm(((integerConstant) rhs).val).isValidImm()) {
+					virtualReg rhs_ = null;
+					if (rhs instanceof register) rhs_ = registerMapping((register) rhs);
+					else {
+						rhs_ = createNewVirtualRegister();
+						currentBlock.addInst(new liInst(currentBlock, rhs_, new intImm(((integerConstant) rhs).val)));
+					}
 					switch (cond) {
 						case eq -> {
 							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.xor, rd, lhs_, rhs_));
