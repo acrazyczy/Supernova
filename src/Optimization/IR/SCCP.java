@@ -33,6 +33,8 @@ public class SCCP implements pass {
 			return new Pair<>(valType.determined, ((integerConstant) var).val);
 		if (var instanceof undefinedValue)
 			return new Pair<>(valType.nonConstant, 0);
+		if (var instanceof nullPointerConstant)
+			return new Pair<>(valType.nonConstant, 0);
 		assert var instanceof register;
 		if (!(var.type instanceof LLVMIntegerType))
 			return new Pair<>(valType.nonConstant, 0);

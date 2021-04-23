@@ -27,7 +27,7 @@ public class stackFrame {
 	}
 
 	public void offsetsComputation() {
-		int maxParameterNumber = max(calleeParameterOffsets.keySet().stream().mapToInt(func -> func.argValues.size()).summaryStatistics().getMax() - 8, 0);
+		int maxParameterNumber = max(calleeParameterOffsets.isEmpty() ? 0 : calleeParameterOffsets.keySet().stream().mapToInt(func -> func.argValues.size()).summaryStatistics().getMax() - 8, 0);
 		int size = spilledRegisterOffsets.size() + maxParameterNumber;
 		for (int i = 0;i < callerParameterOffsets.size();++ i)
 			callerParameterOffsets.get(i).val = (i + size) * 4;

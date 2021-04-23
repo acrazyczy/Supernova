@@ -7,12 +7,12 @@ public class IROptimizer {
 
 	public IROptimizer(IREntry programIREntry) {this.programIREntry = programIREntry;}
 
-	public void run() {
+	public void run(boolean isSSAForm) {
 		boolean flag;
 		do {
-			flag = new SCCP(programIREntry).run();
-			flag |= new ADCE(programIREntry).run();
-			flag |= new OSR(programIREntry).run();
+			flag = isSSAForm && new SCCP(programIREntry).run();
+			flag |= isSSAForm && new ADCE(programIREntry).run();
+			flag |= isSSAForm && new OSR(programIREntry).run();
 //			break;
 		} while (flag);
 	}

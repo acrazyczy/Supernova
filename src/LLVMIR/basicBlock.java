@@ -11,7 +11,7 @@ import java.util.*;
 
 public class basicBlock {
 	public final Map<register, phi> phiCollections = new HashMap<>();
-	private final Map<phi, register> phiMapping = new HashMap<>();
+	public final Map<phi, register> phiMapping = new HashMap<>();
 	public LinkedList<statement> stmts = new LinkedList<>();
 	public terminalStmt tailStmt = null;
 	public String name;
@@ -45,14 +45,22 @@ public class basicBlock {
 		return ret;
 	}
 
-	public void replaceSuccessor(basicBlock oldSuc, basicBlock newSuc) {
+	public boolean replaceSuccessor(basicBlock oldSuc, basicBlock newSuc) {
 		assert tailStmt instanceof br;
-		if (((br) tailStmt).trueBranch == oldSuc) ((br) tailStmt).trueBranch = newSuc;
+		boolean ret = false;
+		if (((br) tailStmt).trueBranch == oldSuc) {
+			((br) tailStmt).trueBranch = newSuc;
+			ret = true;
+		}
 		if (((br) tailStmt).falseBranch == oldSuc) ((br) tailStmt).falseBranch = newSuc;
-		newSuc.phiCollections.values().forEach(phiInst -> {
+		return ret;
+	}
+
+	public void replacePredecessor(basicBlock oldPre, basicBlock newPre) {
+		phiCollections.values().forEach(phiInst -> {
 			for (ListIterator<basicBlock> blkItr = phiInst.blocks.listIterator();blkItr.hasNext();)
-				if (blkItr.next() == oldSuc) {
-					blkItr.set(newSuc);
+				if (blkItr.next() == oldPre) {
+					blkItr.set(newPre);
 					break;
 				}
 		});
@@ -131,6 +139,12 @@ public class basicBlock {
 			assert tailStmt == null;
 			tailStmt = (terminalStmt) inst;
 		}
+	}
+
+	public void insertInstructionBeforeTail(statement inst) {
+		assert !(inst instanceof phi) || !(inst instanceof terminalStmt);
+		inst.belongTo = this;
+		stmts.add(stmts.size() - 1, inst);
 	}
 
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}

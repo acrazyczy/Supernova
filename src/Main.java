@@ -22,8 +22,8 @@ public class Main {
 	private static final String SYNTAX = "-fsyntax-only";
 	private static final String OPTIMIZATION = "-O2";
 	private static final String LLVM = "-emit-llvm";
-	private static final String NO_ASM = "-S";
-//	private static final String SSA_DESTRUCT = "-fno-ssa";
+	private static final String ASM = "-S";
+	private static final String SSA_DESTRUCT = "-fno-ssa"; // dependency: LLVM
 	private static final String INPUT_FILE = "-i";
 
 	private InputStream is;
@@ -31,7 +31,7 @@ public class Main {
 	private boolean LLVMGeneratingFlag;
 	private boolean assemblyGeneratingFlag;
 	private boolean optimizationFlag;
-//	private boolean ssaDestructFlag;
+	private boolean ssaDestructFlag;
 
 	public void error(String errorMessage) {
 		System.out.println(errorMessage);
@@ -45,40 +45,41 @@ public class Main {
 		LLVMGeneratingFlag = false;
 		assemblyGeneratingFlag = true;
 		optimizationFlag = false;
-//		ssaDestructFlag = false;
-		boolean hasBeenSpecified = false;
+		ssaDestructFlag = false;
+		int doCompilation = 0;
 		for (int i = 0; i < args.length; ++i) {
 			if (args[i].charAt(0) == '-') {
 				// options
 				switch (args[i]) {
 					case SYNTAX:
+						if (doCompilation == 2) error("duplicated specification");
+						else doCompilation = 1;
+						break;
 					case LLVM:
-						if (!hasBeenSpecified) hasBeenSpecified = true;
-						else error("duplicated specification");
+					case ASM:
+						if (doCompilation == 1) error("duplicated specification");
+						else doCompilation = 2;
 				}
 				switch (args[i]) {
 					case SYNTAX -> {
 						LLVMGeneratingFlag = false;
 						assemblyGeneratingFlag = false;
 					}
-					case LLVM -> {
-						LLVMGeneratingFlag = true;
-						assemblyGeneratingFlag = true;
-					}
-					case NO_ASM -> assemblyGeneratingFlag = false;
+					case LLVM -> LLVMGeneratingFlag = true;
+					case ASM -> assemblyGeneratingFlag = true;
 					case OPTIMIZATION -> optimizationFlag = true;
+					case SSA_DESTRUCT -> ssaDestructFlag = true;
 					case INPUT_FILE -> {
 						if (i + 1 >= args.length || args[i + 1].charAt(0) == '-') error("no input file specified");
 						try {
 							is = new FileInputStream(args[i + 1]);
-							LLVMOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".ll");
-							asmOs = new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".s");
+							LLVMOs = LLVMGeneratingFlag ? new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".ll") : null;
+							asmOs = assemblyGeneratingFlag ? new FileOutputStream(args[i + 1].substring(0, args[i + 1].indexOf(".")) + ".s") : null;
 						} catch (FileNotFoundException e) {
 							error("file not found: " + args[i + 1]);
 						}
 						++ i;
 					}
-					//case SSA_DESTRUCT -> ssaDestructFlag = true;
 				}
 			} else
 				error("wrong argument: " + args[i]);
@@ -105,20 +106,25 @@ public class Main {
 			new classGenerator(gScope).visit(ASTRoot);
 			IREntry programIREntry = new IREntry();
 			new semanticChecker(gScope, programIREntry).visit(ASTRoot);
-			new IRBuilder(gScope, programIREntry).visit(ASTRoot);
-			new SSAConstructor(programIREntry).run();
 
-			if (optimizationFlag) {
-				new IROptimizer(programIREntry).run();
-			}
+			if (LLVMGeneratingFlag || assemblyGeneratingFlag) {
+				new IRBuilder(gScope, programIREntry).visit(ASTRoot);
+				new SSAConstructor(programIREntry).run();
 
-			if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
-			if (assemblyGeneratingFlag) {
-				new SSADestructor(programIREntry).run();
-				asmEntry programAsmEntry = new asmEntry();
-				new instructionSelector(programIREntry, programAsmEntry).run();
-				new registerAllocator(programAsmEntry).run();
-				new asmPrinter(programAsmEntry, asmOs).run();
+				if (optimizationFlag) new IROptimizer(programIREntry).run(true);
+
+				if (ssaDestructFlag) new SSADestructor(programIREntry).run();
+				if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
+				if (!ssaDestructFlag) new SSADestructor(programIREntry).run();
+
+
+				if (optimizationFlag) new IROptimizer(programIREntry).run(false);
+				if (assemblyGeneratingFlag) {
+					asmEntry programAsmEntry = new asmEntry();
+					new instructionSelector(programIREntry, programAsmEntry).run();
+					new registerAllocator(programAsmEntry).run();
+					new asmPrinter(programAsmEntry, asmOs).run();
+				}
 			}
 		} catch (error | IOException er) {
 			er.printStackTrace();

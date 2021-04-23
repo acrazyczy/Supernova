@@ -522,8 +522,7 @@ public class IRBuilder implements ASTVisitor {
 				it.op == cmpExprNode.opType.Equ ? icmp.condCode.eq : icmp.condCode.ne,
 				it.lhs.val, it.rhs.val, value));
 		} else {
-			assert it.lhs.resultType != null && it.rhs.resultType != null;
-			if (it.lhs.resultType.is_string) {
+			if (it.lhs.resultType != null && it.lhs.resultType.is_string) {
 				assert it.rhs.resultType.is_string;
 				function cmpFunc = null;
 				switch (it.op) {

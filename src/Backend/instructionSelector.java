@@ -126,14 +126,27 @@ public class instructionSelector implements pass {
 					} else {
 						assert rhs instanceof integerConstant || rhs instanceof booleanConstant;
 						intImm intImm = new intImm(rhs instanceof integerConstant ? ((integerConstant) rhs).val : ((booleanConstant) rhs).val);
-						ITypeInst.opType type = null;
-						switch (inst) {
-							case or -> type = ITypeInst.opType.ori;
-							case add -> type = ITypeInst.opType.addi;
-							case and -> type = ITypeInst.opType.andi;
-							case xor -> type = ITypeInst.opType.xori;
+						if (intImm.isValidImm()) {
+							ITypeInst.opType type = null;
+							switch (inst) {
+								case or -> type = ITypeInst.opType.ori;
+								case add -> type = ITypeInst.opType.addi;
+								case and -> type = ITypeInst.opType.andi;
+								case xor -> type = ITypeInst.opType.xori;
+							}
+							currentBlock.addInst(new ITypeInst(currentBlock, type, rd, lhs_, intImm));
+						} else {
+							virtualReg rhs_ = createNewVirtualRegister();
+							currentBlock.addInst(new liInst(currentBlock, rhs_, intImm));
+							RTypeInst.opType type = null;
+							switch (inst) {
+								case or -> type = RTypeInst.opType.or;
+								case add -> type = RTypeInst.opType.add;
+								case and -> type = RTypeInst.opType.and;
+								case xor -> type = RTypeInst.opType.xor;
+							}
+							currentBlock.addInst(new RTypeInst(currentBlock, type, rd, lhs_, rhs_));
 						}
-						currentBlock.addInst(new ITypeInst(currentBlock, type, rd, lhs_, intImm));
 					}
 				} else {
 					assert (lhs instanceof integerConstant || lhs instanceof booleanConstant) &&
@@ -327,8 +340,8 @@ public class instructionSelector implements pass {
 						}
 					}
 				} else {
-					assert rhs instanceof integerConstant;
-					intImm rhs_ = new intImm(((integerConstant) rhs).val);
+					assert rhs instanceof integerConstant || rhs instanceof nullPointerConstant;
+					intImm rhs_ = rhs instanceof integerConstant ? new intImm(((integerConstant) rhs).val) : new intImm(0);
 					switch (cond) {
 						case eq -> {
 							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, lhs_, rhs_));
@@ -366,6 +379,7 @@ public class instructionSelector implements pass {
 						case slt -> currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.slti, rd, lhs_, rhs_));
 						case sle -> {
 							virtualReg rhs__ = createNewVirtualRegister();
+							currentBlock.addInst(new liInst(currentBlock, rhs__, rhs_));
 							currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.slt, rd, rhs__, lhs_));
 							currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.xori, rd, rd, new intImm(1)));
 						}
@@ -405,9 +419,9 @@ public class instructionSelector implements pass {
 			ret stmt_ = (ret) stmt;
 			if (stmt_.value != null)
 				if (stmt_.value instanceof booleanConstant)
-					currentBlock.addInst(new luiInst(currentBlock, a0, new intImm(((booleanConstant) stmt_.value).val)));
+					currentBlock.addInst(new liInst(currentBlock, a0, new intImm(((booleanConstant) stmt_.value).val)));
 				else if (stmt_.value instanceof integerConstant)
-					currentBlock.addInst(new luiInst(currentBlock, a0, new intImm(((integerConstant) stmt_.value).val)));
+					currentBlock.addInst(new liInst(currentBlock, a0, new intImm(((integerConstant) stmt_.value).val)));
 				else if (stmt_.value instanceof nullPointerConstant)
 					currentBlock.addInst(new mvInst(currentBlock, a0, zero));
 				else {
