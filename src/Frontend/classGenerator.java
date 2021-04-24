@@ -78,8 +78,9 @@ public class classGenerator implements ASTVisitor {
 			gScope.defineVariable(currentClassName + "." + varName, varType, it.pos);
 			currentLLVMClass.registerMember(varLLVMType);
 		}
-//		if (it.init != null)
-//			throw new semanticError("MxStar does not support default init of member variables.", it.init.pos);
+		for (exprStmtNode init: it.init)
+			if (init != null)
+				throw new semanticError("MxStar does not support default init of member variables.", init.pos);
 	}
 
 	@Override public void visit(programUnitNode it) {}

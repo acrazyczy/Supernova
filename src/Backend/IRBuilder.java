@@ -14,10 +14,7 @@ import Util.Type.classType;
 import Util.position;
 import Util.typeCalculator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.*;
 
 public class IRBuilder implements ASTVisitor {
 	private final globalScope gScope;
@@ -174,16 +171,20 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(varDefStmtNode it) {
-		if (it.init == null) {
-			if (!currentFunction.functionName.equals("main"))
-				for (entity varEntity: it.varEntities)
-					currentBlock.push_back(new _move(new undefinedValue(varEntity.type), varEntity));
-		} else {
-			assert it.names.size() == 1;
-			if (currentFunction.functionName.equals("main")) {
-				globalVariable gVar = (globalVariable) it.varEntities.iterator().next();
-				if (it.init.resultType != null && it.init.resultType.is_string) {
-					String str = ((constExprNode) it.init).value;
+		Iterator<String> nameItr = it.names.iterator();
+		Iterator<exprStmtNode> initItr = it.init.iterator();
+		Iterator<entity> varItr = it.varEntities.iterator();
+		while (nameItr.hasNext()) {
+			String name = nameItr.next();
+			exprStmtNode init = initItr.next();
+			entity var = varItr.next();
+			if (init == null) {
+				if (!currentFunction.functionName.equals("main"))
+					currentBlock.push_back(new _move(new undefinedValue(var.type), var));
+			} else if (currentFunction.functionName.equals("main")) {
+				globalVariable gVar = (globalVariable) var;
+				if (init.resultType != null && init.resultType.is_string) {
+					String str = ((constExprNode) init).value;
 					globalVariable gStr;
 					if (globalStrMap.containsKey(str)) gStr = globalStrMap.get(str);
 					else {
@@ -200,19 +201,18 @@ public class IRBuilder implements ASTVisitor {
 					));
 					currentBlock.push_back(new store(strPtr, gVar));
 					gVar.val = "null";
-				} else if (it.init instanceof constExprNode) gVar.val = ((constExprNode) it.init).value;
+				} else if (init instanceof constExprNode) gVar.val = ((constExprNode) init).value;
 				else {
-					it.init.accept(this);
-					currentBlock.push_back(new store(it.init.val, gVar));
+					init.accept(this);
+					currentBlock.push_back(new store(init.val, gVar));
 				}
 			} else {
-				it.init.accept(this);
-				currentBlock.push_back(new _move(it.init.val, it.varEntities.iterator().next()));
+				init.accept(this);
+				currentBlock.push_back(new _move(init.val, var));
 			}
+			if (!currentFunction.functionName.equals("main"))
+				((register) var).name = name + currentFunction.getRegisterNameIndex(name);
 		}
-		if (!currentFunction.functionName.equals("main"))
-			for (int i = 0;i < it.varEntities.size();++ i)
-				((register) it.varEntities.get(i)).name = it.names.get(i) + currentFunction.getRegisterNameIndex(it.names.get(i));
 	}
 
 	@Override

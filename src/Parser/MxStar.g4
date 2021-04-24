@@ -12,7 +12,9 @@ Class: 'class';
 
 varType: typeName ('['']')*;
 
-varDef: varType Identifier ((',' Identifier)+ | ('=' expression))? ';';
+varDef: varType singleVarDef  (',' singleVarDef)* ';';
+
+singleVarDef: Identifier ('=' expression)?;
 
 typeArgList: varType Identifier (',' varType Identifier)*;
 

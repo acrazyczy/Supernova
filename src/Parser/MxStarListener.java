@@ -1,4 +1,4 @@
-// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9
+// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9.1
 package Parser;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -67,6 +67,16 @@ public interface MxStarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitVarDef(MxStarParser.VarDefContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link MxStarParser#singleVarDef}.
+	 * @param ctx the parse tree
+	 */
+	void enterSingleVarDef(MxStarParser.SingleVarDefContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link MxStarParser#singleVarDef}.
+	 * @param ctx the parse tree
+	 */
+	void exitSingleVarDef(MxStarParser.SingleVarDefContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link MxStarParser#typeArgList}.
 	 * @param ctx the parse tree

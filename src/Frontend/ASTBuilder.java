@@ -340,8 +340,10 @@ public class ASTBuilder extends MxStarBaseVisitor<ASTNode> {
 	@Override
 	public ASTNode visitVarDef(MxStarParser.VarDefContext ctx) {
 		varDefStmtNode varDefStmt = new varDefStmtNode(new position(ctx), (typeNode) visit(ctx.varType()));
-		ctx.Identifier().forEach(var -> varDefStmt.names.add(var.getText()));
-		if (ctx.expression() != null) varDefStmt.init = (exprStmtNode) visit(ctx.expression());
+		ctx.singleVarDef().forEach(varDef -> {
+			varDefStmt.names.add(varDef.Identifier().getText());
+			varDefStmt.init.add(varDef.expression() == null ? null : (exprStmtNode) visit(varDef.expression()));
+		});
 		return varDefStmt;
 	}
 

@@ -1,4 +1,4 @@
-// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9
+// Generated from E:/Repository/Supernova/src/Parser\MxStar.g4 by ANTLR 4.9.1
 package Parser;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -83,6 +83,18 @@ public class MxStarBaseListener implements MxStarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitVarDef(MxStarParser.VarDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterSingleVarDef(MxStarParser.SingleVarDefContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitSingleVarDef(MxStarParser.SingleVarDefContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

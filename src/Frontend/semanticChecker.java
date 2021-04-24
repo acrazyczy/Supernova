@@ -21,6 +21,7 @@ import Util.Type.functionType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 
 public class semanticChecker implements ASTVisitor {
 	private Scope currentScope;
@@ -525,26 +526,29 @@ public class semanticChecker implements ASTVisitor {
 		Type type = typeCalculator.calcType(gScope, it.varType);
 		if (type.is_void || (type instanceof arrayType) && ((arrayType) type).elementType.is_void)
 			throw new semanticError("variable type cannot be void.", it.varType.pos);
-		if (it.init != null) {
-			it.init.accept(this);
-			if (!typeCalculator.isEqualType(type, it.init.resultType))
-				throw new semanticError("type not match.", it.init.pos);
-		}
-		for (String name: it.names) {
+		Iterator<String> nameItr = it.names.iterator();
+		Iterator<exprStmtNode> initItr = it.init.iterator();
+		while (nameItr.hasNext()) {
+			String name = nameItr.next();
+			exprStmtNode init = initItr.next();
+			if (init != null) {
+				init.accept(this);
+				if (!typeCalculator.isEqualType(type, init.resultType))
+					throw new semanticError("type not match.", init.pos);
+			}
 			if (currentScope.containVariable(name, false))
 				throw new semanticError("redefinition of variable " + name + ".", it.pos);
 			currentScope.defineVariable(name, type, it.pos);
-		}
-		if (currentScope instanceof globalScope) for (String name: it.names) {
-			globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type), "_g." + name, false, false);
-			currentScope.bindVariableToEntity(name, gVar);
-			it.varEntities.add(gVar);
-			programIREntry.globals.add(gVar);
-		}
-		else for (String name: it.names) {
-			entity varEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
-			currentScope.bindVariableToEntity(name, varEntity);
-			it.varEntities.add(varEntity);
+			if (currentScope instanceof globalScope) {
+				globalVariable gVar = new globalVariable(typeCalculator.calcLLVMSingleValueType(gScope, type), "_g." + name, false, false);
+				currentScope.bindVariableToEntity(name, gVar);
+				it.varEntities.add(gVar);
+				programIREntry.globals.add(gVar);
+			} else {
+				entity varEntity = new register(typeCalculator.calcLLVMSingleValueType(gScope, type));
+				currentScope.bindVariableToEntity(name, varEntity);
+				it.varEntities.add(varEntity);
+			}
 		}
 	}
 
