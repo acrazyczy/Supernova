@@ -38,5 +38,9 @@ public class livenessAnalyser implements asmVisitor {
 		} while (changed);
 	}
 
-	@Override public void run() {programEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::livenessComputation);}
+	@Override
+	public boolean run() {
+		programEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::livenessComputation);
+		return true;
+	}
 }

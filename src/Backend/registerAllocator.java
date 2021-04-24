@@ -363,7 +363,8 @@ public class registerAllocator implements asmVisitor {
 	}
 
 	@Override
-	public void run() {
+	public boolean run() {
 		programAsmEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::runGraphColoring);
+		return true;
 	}
 }

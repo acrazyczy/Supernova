@@ -27,11 +27,11 @@ public class asmPrinter implements asmVisitor {
 		pWriter.println(asmFunc);
 		printAsmBlock(asmFunc.initBlock);
 		asmFunc.asmBlocks.forEach(this::printAsmBlock);
-		printAsmBlock(asmFunc.retBlock);
+		if (asmFunc.initBlock != asmFunc.retBlock) printAsmBlock(asmFunc.retBlock);
 	}
 
 	@Override
-	public void run() {
+	public boolean run() {
 		pWriter.println("\t.text");
 		programAsmEntry.asmFunctions.values().stream().filter(asmFunc  -> asmFunc.asmBlocks != null).forEach(this::printAsmFunction);
 		pWriter.println();
@@ -39,5 +39,6 @@ public class asmPrinter implements asmVisitor {
 		programAsmEntry.gblMapping.values().forEach(pWriter::println);
 		pWriter.println();
 		pWriter.flush();
+		return true;
 	}
 }

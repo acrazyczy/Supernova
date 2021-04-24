@@ -13,7 +13,7 @@ public class IROptimizer {
 			flag = isSSAForm && new SCCP(programIREntry).run();
 			flag |= isSSAForm && new ADCE(programIREntry).run();
 			flag |= isSSAForm && new OSR(programIREntry).run();
-//			break;
+			flag |= new CFGSimplifier(programIREntry).run();
 		} while (flag);
 	}
 }

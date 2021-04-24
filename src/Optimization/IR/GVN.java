@@ -3,10 +3,10 @@ package Optimization.IR;
 import Backend.pass;
 import LLVMIR.IREntry;
 
-public class aliasOptimizer implements pass {
+public class GVN implements pass {
 	private final IREntry programIREntry;
 
-	public aliasOptimizer(IREntry programIREntry) {this.programIREntry = programIREntry;}
+	public GVN(IREntry programIREntry) {this.programIREntry = programIREntry;}
 
 	@Override
 	public boolean run() {

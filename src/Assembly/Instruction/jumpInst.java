@@ -3,7 +3,7 @@ package Assembly.Instruction;
 import Assembly.asmBlock;
 
 public class jumpInst extends inst {
-	private final asmBlock label;
+	public final asmBlock label;
 
 	public jumpInst(asmBlock belongTo, asmBlock label) {
 		super(belongTo);

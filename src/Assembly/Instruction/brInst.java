@@ -9,7 +9,7 @@ public class brInst extends inst {
 	}
 
 	private final opType type;
-	private final asmBlock label;
+	public final asmBlock label;
 
 	public brInst(asmBlock belongTo, opType type, virtualReg rs1, virtualReg rs2, asmBlock label) {
 		super(belongTo);

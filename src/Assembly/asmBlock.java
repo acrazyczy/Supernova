@@ -1,9 +1,10 @@
 package Assembly;
 
+import Assembly.Instruction.brInst;
 import Assembly.Instruction.inst;
+import Assembly.Instruction.jumpInst;
 import Assembly.Operand.virtualReg;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,14 +12,14 @@ public class asmBlock {
 	private final int index;
 	public String comment;
 	public inst headInst, tailInst;
-	public ArrayList<asmBlock> predecessors, successors;
+	public Set<asmBlock> predecessors, successors;
 	public Set<virtualReg> liveOut, liveIn;
 
 	public asmBlock(int index) {
 		this.index = index;
 		this.headInst = this.tailInst = null;
-		this.predecessors = new ArrayList<>();
-		this.successors = new ArrayList<>();
+		this.predecessors = new HashSet<>();
+		this.successors = new HashSet<>();
 	}
 
 	public void addSuccessor(asmBlock asmBlk) {
@@ -30,6 +31,31 @@ public class asmBlock {
 		if (headInst == null) headInst = i;
 		else (i.pre = tailInst).suf = i;
 		tailInst = i;
+	}
+
+	public void mergeBlock(asmBlock blk) {
+		for (inst i = headInst;i != null;i = i.suf)
+			if (i instanceof jumpInst) {
+				assert ((jumpInst) i).label == blk;
+				if (i.pre != null) i.pre.suf = i.suf;
+				else headInst = i.suf;
+				if (i.suf != null) i.suf.pre = i.pre;
+				else tailInst = i.pre;
+				break;
+			}
+		if (headInst == null) headInst = blk.headInst;
+		else (tailInst.suf = blk.headInst).pre = tailInst;
+		tailInst = blk.tailInst;
+		blk.headInst = null;
+		successors = new HashSet<>(blk.successors);
+		successors.forEach(sucBlk -> {
+			sucBlk.predecessors.remove(blk); sucBlk.predecessors.add(this);
+		});
+		for (inst i = headInst;i != null && !blk.successors.isEmpty();i = i.suf)
+			if (i instanceof jumpInst) blk.successors.remove(((jumpInst) i).label);
+			else if (i instanceof brInst) blk.successors.remove(((brInst) i).label);
+		assert blk.successors.size() <= 1;
+		if (!blk.successors.isEmpty()) tailInst.linkAfter(new jumpInst(tailInst.belongTo, blk.successors.iterator().next()));
 	}
 
 	public Set<virtualReg> defs() {

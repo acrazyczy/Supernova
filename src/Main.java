@@ -7,6 +7,7 @@ import Frontend.semanticChecker;
 import Frontend.symbolCollector;
 import LLVMIR.IREntry;
 import Optimization.IR.IROptimizer;
+import Optimization.asm.asmOptimizer;
 import Util.error.error;
 import Util.Scope.globalScope;
 import Util.MxStarErrorListener;
@@ -117,12 +118,12 @@ public class Main {
 				if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 				if (!ssaDestructFlag) new SSADestructor(programIREntry).run();
 
-
 				if (optimizationFlag) new IROptimizer(programIREntry).run(false);
 				if (assemblyGeneratingFlag) {
 					asmEntry programAsmEntry = new asmEntry();
 					new instructionSelector(programIREntry, programAsmEntry).run();
 					new registerAllocator(programAsmEntry).run();
+					if (optimizationFlag) new asmOptimizer(programAsmEntry).run();
 					new asmPrinter(programAsmEntry, asmOs).run();
 				}
 			}
