@@ -10,6 +10,7 @@ import LLVMIR.basicBlock;
 import LLVMIR.function;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ADCE implements pass {
 	private final IREntry programIREntry;
@@ -47,12 +48,14 @@ public class ADCE implements pass {
 					workList.add(blk.tailStmt);
 					live.add(blk.tailStmt);
 				});
+			/*
 			func.blocks.stream()
 				.filter(blk -> blk.tailStmt instanceof br && ((br) blk.tailStmt).cond == null)
 				.forEach(blk -> {
 					workList.add(blk.tailStmt);
 					live.add(blk.tailStmt);
 				});
+			*/
 			while (!workList.isEmpty()) {
 				statement stmt = workList.iterator().next();
 				workList.remove(stmt);
@@ -74,14 +77,35 @@ public class ADCE implements pass {
 						live.add(blk.tailStmt);
 					});
 			}
-			List<basicBlock> blocks = new ArrayList<>(func.blocks);
-			for (basicBlock blk : blocks) {
+			for (basicBlock blk : func.blocks) {
 				List<statement> stmts = new ArrayList<>(blk.stmts);
-				changed |= stmts.stream().anyMatch(stmt -> !live.contains(stmt));
-				stmts.stream().filter(stmt -> !live.contains(stmt)).forEach(blk::removeInstruction);
+				changed |= stmts.stream().anyMatch(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt));
+				stmts.stream().filter(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt)).forEach(blk::removeInstruction);
 			}
+			func.blocks.stream()
+				.filter(blk -> !blk.stmts.isEmpty())
+				.collect(Collectors.toList()).forEach(blk -> {
+				if (blk.tailStmt instanceof br) {
+					br tailStmt = (br) blk.tailStmt;
+					tailStmt.trueBranch = jumpReplacement(tailStmt.trueBranch, blk, blk, new HashSet<>(), dominanceProperty.radj);
+					if (tailStmt.cond != null) tailStmt.falseBranch = jumpReplacement(tailStmt.falseBranch, blk, blk, new HashSet<>(), dominanceProperty.radj);
+				}
+			});
+			new HashSet<>(func.blocks).stream().filter(blk -> blk.stmts.isEmpty()).forEach(func.blocks::remove);
 		}
 		return changed;
+	}
+
+	private boolean isUnconditionalJump(statement stmt) {return stmt instanceof br && ((br) stmt).cond == null;}
+
+	private basicBlock jumpReplacement(basicBlock blk, basicBlock preBlk, basicBlock fromBlk, Set<basicBlock> isVisited, Map<basicBlock, Set<basicBlock>> successors) {
+		if (isVisited.contains(blk)) return null;
+		isVisited.add(blk);
+		if (!blk.stmts.isEmpty()) {
+			blk.replacePredecessor(preBlk, fromBlk);
+			return blk;
+		}
+		return successors.get(blk).stream().map(sucBlk -> jumpReplacement(sucBlk, blk, fromBlk, isVisited, successors)).reduce(null, (a, b) -> b != null ? b : a);
 	}
 
 	@Override

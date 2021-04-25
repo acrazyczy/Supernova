@@ -43,6 +43,7 @@ public class asmBlock {
 				else tailInst = i.pre;
 				break;
 			}
+		for (inst i = blk.headInst;i != null;i = i.suf) i.belongTo = this;
 		if (headInst == null) headInst = blk.headInst;
 		else (tailInst.suf = blk.headInst).pre = tailInst;
 		tailInst = blk.tailInst;

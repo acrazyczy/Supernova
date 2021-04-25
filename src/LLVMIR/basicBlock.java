@@ -1,9 +1,6 @@
 package LLVMIR;
 
-import LLVMIR.Instruction.br;
-import LLVMIR.Instruction.phi;
-import LLVMIR.Instruction.statement;
-import LLVMIR.Instruction.terminalStmt;
+import LLVMIR.Instruction.*;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 
@@ -43,6 +40,14 @@ public class basicBlock {
 			if (((br) tailStmt).falseBranch != null && ((br) tailStmt).trueBranch != ((br) tailStmt).falseBranch) ret.add(((br) tailStmt).falseBranch);
 		}
 		return ret;
+	}
+
+	public void mergeBlock(basicBlock blk) {
+		blk.stmts.forEach(stmt -> stmt.belongTo = this);
+		stmts.remove(tailStmt);
+		tailStmt = blk.tailStmt;
+		stmts.addAll(blk.stmts);
+		blk.stmts = null;
 	}
 
 	public boolean replaceSuccessor(basicBlock oldSuc, basicBlock newSuc) {
@@ -142,6 +147,7 @@ public class basicBlock {
 	}
 
 	public void insertInstructionBeforeTail(statement inst) {
+		//noinspection ConstantConditions
 		assert !(inst instanceof phi) || !(inst instanceof terminalStmt);
 		inst.belongTo = this;
 		stmts.add(stmts.size() - 1, inst);

@@ -32,6 +32,6 @@ public class CFGSimplifier implements asmVisitor {
 
 	@Override
 	public boolean run() {
-		return programAsmEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).anyMatch(this::run);
+		return programAsmEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).map(this::run).reduce(false, (a, b) -> a || b);
 	}
 }

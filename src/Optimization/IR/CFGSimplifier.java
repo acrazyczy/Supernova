@@ -7,8 +7,10 @@ import LLVMIR.Operand.booleanConstant;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
 
+import java.util.*;
+
 public class CFGSimplifier implements pass {
-	private IREntry programIREntry;
+	private final IREntry programIREntry;
 
 	public CFGSimplifier(IREntry programIREntry) {this.programIREntry = programIREntry;}
 
@@ -29,14 +31,55 @@ public class CFGSimplifier implements pass {
 		return changed;
 	}
 
+	private boolean checkSuccessor(Map<basicBlock, Set<basicBlock>> predecessors, basicBlock blk) {
+		return predecessors.get(blk).size() == 1 && blk.phiCollections.isEmpty() && (!(blk.tailStmt instanceof br) || ((br) blk.tailStmt).cond == null);
+	}
+
+	private boolean removeRedundantJump(function func) {
+		boolean changed = false;
+		List<basicBlock> blocks = new ArrayList<>(func.blocks);
+		Map<basicBlock, Set<basicBlock>> predecessors = new HashMap<>();
+		blocks.forEach(blk -> predecessors.put(blk, new HashSet<>()));
+		blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
+		for (basicBlock blk: blocks) {
+			if (blk.stmts == null) continue;
+			while (blk.successors().size() == 1 && checkSuccessor(predecessors, blk.successors().iterator().next())) {
+				basicBlock sucBlk = blk.successors().iterator().next();
+				blk.mergeBlock(sucBlk);
+				func.blocks.remove(sucBlk);
+				blk.successors().forEach(b -> {
+					predecessors.get(b).remove(sucBlk); predecessors.get(b).add(blk);
+					b.replacePredecessor(sucBlk, blk);
+				});
+				changed = true;
+			}
+		}
+		return changed;
+	}
+
 	private boolean removeRedundantBranch(function func) {
 		boolean changed = false;
-		for (basicBlock blk: func.blocks)
+		List<basicBlock> blocks = new ArrayList<>(func.blocks);
+		for (basicBlock blk: blocks)
 			if (blk.tailStmt instanceof br && ((br) blk.tailStmt).cond != null)
 				if (((br) blk.tailStmt).trueBranch == ((br) blk.tailStmt).falseBranch) {
 					((br) blk.tailStmt).cond = null;
 					((br) blk.tailStmt).falseBranch = null;
 					changed = true;
+				} else if (((br) blk.tailStmt).trueBranch.tailStmt instanceof br && ((br) blk.tailStmt).falseBranch.tailStmt instanceof br) {
+					basicBlock tb = ((br) blk.tailStmt).trueBranch, fb = ((br) blk.tailStmt).falseBranch;
+					br br1 = (br) tb.tailStmt, br2 = (br) fb.tailStmt;
+					if (((br) blk.tailStmt).trueBranch.stmts.size() == 1 && ((br) blk.tailStmt).falseBranch.stmts.size() == 1)
+						if (br1.cond == null && br2.cond == null && br1.trueBranch == br2.trueBranch) {
+							basicBlock dest = br1.trueBranch;
+							if (dest.phiCollections.isEmpty()) {
+								((br) blk.tailStmt).cond = null;
+								((br) blk.tailStmt).trueBranch = dest;
+								((br) blk.tailStmt).falseBranch = null;
+								func.blocks.remove(tb);
+								func.blocks.remove(fb);
+							}
+						}
 				}
 		return changed;
 	}
@@ -44,8 +87,9 @@ public class CFGSimplifier implements pass {
 	private boolean run(function func) {
 		boolean changed = constantConditionReplacement(func);
 		changed |= removeRedundantBranch(func);
+		changed |= removeRedundantJump(func);
 		return changed;
 	}
 
-	@Override public boolean run() {return programIREntry.functions.stream().filter(func -> func.blocks != null).anyMatch(this::run);}
+	@Override public boolean run() {return programIREntry.functions.stream().filter(func -> func.blocks != null).map(this::run).reduce(false, (a, b) -> a || b);}
 }

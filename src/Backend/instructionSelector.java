@@ -219,6 +219,7 @@ public class instructionSelector implements pass {
 						}
 					if (!merged) currentBlock.addInst(new brInst(currentBlock, brInst.opType.beqz, cond, null, falseBlk));
 				}
+				currentBlock.addInst(new jumpInst(currentBlock, trueBlk));
 			}
 		} else if (stmt instanceof call) {
 			call stmt_ = (call) stmt;
