@@ -10,6 +10,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class bitcast extends statement {
 	public entity value;
@@ -46,6 +47,12 @@ public class bitcast extends statement {
 	}
 
 	@Override public statement clone() {return new bitcast(value, dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		if (value instanceof register) value = replacer.apply((register) value);
+	}
 
 	@Override public String toString() {return dest + " = bitcast " + value.type + " " + value + " to " + dest.type;}
 }

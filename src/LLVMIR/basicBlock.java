@@ -17,13 +17,18 @@ public class basicBlock {
 
 	public basicBlock(String name, function currentFunction) {
 		this.name = name;
-		if (currentFunction != null) this.name = this.name + currentFunction.getBlockNameIndex(name);
+		if (currentFunction != null) this.name = this.name + "." + currentFunction.getBlockNameIndex(name);
 	}
 
 	public void push_front(statement stmt) {
 		assert !(stmt instanceof terminalStmt);
 		stmts.addFirst(stmt);
 		stmt.belongTo = this;
+		if (stmt instanceof phi) {
+			phi stmt_ = (phi) stmt;
+			phiCollections.put((register) stmt.dest, stmt_);
+			phiMapping.put(stmt_, (register) stmt.dest);
+		}
 	}
 
 	public void push_back(statement stmt) {
@@ -31,6 +36,11 @@ public class basicBlock {
 		stmts.add(stmt);
 		stmt.belongTo = this;
 		if (stmt instanceof terminalStmt) tailStmt = (terminalStmt) stmt;
+		if (stmt instanceof phi) {
+			phi stmt_ = (phi) stmt;
+			phiCollections.put((register) stmt.dest, stmt_);
+			phiMapping.put(stmt_, (register) stmt.dest);
+		}
 	}
 
 	public ArrayList<basicBlock> successors() {
@@ -48,6 +58,17 @@ public class basicBlock {
 		tailStmt = blk.tailStmt;
 		stmts.addAll(blk.stmts);
 		blk.stmts = null;
+	}
+
+	public void splitCallInstruction(basicBlock after, call inst) {
+		ListIterator<statement> instItr = stmts.listIterator(stmts.indexOf(inst));
+		removeInstruction(instItr.next(), false);
+		for (instItr.remove();instItr.hasNext();) {
+			statement stmt = instItr.next();
+			removeInstruction(stmt, false);
+			instItr.remove();
+			after.push_back(stmt);
+		}
 	}
 
 	public boolean replaceSuccessor(basicBlock oldSuc, basicBlock newSuc) {
@@ -111,9 +132,9 @@ public class basicBlock {
 				stmts.set(i, newInst);
 	}
 
-	public void removeInstruction(statement stmt) {
+	public void removeInstruction(statement stmt, boolean actuallyRemoving) {
 		if (stmt instanceof terminalStmt) tailStmt = null;
-		stmts.remove(stmt);
+		if (actuallyRemoving) stmts.remove(stmt);
 		if (stmt instanceof phi) {
 			phiCollections.remove(phiMapping.get(stmt));
 			phiMapping.remove(stmt);

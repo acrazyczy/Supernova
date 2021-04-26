@@ -10,6 +10,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 abstract public class statement {
 	public entity dest;
@@ -50,6 +51,8 @@ abstract public class statement {
 	abstract public void replaceOperand(TriFunction<OSR.exprType, statement, entity, entity> replacer, OSR.exprType expr, statement newDef);
 
 	abstract public boolean testOperand(TriPredicate<Set<register>, basicBlock, entity> tester, Set<register> SCC, basicBlock hdr);
+
+	abstract public void replaceAllRegister(Function<register, register> replacer);
 
 	abstract public statement clone();
 }

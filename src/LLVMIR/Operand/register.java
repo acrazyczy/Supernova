@@ -21,7 +21,7 @@ public class register extends entity {
 
 	public register(LLVMSingleValueType type, String name, function currentFunction) {
 		super(type);
-		this.name = name + currentFunction.getRegisterNameIndex(name);
+		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
 	}
 
 	@Override public String toString() {return name == null ? "" : "%" + name;}

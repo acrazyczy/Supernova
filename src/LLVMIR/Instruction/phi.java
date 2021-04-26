@@ -7,8 +7,8 @@ import Optimization.IR.OSR;
 import Util.TriFunction;
 import Util.TriPredicate;
 
-import javax.imageio.ImageTranscoder;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class phi extends statement {
@@ -63,6 +63,15 @@ public class phi extends statement {
 	}
 
 	@Override public statement clone() {return new phi(new LinkedList<>(blocks), new LinkedList<>(values), dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		for (ListIterator<entity> valItr = values.listIterator();valItr.hasNext();) {
+			entity val = valItr.next();
+			if (val instanceof register) valItr.set(replacer.apply((register) val));
+		}
+	}
 
 	@Override
 	public String toString() {

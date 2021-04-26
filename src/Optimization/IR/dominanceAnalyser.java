@@ -99,7 +99,12 @@ public class dominanceAnalyser {
 	public boolean dominanceAnalysis(boolean DFComputationFlag) {
 		boolean ret = true;
 		ArrayList<basicBlock> RPO = getReversePostOrderOfGraph();
-		if (RPO.size() != V.size()) ret = false;
+		if (RPO.size() != V.size()) {
+			Set<basicBlock> unreachable = new HashSet<>(V);
+			RPO.forEach(unreachable::remove);
+			unreachable.forEach(v -> {adj.get(v).forEach(u -> radj.get(u).remove(v)); adj.get(v).clear();});
+			ret = false;
+		}
 		domComputation(RPO);
 		idomComputation(RPO);
 		dominatorTreeConstruction(RPO);

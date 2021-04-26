@@ -9,6 +9,7 @@ import Util.TriPredicate;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class binary extends statement {
 	public enum instCode {
@@ -61,6 +62,13 @@ public class binary extends statement {
 	}
 
 	@Override public statement clone() {return new binary(inst, op1, op2, dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		if (op1 instanceof register) op1 = replacer.apply((register) op1);
+		if (op2 instanceof register) op2 = replacer.apply((register) op2);
+	}
 
 	@Override public String toString() {return dest + " = " + inst + " " + op1.type + " " + op1 + ", " + op2;}
 }

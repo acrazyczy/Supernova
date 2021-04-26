@@ -10,6 +10,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class ret extends terminalStmt {
 	public entity value;
@@ -43,6 +44,11 @@ public class ret extends terminalStmt {
 	}
 
 	@Override public statement clone() {return new ret(value);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		if (value instanceof register) value = replacer.apply((register) value);
+	}
 
 	@Override public String toString() {return value == null ? "ret void" : "ret " + value.type + " " + value;}
 }

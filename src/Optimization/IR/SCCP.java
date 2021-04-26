@@ -85,7 +85,7 @@ public class SCCP implements pass {
 			for (statement stmt : stmts) {
 				if (!changed)
 					changed = stmt.variables().stream().anyMatch(v -> latticeType.get(v) == valType.determined);
-				if (stmt.dest != null && latticeType.get(stmt.dest) == valType.determined) blk.removeInstruction(stmt);
+				if (stmt.dest != null && latticeType.get(stmt.dest) == valType.determined) blk.removeInstruction(stmt, true);
 				else stmt.uses().stream().filter(v -> latticeType.get(v) == valType.determined)
 					.forEach(v -> stmt.replaceUse(v, ((LLVMIntegerType) v.type).is_boolean ? new booleanConstant(latticeValue.get(v)) : new integerConstant(v.type.size(), latticeValue.get(v))));
 			}

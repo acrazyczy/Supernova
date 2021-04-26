@@ -10,6 +10,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class load extends statement {
 	public entity pointer;
@@ -45,6 +46,12 @@ public class load extends statement {
 	}
 
 	@Override public statement clone() {return new load(pointer, dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		if (pointer instanceof register) pointer = replacer.apply((register) pointer);
+	}
 
 	@Override public String toString() {return dest + " = load " + dest.type + ", " + pointer.type + " " + pointer;}
 }

@@ -9,7 +9,9 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class getelementptr extends statement {
@@ -59,6 +61,16 @@ public class getelementptr extends statement {
 	}
 
 	@Override public statement clone() {return new getelementptr(pointer, new ArrayList<>(idxes), dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		if (pointer instanceof register) pointer = replacer.apply((register) pointer);
+		for (ListIterator<entity> idxItr = idxes.listIterator(); idxItr.hasNext();) {
+			entity idx = idxItr.next();
+			if (idx instanceof register) idxItr.set(replacer.apply((register) idx));
+		}
+	}
 
 	@Override
 	public String toString() {

@@ -10,6 +10,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class br extends terminalStmt {
 	public entity cond;
@@ -54,6 +55,11 @@ public class br extends terminalStmt {
 	}
 
 	@Override public statement clone() {return cond == null ? new br(trueBranch) : new br(cond, trueBranch, falseBranch);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		if (cond instanceof register) cond = replacer.apply((register) cond);
+	}
 
 	@Override public String toString() {
 		if (this.cond == null) return "br label " + trueBranch;

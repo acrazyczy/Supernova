@@ -14,6 +14,7 @@ import Util.TriPredicate;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class _move extends statement {
 	public entity src;
@@ -49,6 +50,12 @@ public class _move extends statement {
 	}
 
 	@Override public statement clone() {return new _move(src, dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		dest = replacer.apply((register) dest);
+		if (src instanceof register) src = replacer.apply((register) src);
+	}
 
 	@Override
 	public String toString() {

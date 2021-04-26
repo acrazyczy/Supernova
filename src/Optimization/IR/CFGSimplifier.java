@@ -84,6 +84,25 @@ public class CFGSimplifier implements pass {
 		return changed;
 	}
 
+	private void dfs(function func, Set<function> isVisited, callingAnalyser callingProperty) {
+		if (isVisited.contains(func)) return;
+		isVisited.add(func);
+		callingProperty.callee.get(func).forEach(callee -> dfs(callee, isVisited, callingProperty));
+	}
+
+	private boolean removeUnusedFunction() {
+		callingAnalyser callingProperty = new callingAnalyser(programIREntry);
+		callingProperty.run();
+		Set<function> isVisited = new HashSet<>();
+		dfs(programIREntry.functions.iterator().next(), isVisited, callingProperty);
+		ArrayList<function> funcs = new ArrayList<>(programIREntry.functions);
+		boolean changed = funcs.stream().anyMatch(func -> func.blocks != null && !isVisited.contains(func));
+		funcs.stream()
+			.filter(func -> func.blocks != null && !isVisited.contains(func))
+			.forEach(programIREntry.functions::remove);
+		return changed;
+	}
+
 	private boolean run(function func) {
 		boolean changed = constantConditionReplacement(func);
 		changed |= removeRedundantBranch(func);
@@ -91,5 +110,9 @@ public class CFGSimplifier implements pass {
 		return changed;
 	}
 
-	@Override public boolean run() {return programIREntry.functions.stream().filter(func -> func.blocks != null).map(this::run).reduce(false, (a, b) -> a || b);}
+	@Override public boolean run() {
+		boolean changed = removeUnusedFunction();
+		changed |= programIREntry.functions.stream().filter(func -> func.blocks != null).map(this::run).reduce(false, (a, b) -> a || b);
+		return changed;
+	}
 }

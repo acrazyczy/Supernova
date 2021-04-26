@@ -9,6 +9,7 @@ import Util.TriPredicate;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 public class store extends statement {
 	public entity value, pointer;
@@ -52,7 +53,13 @@ public class store extends statement {
 		return false;
 	}
 
-	@Override public String toString() {return "store " + value.type + " " + value + ", " + pointer.type + " " + pointer;}
-
 	@Override public statement clone() {return new store(value, pointer);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		if (value instanceof register) value = replacer.apply((register) value);
+		if (pointer instanceof register) pointer = replacer.apply((register) pointer);
+	}
+
+	@Override public String toString() {return "store " + value.type + " " + value + ", " + pointer.type + " " + pointer;}
 }

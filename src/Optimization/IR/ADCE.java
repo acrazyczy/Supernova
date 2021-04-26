@@ -80,7 +80,7 @@ public class ADCE implements pass {
 			for (basicBlock blk : func.blocks) {
 				List<statement> stmts = new ArrayList<>(blk.stmts);
 				changed |= stmts.stream().anyMatch(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt));
-				stmts.stream().filter(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt)).forEach(blk::removeInstruction);
+				stmts.stream().filter(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt)).forEach(stmt -> blk.removeInstruction(stmt, true));
 			}
 			func.blocks.stream()
 				.filter(blk -> !blk.stmts.isEmpty())

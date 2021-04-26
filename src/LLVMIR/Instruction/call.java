@@ -9,7 +9,9 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class call extends statement {
@@ -61,6 +63,15 @@ public class call extends statement {
 	}
 
 	@Override public statement clone() {return dest == null ? new call(callee, new ArrayList<>(parameters)) : new call(callee, new ArrayList<>(parameters), dest);}
+
+	@Override
+	public void replaceAllRegister(Function<register, register> replacer) {
+		if (dest != null) dest = replacer.apply((register) dest);
+		for (ListIterator<entity> argItr = parameters.listIterator();argItr.hasNext();) {
+			entity argv = argItr.next();
+			if (argv instanceof register) argItr.set(replacer.apply((register) argv));
+		}
+	}
 
 	@Override public String toString() {
 		String ret = "";
