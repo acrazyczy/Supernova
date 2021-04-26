@@ -115,7 +115,7 @@ public class IRBuilder implements ASTVisitor {
 		LLVMSingleValueType ptr = baseType;
 		assert it.dims.size() >= 1;
 		for (int i = it.dims.size() - 1;i >= 0;-- i) ptr = new LLVMPointerType(ptr);
-		it.val = arrayCreator(mallocFunc, it.dims, it.dims.size() - 1, (LLVMPointerType) ptr);
+		it.val = arrayCreator(mallocFunc, it.dims, 0, (LLVMPointerType) ptr);
 	}
 
 	private register arrayCreator(function mallocFunc, ArrayList<exprStmtNode> idxNodes, int currentDim, LLVMPointerType currentType) {
@@ -139,7 +139,7 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock.push_back(new store(arraySize, arraySizePtr));
 		currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
 		currentBlock.push_back(new bitcast(arraySizePtr, ptr));
-		if (currentDim != 0) {
+		if (currentDim != idxNodes.size() - 1) {
 			register arrayShiftPtr = new register(currentType, "_arrayShiftPtr", currentFunction), itr = new register(new LLVMIntegerType(), "_i", currentFunction);
 			currentBlock.push_back(new _move(ptr, arrayShiftPtr));
 			currentBlock.push_back(new _move(new integerConstant(32, 0), itr));
@@ -155,7 +155,7 @@ public class IRBuilder implements ASTVisitor {
 			currentBlock.push_back(new br(cond, bodyBlock, destBlock));
 			currentFunction.blocks.add(bodyBlock);
 			currentBlock = bodyBlock;
-			register subArrayPtr = arrayCreator(mallocFunc, idxNodes, currentDim - 1, (LLVMPointerType) currentType.pointeeType);
+			register subArrayPtr = arrayCreator(mallocFunc, idxNodes, currentDim + 1, (LLVMPointerType) currentType.pointeeType);
 			currentBlock.push_back(new br(incrBlock));
 			currentFunction.blocks.add(incrBlock);
 			currentBlock = incrBlock;
