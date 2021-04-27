@@ -7,22 +7,20 @@ public class IROptimizer {
 
 	public IROptimizer(IREntry programIREntry) {this.programIREntry = programIREntry;}
 
-	public void run(boolean isSSAForm, boolean inlineFlag) {
+	public void normalOptimization(boolean isSSAForm) {
 		boolean flag;
 		do {
 			flag = isSSAForm && new SCCP(programIREntry).run();
 			flag |= isSSAForm && new ADCE(programIREntry).run();
 			flag |= isSSAForm && new OSR(programIREntry).run();
 			flag |= new CFGSimplifier(programIREntry).run();
+			flag |= isSSAForm && new inlineExpansion(programIREntry, false).run();
 		} while (flag);
-		if (inlineFlag) {
-			new inlineExpansion(programIREntry).run();
-			do {
-				flag = isSSAForm && new SCCP(programIREntry).run();
-//				flag = isSSAForm && new ADCE(programIREntry).run();
-//				flag |= isSSAForm && new OSR(programIREntry).run();
-//				flag |= new CFGSimplifier(programIREntry).run();
-			} while (flag);
-		}
+	}
+
+	public void run(boolean isSSAForm) {
+		normalOptimization(isSSAForm);
+		if (isSSAForm) new inlineExpansion(programIREntry, true).run();
+		normalOptimization(isSSAForm);
 	}
 }

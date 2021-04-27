@@ -13,8 +13,12 @@ import java.util.*;
 
 public class inlineExpansion implements pass {
 	private final IREntry programIREntry;
+	private boolean forceInlining;
 
-	public inlineExpansion(IREntry programIREntry) {this.programIREntry = programIREntry;}
+	public inlineExpansion(IREntry programIREntry, boolean forceInlining) {
+		this.programIREntry = programIREntry;
+		this.forceInlining = forceInlining;
+	}
 
 	Set<function> isVisited, unInlinable;
 	callingAnalyser callingProperty;
@@ -58,6 +62,8 @@ public class inlineExpansion implements pass {
 	}
 
 	private void inlining(call callInst, function func) {
+		function callee = callInst.callee.clone();
+
 		// split current block into three parts: before calling, callee function body and after calling
 		String blockName = callInst.belongTo.name;
 		basicBlock before = callInst.belongTo;
@@ -75,12 +81,16 @@ public class inlineExpansion implements pass {
 
 		// assign value to each parameter
 		Iterator<entity> srcItr = callInst.parameters.iterator();
-		Iterator<register> destItr = callInst.callee.argValues.iterator();
-		while (srcItr.hasNext()) before.push_back(new _move(srcItr.next(), getReg(destItr.next(), regMapping, func)));
+		Iterator<register> destItr = callee.argValues.iterator();
+		while (srcItr.hasNext()) {
+			_move mvInst = new _move(srcItr.next(), getReg(destItr.next(), regMapping, func));
+			((register) mvInst.dest).def = mvInst;
+			before.push_back(mvInst);
+		}
 
 		// add each block of callee to caller, replace register name and block name one by one and replace ret statement
 		ListIterator<basicBlock> blkItr = func.blocks.listIterator(func.blocks.indexOf(after));
-		callInst.callee.blocks.forEach(blk -> {
+		callee.blocks.forEach(blk -> {
 			basicBlock blkMirror = getBlk(blk, blkMapping, func);
 			blkItr.add(blkMirror);
 			blk.stmts.forEach(stmt -> {
@@ -107,10 +117,10 @@ public class inlineExpansion implements pass {
 		});
 
 		// add an unconditional jump to before block
-		before.push_back(new br(getBlk(callInst.callee.blocks.iterator().next(), blkMapping, func)));
+		before.push_back(new br(getBlk(callee.blocks.iterator().next(), blkMapping, func)));
 
 		// use phi function to collect all possible return values
-		if (callInst.callee.returnType != null)
+		if (callee.returnType != null)
 			if (!phiBlocks.isEmpty()) {
 				phi phiInst = new phi(phiBlocks, phiValues, callInst.dest);
 				after.push_front(phiInst);
@@ -122,14 +132,34 @@ public class inlineExpansion implements pass {
 			}
 	}
 
+	private static int bound = 256;
+
 	@Override
 	public boolean run() {
 		isVisited = new HashSet<>();
 		unInlinable = new HashSet<>();
-		dfsStack = new LinkedList<>();
 		programIREntry.functions.forEach(func -> {if (func.blocks == null) {unInlinable.add(func); isVisited.add(func);}});
 		callingProperty = new callingAnalyser(programIREntry);
 		callingProperty.run();
-		return programIREntry.functions.stream().filter(func -> !isVisited.contains(func)).map(this::dfs).reduce(false, (a, b) -> a || b);
+		if (forceInlining) {
+			HashMap<function, Integer> lineNumber = new HashMap<>();
+			unInlinable.add(programIREntry.functions.iterator().next());
+			programIREntry.functions.forEach(func -> lineNumber.put(func, func.blocks == null ? 0 : func.blocks.stream().mapToInt(blk -> blk.stmts.size()).sum()));
+			Map<call, function> inliningCalls = new HashMap<>();
+			programIREntry.functions.stream().filter(func -> func.blocks != null)
+				.forEach(func -> func.blocks.forEach(blk -> blk.stmts.stream().filter(stmt -> stmt instanceof call).forEach(stmt -> {
+					call callInst = (call) stmt;
+					function callee = callInst.callee;
+					if (!unInlinable.contains(callee) && lineNumber.get(callee) < bound) {
+						inliningCalls.put(callInst, func);
+						lineNumber.put(func, lineNumber.get(func) + lineNumber.get(callee));
+					}
+			})));
+			inliningCalls.forEach(this::inlining);
+			return true;
+		} else {
+			dfsStack = new LinkedList<>();
+			return programIREntry.functions.stream().filter(func -> !isVisited.contains(func)).map(this::dfs).reduce(false, (a, b) -> a || b);
+		}
 	}
 }

@@ -1,5 +1,8 @@
 package LLVMIR;
 
+import LLVMIR.Instruction.br;
+import LLVMIR.Instruction.phi;
+import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.entity;
 import LLVMIR.Operand.register;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
@@ -20,6 +23,13 @@ public class function {
 		this.functionName = functionName;
 		this.argValues = argValues;
 		this.blocks = is_builtin ? null : new LinkedList<>(Collections.singletonList(new basicBlock("entry", null)));
+	}
+
+	public function(LLVMSingleValueType returnType, String functionName, ArrayList<register> argValues, LinkedList<basicBlock> blocks) {
+		this.returnType = returnType;
+		this.functionName = functionName;
+		this.argValues = argValues;
+		this.blocks = blocks;
 	}
 
 	public int getBlockNameIndex(String blockName) {
@@ -71,6 +81,48 @@ public class function {
 
 	public String functionToString(ArrayList<entity> argList) {
 		return (returnType == null ? "void" : returnType) + " " + "@" + functionName + "(" + functionArgListToString(argList == null ? new ArrayList<>(argValues.stream().map(argv -> (entity) argv).collect(Collectors.toList())) : argList) + ")";
+	}
+
+	private register getReg(register reg, Map<register, register> regMapping) {
+		if (!regMapping.containsKey(reg)) {
+			register regMirror = new register(reg.type, reg.name);
+			regMapping.put(reg, regMirror);
+		}
+		return regMapping.get(reg);
+	}
+
+	private basicBlock getBlk(basicBlock blk, Map<basicBlock, basicBlock> blkMapping) {
+		if (!blkMapping.containsKey(blk)) {
+			basicBlock blkMirror = new basicBlock(blk.name, null);
+			blkMapping.put(blk, blkMirror);
+		}
+		return blkMapping.get(blk);
+	}
+
+	public function clone() {
+		assert this.blocks != null;
+		Map<basicBlock, basicBlock> blkMapping = new HashMap<>();
+		Map<register, register> regMapping = new HashMap<>();
+		ArrayList<register> argValues = new ArrayList<>(this.argValues);
+		for (ListIterator<register> argItr = argValues.listIterator();argItr.hasNext();) argItr.set(getReg(argItr.next(), regMapping));
+		LinkedList<basicBlock> blocks = new LinkedList<>();
+		this.blocks.forEach(blk -> {
+			basicBlock blkMirror = getBlk(blk, blkMapping);
+			blocks.add(blkMirror);
+			blk.stmts.forEach(stmt -> {
+				statement stmtMirror = stmt.clone();
+				stmtMirror.replaceAllRegister(reg -> getReg(reg, regMapping));
+				if (stmtMirror instanceof br) {
+					br brInst = (br) stmtMirror;
+					brInst.trueBranch = getBlk(brInst.trueBranch, blkMapping);
+					if (brInst.cond != null) brInst.falseBranch = getBlk(brInst.falseBranch, blkMapping);
+				} else if (stmtMirror instanceof phi)
+					for (ListIterator<basicBlock> phiBlkItr = ((phi) stmtMirror).blocks.listIterator();phiBlkItr.hasNext();)
+						phiBlkItr.set(getBlk(phiBlkItr.next(), blkMapping));
+				blkMirror.push_back(stmtMirror);
+			});
+		});
+		return new function(returnType, functionName, argValues, blocks);
 	}
 
 	@Override public String toString() {return functionToString(null);}

@@ -112,13 +112,13 @@ public class Main {
 				new IRBuilder(gScope, programIREntry).visit(ASTRoot);
 				new SSAConstructor(programIREntry).run();
 
-				if (optimizationFlag) new IROptimizer(programIREntry).run(true, true);
+				if (optimizationFlag) new IROptimizer(programIREntry).run(true);
 
 				if (ssaDestructFlag) new SSADestructor(programIREntry).run();
 				if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 				if (!ssaDestructFlag) new SSADestructor(programIREntry).run();
 
-				if (optimizationFlag) new IROptimizer(programIREntry).run(false, false);
+				if (optimizationFlag) new IROptimizer(programIREntry).run(false);
 				if (assemblyGeneratingFlag) {
 					asmEntry programAsmEntry = new asmEntry();
 					new instructionSelector(programIREntry, programAsmEntry).run();
