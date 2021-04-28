@@ -12,6 +12,8 @@ public class IROptimizer {
 		do {
 			flag = isSSAForm && new SCCP(programIREntry).run();
 			flag |= isSSAForm && new ADCE(programIREntry).run();
+			flag |= new CSE(programIREntry).run();
+			flag |= isSSAForm && new TCO(programIREntry).run();
 			flag |= isSSAForm && new OSR(programIREntry).run();
 			flag |= new CFGSimplifier(programIREntry).run();
 			flag |= isSSAForm && new inlineExpansion(programIREntry, false).run();
