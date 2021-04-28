@@ -21,16 +21,18 @@ public class dominanceAnalyser {
 		this.V.forEach(v -> this.radj.put(v, new HashSet<>()));
 	}
 
-	private void getPostOrderOfGraph(basicBlock blk, Set<basicBlock> isVisited, List<basicBlock> order) {
+	private ArrayList<basicBlock> order;
+
+	private void getPostOrderOfGraph(basicBlock blk, Set<basicBlock> isVisited) {
 		isVisited.add(blk);
-		adj.get(blk).stream().filter(adjBlk -> !isVisited.contains(adjBlk)).forEach(adjBlk -> getPostOrderOfGraph(adjBlk, isVisited, order));
+		adj.get(blk).stream().filter(adjBlk -> !isVisited.contains(adjBlk)).forEach(adjBlk -> getPostOrderOfGraph(adjBlk, isVisited));
 		order.add(blk);
 	}
 
 	public ArrayList<basicBlock> getPostOrderOfGraph() {
-		ArrayList<basicBlock> order = new ArrayList<>();
+		order = new ArrayList<>();
 		Set<basicBlock> isVisited = new HashSet<>();
-		getPostOrderOfGraph(root, isVisited, order);
+		getPostOrderOfGraph(root, isVisited);
 		return order;
 	}
 

@@ -52,7 +52,24 @@ public class basicBlock {
 		return ret;
 	}
 
-	public void mergeBlock(basicBlock blk) {
+	public void mergeBlock(basicBlock blk, function func) {
+		ArrayList<_move> mv1 = new ArrayList<>(), mv2 = new ArrayList<>();
+		for (ListIterator<statement> stmtItr = blk.stmts.listIterator();stmtItr.hasNext();) {
+			statement inst = stmtItr.next();
+			if (!(inst instanceof phi)) break;
+			phi inst_ = (phi) inst;
+			assert inst_.values.size() == 1;
+			register tmp = new register(inst_.dest.type, "mb.tmp", func);
+			_move mvInst = new _move(inst_.values.iterator().next(), tmp);
+			tmp.def = mvInst;
+			mv1.add(mvInst);
+			mvInst = new _move(tmp, inst_.dest);
+			((register) inst_.dest).def = mvInst;
+			mv2.add(mvInst);
+			stmtItr.remove();
+		}
+		mv2.forEach(mv -> blk.stmts.addFirst(mv));
+		mv1.forEach(mv -> blk.stmts.addFirst(mv));
 		blk.stmts.forEach(stmt -> stmt.belongTo = this);
 		stmts.remove(tailStmt);
 		tailStmt = blk.tailStmt;
@@ -176,14 +193,14 @@ public class basicBlock {
 
 	public boolean hasNoTerminalStmt() {return tailStmt == null;}
 
-	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
+	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<statement>> usePoses, Map<register, Set<basicBlock>> defPoses) {
 		stmts.forEach(stmt -> {
 			if (variables != null) variables.addAll(stmt.variables());
 			if (uses != null) uses.addAll(stmt.uses());
 			if (defs != null) defs.addAll(stmt.defs());
 			if (usePoses != null) stmt.uses().forEach(r -> {
-				if (usePoses.containsKey(r)) usePoses.get(r).add(this);
-				else usePoses.put(r, new HashSet<>(Collections.singleton(this)));
+				if (usePoses.containsKey(r)) usePoses.get(r).add(stmt);
+				else usePoses.put(r, new HashSet<>(Collections.singleton(stmt)));
 			});
 			if (defPoses != null) stmt.defs().forEach(r -> {
 				if (defPoses.containsKey(r)) defPoses.get(r).add(this);

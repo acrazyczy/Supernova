@@ -5,7 +5,7 @@ import LLVMIR.TypeSystem.LLVMIntegerType;
 import java.util.Objects;
 
 public class integerConstant extends constant {
-	public final int val;
+	public int val;
 
 	public integerConstant(int width, int val) {
 		super(new LLVMIntegerType(width));

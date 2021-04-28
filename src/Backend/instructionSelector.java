@@ -18,6 +18,8 @@ import LLVMIR.function;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static java.lang.Integer.compareUnsigned;
 
@@ -58,6 +60,8 @@ public class instructionSelector implements pass {
 		currentFunction.virtualRegs.add(vReg);
 		return vReg;
 	}
+
+	private Map<register, Set<statement>> uses;
 
 	private void buildAsmInst(statement stmt) {
 		if (stmt instanceof _move) {
@@ -178,45 +182,49 @@ public class instructionSelector implements pass {
 				else {
 					virtualReg cond = registerMapping((register) stmt_.cond);
 					boolean merged = false;
-					inst tailInst = currentBlock.tailInst;
-					if (tailInst != null)
-						if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
-							RTypeInst preInst = (RTypeInst) tailInst.pre;
-							if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
-								if (preInst.type == RTypeInst.opType.slt) currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
-								else currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bltu, preInst.rs2, preInst.rs1, falseBlk);
-								currentBlock.tailInst.pre = preInst.pre;
-								if (preInst.pre != null) preInst.pre.suf = currentBlock.tailInst;
-								else currentBlock.headInst = currentBlock.tailInst;
-								preInst.removeFromBlockWithoutRelinking();
-								tailInst.removeFromBlockWithoutRelinking();
-								merged = true;
-							}
-						} else {
-							inst preInst = tailInst.pre;
-							if (tailInst instanceof szInst) {
-								if (((szInst) tailInst).testMergeability(cond)) {
-									currentBlock.tailInst = new brInst(currentBlock,
-										((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
-										tailInst.rs1, null, falseBlk
-									);
-									merged = true;
-								}
-							} else if (tailInst instanceof RTypeInst) {
-								if (((RTypeInst) tailInst).testMergeability(cond)) {
-									if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
-										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, tailInst.rs1, tailInst.rs2, falseBlk);
+					if (uses.get((register) stmt_.cond).size() == 1) {
+						inst tailInst = currentBlock.tailInst;
+						if (tailInst != null)
+							if (tailInst instanceof ITypeInst && tailInst.pre instanceof RTypeInst) {
+								RTypeInst preInst = (RTypeInst) tailInst.pre;
+								if (((ITypeInst) tailInst).testMergeability(cond) && preInst.testMergeability(cond)) {
+									if (preInst.type == RTypeInst.opType.slt)
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.blt, preInst.rs1, preInst.rs2, falseBlk);
 									else
-										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bltu, preInst.rs2, preInst.rs1, falseBlk);
+									currentBlock.tailInst.pre = preInst.pre;
+									if (preInst.pre != null) preInst.pre.suf = currentBlock.tailInst;
+									else currentBlock.headInst = currentBlock.tailInst;
+									preInst.removeFromBlockWithoutRelinking();
+									tailInst.removeFromBlockWithoutRelinking();
 									merged = true;
 								}
+							} else {
+								inst preInst = tailInst.pre;
+								if (tailInst instanceof szInst) {
+									if (((szInst) tailInst).testMergeability(cond)) {
+										currentBlock.tailInst = new brInst(currentBlock,
+											((szInst) tailInst).type == szInst.opType.seqz ? brInst.opType.bnez : brInst.opType.beqz,
+											tailInst.rs1, null, falseBlk
+										);
+										merged = true;
+									}
+								} else if (tailInst instanceof RTypeInst) {
+									if (((RTypeInst) tailInst).testMergeability(cond)) {
+										if (((RTypeInst) tailInst).type == RTypeInst.opType.slt)
+											currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bge, tailInst.rs1, tailInst.rs2, falseBlk);
+										else
+											currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
+										merged = true;
+									}
+								}
+								if (merged) {
+									if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
+									else (currentBlock.tailInst.pre = preInst).suf = currentBlock.tailInst;
+									tailInst.removeFromBlockWithoutRelinking();
+								}
 							}
-							if (merged) {
-								if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
-								else (currentBlock.tailInst.pre = preInst).suf = currentBlock.tailInst;
-								tailInst.removeFromBlockWithoutRelinking();
-							}
-						}
+					}
 					if (!merged) currentBlock.addInst(new brInst(currentBlock, brInst.opType.beqz, cond, null, falseBlk));
 				}
 				currentBlock.addInst(new jumpInst(currentBlock, trueBlk));
@@ -309,7 +317,7 @@ public class instructionSelector implements pass {
 			if (lhs instanceof register) {
 				virtualReg lhs_ = registerMapping((register) lhs);
 				if (rhs instanceof register || rhs instanceof integerConstant && !new intImm(((integerConstant) rhs).val).isValidImm()) {
-					virtualReg rhs_ = null;
+					virtualReg rhs_;
 					if (rhs instanceof register) rhs_ = registerMapping((register) rhs);
 					else {
 						rhs_ = createNewVirtualRegister();
@@ -473,6 +481,8 @@ public class instructionSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
+		uses = new HashMap<>();
+		func.variablesAnalysis(null, null, null, uses, null);
 		asmFunction asmFunc = programAsmEntry.asmFunctions.get(func);
 		currentFunction = asmFunc;
 		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping(arg)));

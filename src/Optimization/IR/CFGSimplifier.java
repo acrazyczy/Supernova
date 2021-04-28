@@ -32,7 +32,7 @@ public class CFGSimplifier implements pass {
 	}
 
 	private boolean checkSuccessor(Map<basicBlock, Set<basicBlock>> predecessors, basicBlock blk) {
-		return predecessors.get(blk).size() == 1 && blk.phiCollections.isEmpty() && (!(blk.tailStmt instanceof br) || ((br) blk.tailStmt).cond == null);
+		return predecessors.get(blk).size() == 1 && (!(blk.tailStmt instanceof br) || ((br) blk.tailStmt).cond == null);
 	}
 
 	private boolean removeRedundantJump(function func) {
@@ -45,7 +45,7 @@ public class CFGSimplifier implements pass {
 			if (blk.stmts == null) continue;
 			while (blk.successors().size() == 1 && checkSuccessor(predecessors, blk.successors().iterator().next())) {
 				basicBlock sucBlk = blk.successors().iterator().next();
-				blk.mergeBlock(sucBlk);
+				blk.mergeBlock(sucBlk, func);
 				func.blocks.remove(sucBlk);
 				blk.successors().forEach(b -> {
 					predecessors.get(b).remove(sucBlk); predecessors.get(b).add(blk);

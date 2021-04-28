@@ -68,7 +68,7 @@ public class function {
 		return ret.toString();
 	}
 
-	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<basicBlock>> usePoses, Map<register, Set<basicBlock>> defPoses) {
+	public void variablesAnalysis(Set<register> variables, Set<register> uses, Set<register> defs, Map<register, Set<statement>> usePoses, Map<register, Set<basicBlock>> defPoses) {
 		if (variables != null) variables.addAll(argValues);
 		if (defs != null) defs.addAll(argValues);
 		if (defPoses != null)

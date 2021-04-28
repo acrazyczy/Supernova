@@ -15,6 +15,8 @@ public class inlineExpansion implements pass {
 	private final IREntry programIREntry;
 	private boolean forceInlining;
 
+	private static int bound = 64;
+
 	public inlineExpansion(IREntry programIREntry, boolean forceInlining) {
 		this.programIREntry = programIREntry;
 		this.forceInlining = forceInlining;
@@ -34,7 +36,7 @@ public class inlineExpansion implements pass {
 		}
 		boolean ret = callingProperty.callee.get(func).stream().filter(callee -> !isVisited.contains(callee)).map(this::dfs).reduce(false, (a, b) -> a || b);
 		for (function callee: callingProperty.callee.get(func))
-			if (!unInlinable.contains(callee)) {
+			if (!unInlinable.contains(callee) && callee.blocks.stream().mapToInt(blk -> blk.stmts.size()).sum() < bound) {
 				callingProperty.callInst.get(func).get(callee).forEach(stmt -> inlining(stmt, func));
 				ret = true;
 			}
@@ -61,8 +63,15 @@ public class inlineExpansion implements pass {
 		return blkMapping.get(blk);
 	}
 
+	Map<function, function> cloneMap;
+
+	private function getClone(function func) {
+		if (!cloneMap.containsKey(func)) cloneMap.put(func, func.clone());
+		return cloneMap.get(func);
+	}
+
 	private void inlining(call callInst, function func) {
-		function callee = callInst.callee.clone();
+		function callee = forceInlining ? callInst.callee.clone() : getClone(callInst.callee);
 
 		// split current block into three parts: before calling, callee function body and after calling
 		String blockName = callInst.belongTo.name;
@@ -132,8 +141,6 @@ public class inlineExpansion implements pass {
 			}
 	}
 
-	private static int bound = 256;
-
 	@Override
 	public boolean run() {
 		isVisited = new HashSet<>();
@@ -159,6 +166,7 @@ public class inlineExpansion implements pass {
 			return true;
 		} else {
 			dfsStack = new LinkedList<>();
+			cloneMap = new HashMap<>();
 			return programIREntry.functions.stream().filter(func -> !isVisited.contains(func)).map(this::dfs).reduce(false, (a, b) -> a || b);
 		}
 	}
