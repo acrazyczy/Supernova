@@ -113,9 +113,9 @@ public class Main {
 				new SSAConstructor(programIREntry).run();
 
 				if (optimizationFlag) new IROptimizer(programIREntry).run(true);
-				if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 
 				if (ssaDestructFlag) new SSADestructor(programIREntry).run();
+				if (LLVMGeneratingFlag) new IRPrinter(programIREntry, LLVMOs).run();
 				if (!ssaDestructFlag) new SSADestructor(programIREntry).run();
 
 				if (optimizationFlag) new IROptimizer(programIREntry).run(false);
