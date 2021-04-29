@@ -70,6 +70,10 @@ public class IRBuilder implements ASTVisitor {
 			it.ptr = ptr;
 		}
 		it.val = value;
+		if (it.trueBranch != null) {
+			assert it.falseBranch != null;
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
+		}
 	}
 
 	@Override
@@ -98,6 +102,10 @@ public class IRBuilder implements ASTVisitor {
 				currentBlock.push_back(new call(func, parameters, value));
 				it.val = value;
 			}
+		}
+		if (it.trueBranch != null) {
+			assert it.falseBranch != null;
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
 		}
 	}
 
@@ -282,7 +290,6 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction.blocks.add(cond);
 		currentBlock = cond;
 		it.cond.accept(this);
-		currentBlock.push_back(new br(body));
 
 		currentFunction.blocks.add(body);
 		currentBlock = body;
@@ -341,35 +348,40 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override public void visit(suiteStmtNode it) {it.stmts.forEach(stmt -> {if (stmt != null) stmt.accept(this);});}
 
+	private basicBlock shortCircuitBlock;
+
 	@Override
 	public void visit(logicExprNode it) {
-		register value = new register(new LLVMIntegerType(8, true), "", currentFunction);
-		basicBlock lhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs" : "or.lhs", currentFunction),
-			rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.rhs" : "or.rhs", currentFunction),
-			dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
-		currentBlock.push_back(new br(lhs));
-		currentFunction.blocks.add(lhs);
-		currentBlock = lhs;
-		it.lhs.accept(this);
-		currentBlock.push_back(new _move(it.lhs.val, value));
-		if (it.op == logicExprNode.opType.And) currentBlock.push_back(new br(it.lhs.val, rhs, dest));
-		else {
-			currentBlock.push_back(new binary(binary.instCode.xor, it.lhs.val, new booleanConstant(1), it.lhs.val));
-			currentBlock.push_back(new br(it.lhs.val, rhs, dest));
-		}
+		basicBlock rhs = new basicBlock(it.op == logicExprNode.opType.And ? "and.lhs.true" : "or.lhs.false", currentFunction);
 		currentFunction.blocks.add(rhs);
+		it.lhs.accept(this);
+		basicBlock lhs = currentBlock;
 		currentBlock = rhs;
 		it.rhs.accept(this);
-		currentBlock.push_back(new _move(it.rhs.val, value));
-		currentBlock.push_back(new br(dest));
-		currentFunction.blocks.add(dest);
-		currentBlock = dest;
-
+		if (it.rhs instanceof logicExprNode && ((logicExprNode) it.rhs).op == it.op) {
+			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
+			it.val = it.rhs.val;
+		} else {
+			register value = new register(new LLVMIntegerType(8, true), it.op == logicExprNode.opType.And ? "and.res" : "or.res", currentFunction);
+			shortCircuitBlock = new basicBlock(it.op == logicExprNode.opType.And ? "and.false" : "or.true", currentFunction);
+			currentFunction.blocks.add(shortCircuitBlock);
+			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
+			basicBlock end = new basicBlock(it.op == logicExprNode.opType.And ? "and.true" : "or.false", currentFunction),
+				dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
+			currentFunction.blocks.add(end);
+			currentFunction.blocks.add(dest);
+			currentBlock.push_back(it.op == logicExprNode.opType.And ? new br(it.rhs.val, end, shortCircuitBlock) : new br(it.rhs.val, shortCircuitBlock, end));
+			shortCircuitBlock.push_back(new _move(new booleanConstant(it.op == logicExprNode.opType.And ? 0 : 1), value));
+			shortCircuitBlock.push_back(new br(dest));
+			end.push_back(new _move(new booleanConstant(it.op == logicExprNode.opType.And ? 1 : 0), value));
+			end.push_back(new br(dest));
+			currentBlock = dest;
+			it.val = value;
+		}
 		if (it.trueBranch != null) {
 			assert it.falseBranch != null;
-			currentBlock.push_back(new br(value, it.trueBranch, it.falseBranch));
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
 		}
-		it.val = value;
 	}
 
 	@Override
@@ -405,6 +417,10 @@ public class IRBuilder implements ASTVisitor {
 			));
 		}
 		it.val = value;
+		if (it.trueBranch != null) {
+			assert it.falseBranch != null;
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
+		}
 	}
 
 	@Override
@@ -443,6 +459,10 @@ public class IRBuilder implements ASTVisitor {
 			it.val = value;
 			it.ptr = it.varEntity;
 		} else it.val = it.varEntity;
+		if (it.trueBranch != null) {
+			assert it.falseBranch != null;
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
+		}
 	}
 
 	@Override
@@ -597,6 +617,10 @@ public class IRBuilder implements ASTVisitor {
 		it.ptr = ptr;
 		currentBlock.push_back(new load(ptr, value));
 		it.val = value;
+		if (it.trueBranch != null) {
+			assert it.falseBranch != null;
+			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
+		}
 	}
 
 	@Override

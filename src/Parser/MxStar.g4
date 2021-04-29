@@ -47,7 +47,7 @@ expression: atomicExpression #atomicExpr
 	| expression op = ('<' | '<=' | '>' | '>=') expression #relationalExpr
 	| expression op = ('==' | '!=') expression #relationalExpr
 	| expression op = ('&' | '^' | '|') expression #bitwiseExpr
-	| expression op = ('&&' | '||') expression #logicExpr
+	| <assoc=right> expression op = ('&&' | '||') expression #logicExpr
 	| <assoc=right> expression op = '=' expression #assigmentExpr;
 
 New: 'new';

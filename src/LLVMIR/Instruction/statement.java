@@ -31,15 +31,7 @@ abstract public class statement {
 	abstract public void replaceUse(entity oldReg, entity newReg);
 
 	public void replaceDef(register oldReg, register newReg) {
-		if (this instanceof phi) {
-			belongTo.phiCollections.remove((register) dest);
-			belongTo.phiMapping.remove(this);
-		}
 		if (dest == oldReg) dest = newReg;
-		if (this instanceof phi) {
-			belongTo.phiCollections.put((register) dest, (phi) this);
-			belongTo.phiMapping.put((phi) this, (register) dest);
-		}
 	}
 
 	public Set<register> defs() {

@@ -69,7 +69,8 @@ public class SSAConstructor implements pass {
 			argv_.reachingDef = argv.reachingDef;
 			argv.reachingDef = argv_;
 		}
-		dominanceProperty.getPreOrderOfTree().forEach(blk -> {
+		List<basicBlock> order = dominanceProperty.getPreOrderOfTree();
+		order.forEach(blk -> {
 			blk.stmts.forEach(i -> {
 				if (!(i instanceof phi))
 					i.uses().forEach(v -> {
@@ -86,12 +87,10 @@ public class SSAConstructor implements pass {
 					v.reachingDef = v_;
 				});
 			});
-			blk.successors().forEach(sucBlk -> sucBlk.phiCollections.forEach((u, phiInst) ->
-				phiInst.uses().forEach(v -> {
-					updateReachingDef(v, blk);
-					phiInst.replaceUse(v, v.reachingDef, blk);
-				})
-			));
+			blk.successors().forEach(sucBlk -> sucBlk.phiCollections.forEach((u, phiInst) -> {
+				updateReachingDef(u, blk);
+				phiInst.replaceUse(u, u.reachingDef, blk);
+			}));
 		});
 	}
 

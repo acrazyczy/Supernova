@@ -1774,7 +1774,7 @@ public class MxStarParser extends Parser {
 							consume();
 						}
 						setState(207);
-						expression(3);
+						expression(2);
 						}
 						break;
 					case 8:
@@ -2885,7 +2885,7 @@ public class MxStarParser extends Parser {
 		"\2\2\u00c5\u00e0\5 \21\t\u00c6\u00c7\f\7\2\2\u00c7\u00c8\t\b\2\2\u00c8"+
 		"\u00e0\5 \21\b\u00c9\u00ca\f\6\2\2\u00ca\u00cb\t\t\2\2\u00cb\u00e0\5 "+
 		"\21\7\u00cc\u00cd\f\5\2\2\u00cd\u00ce\t\n\2\2\u00ce\u00e0\5 \21\6\u00cf"+
-		"\u00d0\f\4\2\2\u00d0\u00d1\t\13\2\2\u00d1\u00e0\5 \21\5\u00d2\u00d3\f"+
+		"\u00d0\f\4\2\2\u00d0\u00d1\t\13\2\2\u00d1\u00e0\5 \21\4\u00d2\u00d3\f"+
 		"\3\2\2\u00d3\u00d4\7\67\2\2\u00d4\u00e0\5 \21\3\u00d5\u00d6\f\21\2\2\u00d6"+
 		"\u00e0\t\3\2\2\u00d7\u00d8\f\17\2\2\u00d8\u00d9\7\33\2\2\u00d9\u00da\5"+
 		" \21\2\u00da\u00db\7\34\2\2\u00db\u00e0\3\2\2\2\u00dc\u00dd\f\16\2\2\u00dd"+

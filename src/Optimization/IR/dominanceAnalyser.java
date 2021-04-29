@@ -23,16 +23,17 @@ public class dominanceAnalyser {
 
 	private ArrayList<basicBlock> order;
 
-	private void getPostOrderOfGraph(basicBlock blk, Set<basicBlock> isVisited) {
+	private void getPostOrderOfGraph(basicBlock blk, Set<basicBlock> isVisited, int depth) {
 		isVisited.add(blk);
-		adj.get(blk).stream().filter(adjBlk -> !isVisited.contains(adjBlk)).forEach(adjBlk -> getPostOrderOfGraph(adjBlk, isVisited));
+		for (basicBlock adjBlk: adj.get(blk))
+			if (!isVisited.contains(adjBlk)) getPostOrderOfGraph(adjBlk, isVisited, depth + 1);
 		order.add(blk);
 	}
 
 	public ArrayList<basicBlock> getPostOrderOfGraph() {
 		order = new ArrayList<>();
 		Set<basicBlock> isVisited = new HashSet<>();
-		getPostOrderOfGraph(root, isVisited);
+		getPostOrderOfGraph(root, isVisited, 0);
 		return order;
 	}
 
