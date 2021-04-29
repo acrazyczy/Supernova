@@ -7,7 +7,7 @@ import Optimization.IR.OSR;
 import Util.TriFunction;
 import Util.TriPredicate;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -29,7 +29,7 @@ public class icmp extends statement {
 
 	@Override
 	public Set<register> variables() {
-		Set<register> ret = new HashSet<>();
+		Set<register> ret = new LinkedHashSet<>();
 		if (op1 instanceof register) ret.add((register) op1);
 		if (op2 instanceof register) ret.add((register) op2);
 		ret.add((register) dest);
@@ -38,7 +38,7 @@ public class icmp extends statement {
 
 	@Override
 	public Set<register> uses() {
-		Set<register> ret = new HashSet<>();
+		Set<register> ret = new LinkedHashSet<>();
 		if (op1 instanceof register) ret.add((register) op1);
 		if (op2 instanceof register) ret.add((register) op2);
 		return ret;

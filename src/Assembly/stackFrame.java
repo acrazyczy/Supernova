@@ -8,7 +8,7 @@ import Assembly.Operand.virtualReg;
 import LLVMIR.function;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static java.lang.Integer.max;
@@ -22,8 +22,8 @@ public class stackFrame {
 
 	public stackFrame(asmFunction asmFunc) {
 		this.asmFunc = asmFunc;
-		spilledRegisterOffsets = new HashMap<>();
-		calleeParameterOffsets = new HashMap<>();
+		spilledRegisterOffsets = new LinkedHashMap<>();
+		calleeParameterOffsets = new LinkedHashMap<>();
 	}
 
 	public void offsetsComputation() {

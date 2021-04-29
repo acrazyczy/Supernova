@@ -8,7 +8,7 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -35,7 +35,7 @@ abstract public class statement {
 	}
 
 	public Set<register> defs() {
-		return dest == null ? new HashSet<>() : Collections.singleton((register) dest);
+		return dest == null ? new LinkedHashSet<>() : Collections.singleton((register) dest);
 	}
 
 	@Override abstract public String toString();

@@ -8,7 +8,7 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -22,7 +22,7 @@ public class bitcast extends statement {
 
 	@Override
 	public Set<register> variables() {
-		Set<register> ret = new HashSet<>();
+		Set<register> ret = new LinkedHashSet<>();
 		if (value instanceof register) ret.add((register) value);
 		ret.add((register) dest);
 		return ret;
@@ -30,7 +30,7 @@ public class bitcast extends statement {
 
 	@Override
 	public Set<register> uses() {
-		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
+		return value instanceof register ? new LinkedHashSet<>(Collections.singleton((register) value)) : new LinkedHashSet<>();
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (value == oldReg) value = newReg;}

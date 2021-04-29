@@ -5,8 +5,8 @@ import LLVMIR.IREntry;
 import LLVMIR.Instruction.call;
 import LLVMIR.function;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,11 +20,11 @@ public class callingAnalyser implements pass {
 
 	@Override
 	public boolean run() {
-		caller = new HashMap<>();
-		callee = new HashMap<>();
-		callInst = new HashMap<>();
+		caller = new LinkedHashMap<>();
+		callee = new LinkedHashMap<>();
+		callInst = new LinkedHashMap<>();
 		programIREntry.functions.forEach(func -> {
-			caller.put(func, new HashSet<>()); callee.put(func, new HashSet<>()); callInst.put(func, new HashMap<>());
+			caller.put(func, new LinkedHashSet<>()); callee.put(func, new LinkedHashSet<>()); callInst.put(func, new LinkedHashMap<>());
 		});
 		programIREntry.functions.stream()
 			.filter(func -> func.blocks != null)
@@ -33,7 +33,7 @@ public class callingAnalyser implements pass {
 					call stmt_ = (call) stmt;
 					caller.get(stmt_.callee).add(func);
 					callee.get(func).add(stmt_.callee);
-					if (!callInst.get(func).containsKey(stmt_.callee)) callInst.get(func).put(stmt_.callee, new HashSet<>());
+					if (!callInst.get(func).containsKey(stmt_.callee)) callInst.get(func).put(stmt_.callee, new LinkedHashSet<>());
 					callInst.get(func).get(stmt_.callee).add(stmt_);
 				})
 			));

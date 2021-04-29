@@ -31,21 +31,21 @@ public class SSADestructor implements pass {
 	}
 
 	private void initialization(function func) {
-		predecessors = new HashMap<>();
+		predecessors = new LinkedHashMap<>();
 		func.blocks.forEach(blk -> predecessors.put(blk, new ArrayList<>()));
 		func.blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
 	}
 
 	private void criticalEdgeSplitting(function func) {
-		parallelCopy = new HashMap<>();
+		parallelCopy = new LinkedHashMap<>();
 		ArrayList<basicBlock> blocks = new ArrayList<>(func.blocks);
-		blocks.forEach(blk -> parallelCopy.put(blk, new HashSet<>()));
+		blocks.forEach(blk -> parallelCopy.put(blk, new LinkedHashSet<>()));
 		blocks.stream().filter(blk -> !blk.phiCollections.isEmpty()).forEach(blk -> {
 			predecessors.get(blk).stream()
 				.filter(preBlk -> preBlk.successors().size() > 1)
 				.forEach(preBlk -> {
 					basicBlock splitBlock = new basicBlock(preBlk.name + "_" + blk.name + ".split", func);
-					parallelCopy.put(splitBlock, new HashSet<>());
+					parallelCopy.put(splitBlock, new LinkedHashSet<>());
 					splitBlock.push_back(new br(blk));
 					blk.replacePredecessor(preBlk, splitBlock);
 					if (preBlk.replaceSuccessor(blk, splitBlock))
@@ -70,7 +70,7 @@ public class SSADestructor implements pass {
 		func.blocks.forEach(blk -> {
 			Set<_move> PCs = parallelCopy.get(blk);
 			blk.removeAllPhi();
-			Map<register, Integer> degree = new HashMap<>();
+			Map<register, Integer> degree = new LinkedHashMap<>();
 			PCs.forEach(mvInst -> mvInst.variables().forEach(v -> degree.put(v, 0)));
 			PCs.forEach(mvInst -> {
 				if (mvInst.src instanceof register)

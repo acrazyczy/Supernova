@@ -20,7 +20,7 @@ public class ADCE implements pass {
 
 	private boolean run(function func) {
 		basicBlock entry = new basicBlock(), exit = new basicBlock();
-		Set<basicBlock> nodes = new HashSet<>(func.blocks);
+		Set<basicBlock> nodes = new LinkedHashSet<>(func.blocks);
 		nodes.add(entry);
 		nodes.add(exit);
 		dominanceAnalyser dominanceProperty = new dominanceAnalyser(exit, nodes);
@@ -32,9 +32,9 @@ public class ADCE implements pass {
 
 		boolean changed = false;
 		if (dominanceProperty.dominanceAnalysis(true)) {
-			Map<register, Set<basicBlock>> def = new HashMap<>();
+			Map<register, Set<basicBlock>> def = new LinkedHashMap<>();
 			func.variablesAnalysis(null, null, null, null, def);
-			Set<statement> live = new HashSet<>(), workList = new HashSet<>();
+			Set<statement> live = new LinkedHashSet<>(), workList = new LinkedHashSet<>();
 			func.blocks.forEach(blk -> blk.stmts.stream()
 				.filter(stmt -> sideEffectProperty.sideEffectStatements.contains(stmt))
 				.forEach(stmt -> {
@@ -87,11 +87,11 @@ public class ADCE implements pass {
 				.collect(Collectors.toList()).forEach(blk -> {
 				if (blk.tailStmt instanceof br) {
 					br tailStmt = (br) blk.tailStmt;
-					tailStmt.trueBranch = jumpReplacement(tailStmt.trueBranch, blk, blk, new HashSet<>(), dominanceProperty.radj);
-					if (tailStmt.cond != null) tailStmt.falseBranch = jumpReplacement(tailStmt.falseBranch, blk, blk, new HashSet<>(), dominanceProperty.radj);
+					tailStmt.trueBranch = jumpReplacement(tailStmt.trueBranch, blk, blk, new LinkedHashSet<>(), dominanceProperty.radj);
+					if (tailStmt.cond != null) tailStmt.falseBranch = jumpReplacement(tailStmt.falseBranch, blk, blk, new LinkedHashSet<>(), dominanceProperty.radj);
 				}
 			});
-			new HashSet<>(func.blocks).stream().filter(blk -> blk.stmts.isEmpty()).forEach(func.blocks::remove);
+			new LinkedHashSet<>(func.blocks).stream().filter(blk -> blk.stmts.isEmpty()).forEach(func.blocks::remove);
 		}
 		return changed;
 	}

@@ -3,7 +3,7 @@ package Assembly.Instruction;
 import Assembly.Operand.virtualReg;
 import Assembly.asmBlock;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 abstract public class inst {
@@ -11,7 +11,7 @@ abstract public class inst {
 	public virtualReg rd, rs1, rs2;
 
 	/* graph coloring information */
-	public Set<virtualReg> defs = new HashSet<>(), uses = new HashSet<>();
+	public Set<virtualReg> defs = new LinkedHashSet<>(), uses = new LinkedHashSet<>();
 	public asmBlock belongTo;
 
 	public inst(asmBlock belongTo) {this.belongTo = belongTo;}

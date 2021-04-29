@@ -227,7 +227,7 @@ public class OSR implements pass {
 			} else if (stackSet.contains(u)) low.put(v, min(low.get(v), DFN.get(u)));
 		});
 		if (DFN.get(v).equals(low.get(v))) {
-			Set<register> SCC = new HashSet<>();
+			Set<register> SCC = new LinkedHashSet<>();
 			register top;
 			do {
 				stackSet.remove(top = stack.pop());
@@ -238,24 +238,24 @@ public class OSR implements pass {
 	}
 
 	private boolean run(function func) {
-		dominanceProperty = new dominanceAnalyser(func.blocks.iterator().next(), new HashSet<>(func.blocks));
+		dominanceProperty = new dominanceAnalyser(func.blocks.iterator().next(), new LinkedHashSet<>(func.blocks));
 		func.blocks.forEach(blk -> blk.successors().forEach(sucBlk -> dominanceProperty.addEdge(blk, sucBlk)));
 		changed = false;
 		if (dominanceProperty.dominanceAnalysis(false)) {
 			ArrayList<basicBlock> RPO = dominanceProperty.getReversePostOrderOfGraph();
-			RPONumber = new HashMap<>();
+			RPONumber = new LinkedHashMap<>();
 			for (int i = 0; i < RPO.size(); ++ i) RPONumber.put(RPO.get(i), i);
 
-			DFN = new HashMap<>();
-			low = new HashMap<>();
-			stackSet = new HashSet<>();
+			DFN = new LinkedHashMap<>();
+			low = new LinkedHashMap<>();
+			stackSet = new LinkedHashSet<>();
 			stack = new Stack<>();
 			DFSIndex = 0;
-			header = new HashMap<>();
-			exprMap = new HashMap<>();
+			header = new LinkedHashMap<>();
+			exprMap = new LinkedHashMap<>();
 			entry = func.blocks.iterator().next();
 
-			Set<register> vars = new HashSet<>();
+			Set<register> vars = new LinkedHashSet<>();
 			func.variablesAnalysis(vars, null, null, null, null);
 
 			vars.forEach(v -> {

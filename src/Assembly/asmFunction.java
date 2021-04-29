@@ -3,7 +3,7 @@ package Assembly;
 import Assembly.Operand.virtualReg;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -22,10 +22,10 @@ public class asmFunction {
 		this.parameters = parameters;
 		if (parameters == null) {
 			this.asmBlocks = null;
-			this.virtualRegs = new HashSet<>();
+			this.virtualRegs = new LinkedHashSet<>();
 		} else {
 			this.asmBlocks = new LinkedList<>();
-			this.virtualRegs = new HashSet<>(parameters);
+			this.virtualRegs = new LinkedHashSet<>(parameters);
 		}
 	}
 
@@ -37,7 +37,7 @@ public class asmFunction {
 
 	public ArrayList<asmBlock> dfsOrderComputation() {
 		ArrayList<asmBlock> ret = new ArrayList<>();
-		visited = new HashSet<>();
+		visited = new LinkedHashSet<>();
 		dfsBlock(initBlock, ret);
 		return ret;
 	}

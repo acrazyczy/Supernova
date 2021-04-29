@@ -42,21 +42,21 @@ public class SCCP implements pass {
 	}
 
 	private boolean run(function func) {
-		executableBlocks = new HashSet<>();
-		latticeType = new HashMap<>();
-		latticeValue = new HashMap<>();
-		predecessors = new HashMap<>();
+		executableBlocks = new LinkedHashSet<>();
+		latticeType = new LinkedHashMap<>();
+		latticeValue = new LinkedHashMap<>();
+		predecessors = new LinkedHashMap<>();
 
 		func.blocks.forEach(blk -> predecessors.put(blk, new ArrayList<>()));
 		func.blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
 
 		boolean changed = false;
-		Set<basicBlock> blockWorkList = new HashSet<>();
-		Set<register> vars = new HashSet<>(), variableWorkList = new HashSet<>();
+		Set<basicBlock> blockWorkList = new LinkedHashSet<>();
+		Set<register> vars = new LinkedHashSet<>(), variableWorkList = new LinkedHashSet<>();
 		func.variablesAnalysis(vars, null, null, null, null);
 
-		Map<register, Set<statement>> uses = new HashMap<>();
-		vars.forEach(v -> uses.put(v, new HashSet<>()));
+		Map<register, Set<statement>> uses = new LinkedHashMap<>();
+		vars.forEach(v -> uses.put(v, new LinkedHashSet<>()));
 		func.blocks.forEach(blk -> blk.stmts.forEach(stmt -> stmt.uses().forEach(v -> uses.get(v).add(stmt))));
 
 		vars.forEach(v -> latticeType.put(v, valType.undetermined));

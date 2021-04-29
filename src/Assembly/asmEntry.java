@@ -4,11 +4,11 @@ import Assembly.Operand.globalData;
 import LLVMIR.Operand.globalVariable;
 import LLVMIR.function;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class asmEntry {
-	public HashMap<globalVariable, globalData> gblMapping = new HashMap<>();
-	public HashMap<function, asmFunction> asmFunctions = new HashMap<>();
+	public LinkedHashMap<globalVariable, globalData> gblMapping = new LinkedHashMap<>();
+	public LinkedHashMap<function, asmFunction> asmFunctions = new LinkedHashMap<>();
 
 	public asmEntry() {}
 }

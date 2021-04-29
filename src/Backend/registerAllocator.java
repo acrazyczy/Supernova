@@ -62,24 +62,24 @@ public class registerAllocator implements asmVisitor {
 		freezeWorkList = new ArrayList<>();
 		spillWorkList = new ArrayList<>();
 		spilledNodes = new ArrayList<>();
-		coalescedNodes = new HashSet<>();
-		coloredNodes = new HashSet<>();
+		coalescedNodes = new LinkedHashSet<>();
+		coloredNodes = new LinkedHashSet<>();
 		selectStack = new Stack<>();
-		coalescedMoves = new HashSet<>();
-		constrainedMoves = new HashSet<>();
-		frozenMoves = new HashSet<>();
-		workListMoves = new HashSet<>();
-		activeMoves = new HashSet<>();
-		adjSet = new HashSet<>();
-		alias = new HashMap<>();
+		coalescedMoves = new LinkedHashSet<>();
+		constrainedMoves = new LinkedHashSet<>();
+		frozenMoves = new LinkedHashSet<>();
+		workListMoves = new LinkedHashSet<>();
+		activeMoves = new LinkedHashSet<>();
+		adjSet = new LinkedHashSet<>();
+		alias = new LinkedHashMap<>();
 
 		initial.forEach(virtualReg::initializationForGraphColoring);
 		precolored.forEach(virtualReg::initializationForGraphColoring);
 	}
 
 	private void runGraphColoring(asmFunction asmFunc) {
-		initial = new HashSet<>(asmFunc.virtualRegs);
-		precolored = new HashSet<>(physicalReg.pRegToVReg.values());
+		initial = new LinkedHashSet<>(asmFunc.virtualRegs);
+		precolored = new LinkedHashSet<>(physicalReg.pRegToVReg.values());
 		initial.removeAll(precolored);
 
 		while (true) {
@@ -160,14 +160,14 @@ public class registerAllocator implements asmVisitor {
 	}
 
 	private Set<virtualReg> adjacent(virtualReg n) {
-		Set<virtualReg> ret = new HashSet<>(n.adjList);
+		Set<virtualReg> ret = new LinkedHashSet<>(n.adjList);
 		selectStack.forEach(ret::remove);
 		ret.removeAll(coalescedNodes);
 		return ret;
 	}
 
 	private Set<mvInst> nodeMoves(virtualReg n) {
-		Set<mvInst> ret = new HashSet<>(activeMoves);
+		Set<mvInst> ret = new LinkedHashSet<>(activeMoves);
 		ret.addAll(workListMoves);
 		ret.retainAll(n.moveList);
 		return ret;
@@ -187,7 +187,7 @@ public class registerAllocator implements asmVisitor {
 
 	private void decrementDegree(virtualReg m) {
 		if (m.deg -- == registerNumber) {
-			Set<virtualReg> nodes = new HashSet<>(adjacent(m));
+			Set<virtualReg> nodes = new LinkedHashSet<>(adjacent(m));
 			nodes.add(m);
 			enableMoves(nodes);
 			spillWorkList.remove(m);
@@ -264,7 +264,7 @@ public class registerAllocator implements asmVisitor {
 		coalescedNodes.add(v);
 		alias.put(v, u);
 		u.moveList.addAll(v.moveList);
-		enableMoves(new HashSet<>(Collections.singletonList(v)));
+		enableMoves(new LinkedHashSet<>(Collections.singletonList(v)));
 		adjacent(v).forEach(t -> {addEdge(t, u);decrementDegree(t);});
 		if (u.deg >= registerNumber && freezeWorkList.contains(u)) {
 			freezeWorkList.remove(u);
@@ -313,7 +313,7 @@ public class registerAllocator implements asmVisitor {
 	private void assignColors() {
 		while (!selectStack.isEmpty()) {
 			virtualReg n = selectStack.pop();
-			Set<physicalReg> okColors = new HashSet<>(physicalReg.allocatablePRegs.values());
+			Set<physicalReg> okColors = new LinkedHashSet<>(physicalReg.allocatablePRegs.values());
 			n.adjList.forEach(w -> {
 				virtualReg w_ = getAlias(w);
 				if (coloredNodes.contains(w_) || precolored.contains(w_)) okColors.remove(w_.color);
@@ -322,7 +322,7 @@ public class registerAllocator implements asmVisitor {
 			else {
 				coloredNodes.add(n);
 				// choose caller save registers first
-				Set<physicalReg> callerSaveColors = new HashSet<>(physicalReg.callerSavePRegs.values());
+				Set<physicalReg> callerSaveColors = new LinkedHashSet<>(physicalReg.callerSavePRegs.values());
 				callerSaveColors.retainAll(okColors);
 				if (callerSaveColors.isEmpty()) n.color = okColors.iterator().next();
 				else n.color = callerSaveColors.iterator().next();
@@ -336,11 +336,11 @@ public class registerAllocator implements asmVisitor {
 		// create a new temporary variable v_i for each defs and uses
 		// insert a store instruction after each defs of v_i and a load instruction before each uses of v_i
 		// add all v_i into newTemps
-		Set<virtualReg> newTemps = new HashSet<>();
+		Set<virtualReg> newTemps = new LinkedHashSet<>();
 		spilledNodes.forEach(v -> {
 			intImm offset = new intImm();
 			asmFunc.stkFrame.spilledRegisterOffsets.put(v, offset);
-			Set<inst> uses = new HashSet<>(v.uses), defs = new HashSet<>(v.defs);
+			Set<inst> uses = new LinkedHashSet<>(v.uses), defs = new LinkedHashSet<>(v.defs);
 			uses.forEach(use -> {
 				virtualReg v_ = new virtualReg();
 				use.replaceUse(v, v_);
@@ -355,7 +355,7 @@ public class registerAllocator implements asmVisitor {
 			});
 		});
 		spilledNodes.clear();
-		initial = new HashSet<>(coloredNodes);
+		initial = new LinkedHashSet<>(coloredNodes);
 		initial.addAll(coalescedNodes);
 		initial.addAll(newTemps);
 		coloredNodes.clear();

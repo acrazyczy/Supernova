@@ -8,7 +8,7 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -22,12 +22,12 @@ public class ret extends terminalStmt {
 
 	@Override
 	public Set<register> variables() {
-		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
+		return value instanceof register ? new LinkedHashSet<>(Collections.singleton((register) value)) : new LinkedHashSet<>();
 	}
 
 	@Override
 	public Set<register> uses() {
-		return value instanceof register ? new HashSet<>(Collections.singleton((register) value)) : new HashSet<>();
+		return value instanceof register ? new LinkedHashSet<>(Collections.singleton((register) value)) : new LinkedHashSet<>();
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (value == oldReg) value = newReg;}

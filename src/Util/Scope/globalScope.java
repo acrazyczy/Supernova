@@ -9,11 +9,11 @@ import Util.error.semanticError;
 import Util.position;
 import Util.typeCalculator;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class globalScope extends Scope {
-	private final HashMap<String, Type> types = new HashMap<>();
-	private final HashMap<Type, LLVMFirstClassType> typesMap = new HashMap<>();
+	private final LinkedHashMap<String, Type> types = new LinkedHashMap<>();
+	private final LinkedHashMap<Type, LLVMFirstClassType> typesMap = new LinkedHashMap<>();
 
 	public globalScope(Scope parentScope) {super(parentScope);}
 

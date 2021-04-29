@@ -8,7 +8,7 @@ import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.ListIterator;
 import java.util.Map;
 
@@ -42,7 +42,7 @@ public class CSE implements pass {
 	private boolean run(function func) {
 		boolean changed = false;
 		for (basicBlock blk: func.blocks) {
-			commonSubExpression = new HashMap<>();
+			commonSubExpression = new LinkedHashMap<>();
 			for (ListIterator<statement> instItr = blk.stmts.listIterator(); instItr.hasNext(); ) {
 				statement inst = instItr.next();
 				if (isCandidateInstruction(inst)) {

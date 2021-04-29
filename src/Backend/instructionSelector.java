@@ -17,7 +17,7 @@ import LLVMIR.Instruction.*;
 import LLVMIR.function;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,8 +32,8 @@ public class instructionSelector implements pass {
 	private asmFunction currentFunction;
 	private asmBlock currentBlock;
 
-	private final HashMap<register, virtualReg> regMap = new HashMap<>();
-	private final HashMap<basicBlock, asmBlock> blkMap = new HashMap<>();
+	private final LinkedHashMap<register, virtualReg> regMap = new LinkedHashMap<>();
+	private final LinkedHashMap<basicBlock, asmBlock> blkMap = new LinkedHashMap<>();
 
 	static virtualReg sp = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("sp"));
 	static virtualReg a0 = physicalReg.pRegToVReg.get(physicalReg.pRegs.get("a0"));
@@ -481,7 +481,7 @@ public class instructionSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
-		uses = new HashMap<>();
+		uses = new LinkedHashMap<>();
 		func.variablesAnalysis(null, null, null, uses, null);
 		asmFunction asmFunc = programAsmEntry.asmFunctions.get(func);
 		currentFunction = asmFunc;

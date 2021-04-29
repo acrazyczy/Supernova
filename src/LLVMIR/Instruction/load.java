@@ -8,7 +8,7 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -22,14 +22,14 @@ public class load extends statement {
 
 	@Override
 	public Set<register> variables() {
-		Set<register> ret = new HashSet<>(Collections.singleton((register) dest));
+		Set<register> ret = new LinkedHashSet<>(Collections.singleton((register) dest));
 		if (pointer instanceof register) ret.add((register) pointer);
 		return ret;
 	}
 
 	@Override
 	public Set<register> uses() {
-		return pointer instanceof register ? new HashSet<>(Collections.singleton((register) pointer)) : new HashSet<>();
+		return pointer instanceof register ? new LinkedHashSet<>(Collections.singleton((register) pointer)) : new LinkedHashSet<>();
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (pointer == oldReg) pointer = newReg;}

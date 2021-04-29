@@ -12,7 +12,7 @@ import Util.Type.functionType;
 import Util.error.semanticError;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class classGenerator implements ASTVisitor {
 	private final globalScope gScope;
@@ -47,9 +47,9 @@ public class classGenerator implements ASTVisitor {
 		currentClass = (classType) gScope.getTypeFromName(it.name, it.pos);
 		currentLLVMClass = (LLVMStructureType) gScope.getLLVMTypeFromType(currentClass);
 		currentClassName = it.name;
-		currentClass.memberVariables = new HashMap<>();
-		currentClass.memberVariablesIndex = new HashMap<>();
-		currentClass.memberMethods = new HashMap<>();
+		currentClass.memberVariables = new LinkedHashMap<>();
+		currentClass.memberVariablesIndex = new LinkedHashMap<>();
+		currentClass.memberMethods = new LinkedHashMap<>();
 		it.units.forEach(unit -> {
 			if (unit.classDef != null) throw new semanticError("Mxstar does not support subclass.", unit.classDef.pos);
 			if (unit.varDef != null) unit.varDef.accept(this);

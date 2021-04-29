@@ -38,8 +38,8 @@ public class CFGSimplifier implements pass {
 	private boolean removeRedundantJump(function func) {
 		boolean changed = false;
 		List<basicBlock> blocks = new ArrayList<>(func.blocks);
-		Map<basicBlock, Set<basicBlock>> predecessors = new HashMap<>();
-		blocks.forEach(blk -> predecessors.put(blk, new HashSet<>()));
+		Map<basicBlock, Set<basicBlock>> predecessors = new LinkedHashMap<>();
+		blocks.forEach(blk -> predecessors.put(blk, new LinkedHashSet<>()));
 		blocks.forEach(blk -> blk.successors().forEach(sucBlk -> predecessors.get(sucBlk).add(blk)));
 		for (basicBlock blk: blocks) {
 			if (blk.stmts == null) continue;
@@ -93,7 +93,7 @@ public class CFGSimplifier implements pass {
 	private boolean removeUnusedFunction() {
 		callingAnalyser callingProperty = new callingAnalyser(programIREntry);
 		callingProperty.run();
-		Set<function> isVisited = new HashSet<>();
+		Set<function> isVisited = new LinkedHashSet<>();
 		dfs(programIREntry.functions.iterator().next(), isVisited, callingProperty);
 		ArrayList<function> funcs = new ArrayList<>(programIREntry.functions);
 		boolean changed = funcs.stream().anyMatch(func -> func.blocks != null && !isVisited.contains(func));

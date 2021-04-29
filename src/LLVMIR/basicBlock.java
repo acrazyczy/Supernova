@@ -7,8 +7,8 @@ import LLVMIR.Operand.register;
 import java.util.*;
 
 public class basicBlock {
-	public final Map<register, phi> phiCollections = new HashMap<>();
-	public final Map<phi, register> phiMapping = new HashMap<>();
+	public final Map<register, phi> phiCollections = new LinkedHashMap<>();
+	public final Map<phi, register> phiMapping = new LinkedHashMap<>();
 	public LinkedList<statement> stmts = new LinkedList<>();
 	public terminalStmt tailStmt = null;
 	public String name;
@@ -200,11 +200,11 @@ public class basicBlock {
 			if (defs != null) defs.addAll(stmt.defs());
 			if (usePoses != null) stmt.uses().forEach(r -> {
 				if (usePoses.containsKey(r)) usePoses.get(r).add(stmt);
-				else usePoses.put(r, new HashSet<>(Collections.singleton(stmt)));
+				else usePoses.put(r, new LinkedHashSet<>(Collections.singleton(stmt)));
 			});
 			if (defPoses != null) stmt.defs().forEach(r -> {
 				if (defPoses.containsKey(r)) defPoses.get(r).add(this);
-				else defPoses.put(r, new HashSet<>(Collections.singleton(this)));
+				else defPoses.put(r, new LinkedHashSet<>(Collections.singleton(this)));
 			});
 		});
 	}

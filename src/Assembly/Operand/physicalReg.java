@@ -1,7 +1,7 @@
 package Assembly.Operand;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class physicalReg extends reg {
 	static public String[] pRegNames = {
@@ -28,19 +28,19 @@ public class physicalReg extends reg {
 		"ra"
 	};
 
-	static public HashMap<String, physicalReg> pRegs;
-	static public HashMap<String, physicalReg> callerSavePRegs;
-	static public HashMap<String, physicalReg> calleeSavePRegs;
-	static public HashMap<String, physicalReg> allocatablePRegs;
+	static public LinkedHashMap<String, physicalReg> pRegs;
+	static public LinkedHashMap<String, physicalReg> callerSavePRegs;
+	static public LinkedHashMap<String, physicalReg> calleeSavePRegs;
+	static public LinkedHashMap<String, physicalReg> allocatablePRegs;
 
-	static public HashMap<physicalReg, virtualReg> pRegToVReg;
+	static public LinkedHashMap<physicalReg, virtualReg> pRegToVReg;
 
 	static {
-		pRegs = new HashMap<>();
-		callerSavePRegs = new HashMap<>();
-		calleeSavePRegs = new HashMap<>();
-		allocatablePRegs = new HashMap<>();
-		pRegToVReg = new HashMap<>();
+		pRegs = new LinkedHashMap<>();
+		callerSavePRegs = new LinkedHashMap<>();
+		calleeSavePRegs = new LinkedHashMap<>();
+		allocatablePRegs = new LinkedHashMap<>();
+		pRegToVReg = new LinkedHashMap<>();
 		for (String name: pRegNames) pRegs.put(name, new physicalReg(name));
 		for (String name: callerSavePRegNames) callerSavePRegs.put(name, pRegs.get(name));
 		for (String name: calleeSavePRegNames) calleeSavePRegs.put(name, pRegs.get(name));

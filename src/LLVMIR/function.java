@@ -15,8 +15,8 @@ public class function {
 	public String functionName;
 	public ArrayList<register> argValues;
 	public LinkedList<basicBlock> blocks;
-	private final HashMap<String, Integer> blockNameCounter = new HashMap<>();
-	private final HashMap<String, Integer> registerNameCounter = new HashMap<>();
+	private final LinkedHashMap<String, Integer> blockNameCounter = new LinkedHashMap<>();
+	private final LinkedHashMap<String, Integer> registerNameCounter = new LinkedHashMap<>();
 
 	public function(LLVMSingleValueType returnType, String functionName, ArrayList<register> argValues, boolean is_builtin) {
 		this.returnType = returnType;
@@ -74,7 +74,7 @@ public class function {
 		if (defPoses != null)
 			argValues.forEach(argv -> {
 				if (defPoses.containsKey(argv)) defPoses.get(argv).add(blocks.iterator().next());
-				else defPoses.put(argv, new HashSet<>(Collections.singleton(blocks.iterator().next())));
+				else defPoses.put(argv, new LinkedHashSet<>(Collections.singleton(blocks.iterator().next())));
 			});
 		blocks.forEach(blk -> blk.variablesAnalysis(variables, uses, defs, usePoses, defPoses));
 	}
@@ -101,8 +101,8 @@ public class function {
 
 	public function clone() {
 		assert this.blocks != null;
-		Map<basicBlock, basicBlock> blkMapping = new HashMap<>();
-		Map<register, register> regMapping = new HashMap<>();
+		Map<basicBlock, basicBlock> blkMapping = new LinkedHashMap<>();
+		Map<register, register> regMapping = new LinkedHashMap<>();
 		ArrayList<register> argValues = new ArrayList<>(this.argValues);
 		for (ListIterator<register> argItr = argValues.listIterator();argItr.hasNext();) argItr.set(getReg(argItr.next(), regMapping));
 		LinkedList<basicBlock> blocks = new LinkedList<>();

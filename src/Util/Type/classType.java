@@ -1,11 +1,11 @@
 package Util.Type;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class classType extends Type {
-	public HashMap<String, Type> memberVariables = null;
-	public HashMap<String, Integer> memberVariablesIndex = null;
-	public HashMap<String, functionType> memberMethods = null;
+	public LinkedHashMap<String, Type> memberVariables = null;
+	public LinkedHashMap<String, Integer> memberVariablesIndex = null;
+	public LinkedHashMap<String, functionType> memberMethods = null;
 	public String className;
 	public int memberVariablesCounter = 0;
 

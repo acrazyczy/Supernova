@@ -12,7 +12,7 @@ import Util.TriFunction;
 import Util.TriPredicate;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -26,7 +26,7 @@ public class _move extends statement {
 
 	@Override
 	public Set<register> variables() {
-		Set<register> ret = new HashSet<>();
+		Set<register> ret = new LinkedHashSet<>();
 		if (src instanceof register) ret.add((register) src);
 		ret.add((register) dest);
 		return ret;
@@ -34,7 +34,7 @@ public class _move extends statement {
 
 	@Override
 	public Set<register> uses() {
-		return src instanceof register ? new HashSet<>(Collections.singleton((register) src)) : new HashSet<>();
+		return src instanceof register ? new LinkedHashSet<>(Collections.singleton((register) src)) : new LinkedHashSet<>();
 	}
 
 	@Override public void replaceUse(entity oldReg, entity newReg) {if (src == oldReg) src = newReg;}

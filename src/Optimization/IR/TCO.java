@@ -23,7 +23,7 @@ public class TCO implements pass {
 		ArrayList<basicBlock> blocks = new ArrayList<>(func.blocks);
 		LinkedList<register> argValues = new LinkedList<>();
 		LinkedList<basicBlock> phiBlocks = new LinkedList<>();
-		Map<register, LinkedList<entity>> phiValues = new HashMap<>();
+		Map<register, LinkedList<entity>> phiValues = new LinkedHashMap<>();
 		basicBlock newEntry, oldEntry = func.blocks.iterator().next();
 		for (basicBlock blk: blocks)
 			if (blk.tailStmt instanceof ret) {

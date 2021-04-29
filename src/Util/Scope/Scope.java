@@ -1,6 +1,6 @@
 package Util.Scope;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 import LLVMIR.Operand.entity;
 import LLVMIR.function;
@@ -9,9 +9,9 @@ import Util.error.semanticError;
 import Util.position;
 
 public class Scope {
-	protected HashMap<String, Type> vars = new HashMap<>(), meths = new HashMap<>();
-	protected HashMap<String, entity> varEntities = new HashMap<>();
-	protected HashMap<String, function> methFunctions = new HashMap<>();
+	protected LinkedHashMap<String, Type> vars = new LinkedHashMap<>(), meths = new LinkedHashMap<>();
+	protected LinkedHashMap<String, entity> varEntities = new LinkedHashMap<>();
+	protected LinkedHashMap<String, function> methFunctions = new LinkedHashMap<>();
 	private final Scope parentScope;
 
 	public Scope(Scope parentScope) {this.parentScope = parentScope;}

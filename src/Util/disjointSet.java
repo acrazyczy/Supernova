@@ -1,9 +1,9 @@
 package Util;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 public class disjointSet<T> {
-	private final HashMap<T, T> parent = new HashMap<>();
+	private final LinkedHashMap<T, T> parent = new LinkedHashMap<>();
 
 	public T query(T node) {
 		if (!parent.containsKey(node)) return node;

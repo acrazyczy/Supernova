@@ -8,8 +8,8 @@ import LLVMIR.Operand.register;
 import LLVMIR.function;
 import Util.disjointSet;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,8 +19,8 @@ public class copyPropagation implements pass {
 	public copyPropagation(IREntry programIREntry) {this.programIREntry = programIREntry;}
 
 	private boolean run(function func) {
-		Set<register> vars = new HashSet<>();
-		Map<register, Set<statement>> uses = new HashMap<>();
+		Set<register> vars = new LinkedHashSet<>();
+		Map<register, Set<statement>> uses = new LinkedHashMap<>();
 		func.variablesAnalysis(vars, null, null, uses, null);
 		disjointSet<register> dsu = new disjointSet<>();
 		vars.stream().filter(v -> v.def instanceof _move && ((_move) v.def).src instanceof register)

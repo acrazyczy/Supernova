@@ -5,8 +5,8 @@ import LLVMIR.IREntry;
 import LLVMIR.Instruction.*;
 import LLVMIR.function;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,16 +45,16 @@ public class sideEffectAnalyzer implements pass {
 
 	@Override
 	public boolean run() {
-		sideEffectFunctions = new HashSet<>();
-		sideEffectStatements = new HashSet<>();
-		callerFunctionLists = new HashMap<>();
-		callerInstructionLists = new HashMap<>();
+		sideEffectFunctions = new LinkedHashSet<>();
+		sideEffectStatements = new LinkedHashSet<>();
+		callerFunctionLists = new LinkedHashMap<>();
+		callerInstructionLists = new LinkedHashMap<>();
 		programIREntry.functions.forEach(func -> {
-			callerFunctionLists.put(func, new HashSet<>());
-			callerInstructionLists.put(func, new HashSet<>());
+			callerFunctionLists.put(func, new LinkedHashSet<>());
+			callerInstructionLists.put(func, new LinkedHashSet<>());
 		});
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(this::sideEffectComputation);
-		isVisited = new HashSet<>();
+		isVisited = new LinkedHashSet<>();
 		for (function func: programIREntry.functions) {
 			if (func.blocks == null
 				&& !func.functionName.equals("print")

@@ -5,7 +5,7 @@ import Assembly.Instruction.inst;
 import Assembly.Instruction.jumpInst;
 import Assembly.Operand.virtualReg;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class asmBlock {
@@ -18,8 +18,8 @@ public class asmBlock {
 	public asmBlock(int index) {
 		this.index = index;
 		this.headInst = this.tailInst = null;
-		this.predecessors = new HashSet<>();
-		this.successors = new HashSet<>();
+		this.predecessors = new LinkedHashSet<>();
+		this.successors = new LinkedHashSet<>();
 	}
 
 	public void addSuccessor(asmBlock asmBlk) {
@@ -48,7 +48,7 @@ public class asmBlock {
 		else (tailInst.suf = blk.headInst).pre = tailInst;
 		tailInst = blk.tailInst;
 		blk.headInst = null;
-		successors = new HashSet<>(blk.successors);
+		successors = new LinkedHashSet<>(blk.successors);
 		successors.forEach(sucBlk -> {
 			sucBlk.predecessors.remove(blk); sucBlk.predecessors.add(this);
 		});
@@ -60,13 +60,13 @@ public class asmBlock {
 	}
 
 	public Set<virtualReg> defs() {
-		Set<virtualReg> ret = new HashSet<>();
+		Set<virtualReg> ret = new LinkedHashSet<>();
 		for (inst i = headInst;i != null;i = i.suf) ret.addAll(i.defs);
 		return ret;
 	}
 
 	public Set<virtualReg> uses() {
-		Set<virtualReg> ret = new HashSet<>();
+		Set<virtualReg> ret = new LinkedHashSet<>();
 		for (inst i = tailInst;i != null;i = i.pre) {
 			ret.removeAll(i.defs);
 			ret.addAll(i.uses);

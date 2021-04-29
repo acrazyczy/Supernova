@@ -24,7 +24,7 @@ public class IRBuilder implements ASTVisitor {
 	private final IREntry programIREntry;
 	private int strConstCounter = 0;
 
-	private final HashMap<String, globalVariable> globalStrMap = new HashMap<>();
+	private final LinkedHashMap<String, globalVariable> globalStrMap = new LinkedHashMap<>();
 
 	public IRBuilder(globalScope gScope, IREntry programIREntry) {
 		this.gScope = gScope;

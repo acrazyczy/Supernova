@@ -8,7 +8,7 @@ import LLVMIR.Operand.integerConstant;
 import LLVMIR.Operand.register;
 import LLVMIR.function;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class algebraicSimplifier implements pass {
@@ -54,7 +54,7 @@ public class algebraicSimplifier implements pass {
 	}
 
 	private boolean run(function func) {
-		Set<register> vars = new HashSet<>(), isVisited = new HashSet<>();
+		Set<register> vars = new LinkedHashSet<>(), isVisited = new LinkedHashSet<>();
 		func.variablesAnalysis(vars, null, null, null, null);
 		return vars.stream().map(v -> simplification(v, isVisited)).reduce(false, (a, b) -> a || b);
 	}

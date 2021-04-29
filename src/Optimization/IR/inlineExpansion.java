@@ -13,9 +13,9 @@ import java.util.*;
 
 public class inlineExpansion implements pass {
 	private final IREntry programIREntry;
-	private boolean forceInlining;
+	private final boolean forceInlining;
 
-	private static int bound = 64;
+	private static final int bound = 64;
 
 	public inlineExpansion(IREntry programIREntry, boolean forceInlining) {
 		this.programIREntry = programIREntry;
@@ -83,8 +83,8 @@ public class inlineExpansion implements pass {
 		func.blocks.add(func.blocks.indexOf(before) + 1, after);
 
 		// initialize block and register mapping
-		Map<basicBlock, basicBlock> blkMapping = new HashMap<>();
-		Map<register, register> regMapping = new HashMap<>();
+		Map<basicBlock, basicBlock> blkMapping = new LinkedHashMap<>();
+		Map<register, register> regMapping = new LinkedHashMap<>();
 		LinkedList<basicBlock> phiBlocks = new LinkedList<>();
 		LinkedList<entity> phiValues = new LinkedList<>();
 
@@ -143,16 +143,16 @@ public class inlineExpansion implements pass {
 
 	@Override
 	public boolean run() {
-		isVisited = new HashSet<>();
-		unInlinable = new HashSet<>();
+		isVisited = new LinkedHashSet<>();
+		unInlinable = new LinkedHashSet<>();
 		programIREntry.functions.forEach(func -> {if (func.blocks == null) {unInlinable.add(func); isVisited.add(func);}});
 		callingProperty = new callingAnalyser(programIREntry);
 		callingProperty.run();
 		if (forceInlining) {
-			HashMap<function, Integer> lineNumber = new HashMap<>();
+			LinkedHashMap<function, Integer> lineNumber = new LinkedHashMap<>();
 			unInlinable.add(programIREntry.functions.iterator().next());
 			programIREntry.functions.forEach(func -> lineNumber.put(func, func.blocks == null ? 0 : func.blocks.stream().mapToInt(blk -> blk.stmts.size()).sum()));
-			Map<call, function> inliningCalls = new HashMap<>();
+			Map<call, function> inliningCalls = new LinkedHashMap<>();
 			programIREntry.functions.stream().filter(func -> func.blocks != null)
 				.forEach(func -> func.blocks.forEach(blk -> blk.stmts.stream().filter(stmt -> stmt instanceof call).forEach(stmt -> {
 					call callInst = (call) stmt;
@@ -166,7 +166,7 @@ public class inlineExpansion implements pass {
 			return true;
 		} else {
 			dfsStack = new LinkedList<>();
-			cloneMap = new HashMap<>();
+			cloneMap = new LinkedHashMap<>();
 			return programIREntry.functions.stream().filter(func -> !isVisited.contains(func)).map(this::dfs).reduce(false, (a, b) -> a || b);
 		}
 	}

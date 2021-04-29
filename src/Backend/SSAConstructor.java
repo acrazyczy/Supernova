@@ -17,7 +17,7 @@ public class SSAConstructor implements pass {
 	private dominanceAnalyser dominanceProperty;
 
 	private Set<register> vars;
-	private final Map<register, Integer> renamingCounter = new HashMap<>();
+	private final Map<register, Integer> renamingCounter = new LinkedHashMap<>();
 
 	public SSAConstructor(IREntry programIREntry) {
 		this.programIREntry = programIREntry;
@@ -26,10 +26,10 @@ public class SSAConstructor implements pass {
 	@Override
 	public boolean run() {
 		programIREntry.functions.stream().filter(func -> func.blocks != null).forEach(func -> {
-			dominanceProperty = new dominanceAnalyser(func.blocks.iterator().next(), new HashSet<>(func.blocks));
+			dominanceProperty = new dominanceAnalyser(func.blocks.iterator().next(), new LinkedHashSet<>(func.blocks));
 			func.blocks.forEach(u -> u.successors().forEach(v -> dominanceProperty.addEdge(u, v)));
 			dominanceProperty.dominanceAnalysis(true);
-			Set<basicBlock> unreachableBlocks = new HashSet<>(func.blocks);
+			Set<basicBlock> unreachableBlocks = new LinkedHashSet<>(func.blocks);
 			dominanceProperty.getPostOrderOfGraph().forEach(unreachableBlocks::remove);
 			func.blocks.removeAll(unreachableBlocks);
 			phiInsertion(func);
@@ -39,15 +39,15 @@ public class SSAConstructor implements pass {
 	}
 
 	private void phiInsertion(function func) {
-		Map<register, Set<basicBlock>> defs = new HashMap<>();
-		vars = new HashSet<>();
+		Map<register, Set<basicBlock>> defs = new LinkedHashMap<>();
+		vars = new LinkedHashSet<>();
 		func.variablesAnalysis(vars, null, null, null, defs);
-		Set<register> vars_ = new HashSet<>(vars);
+		Set<register> vars_ = new LinkedHashSet<>(vars);
 		func.argValues.forEach(vars_::remove);
 		vars_.forEach(v -> func.blocks.iterator().next().push_front(new _move(new undefinedValue(v.type), v)));
 		vars.forEach(v -> {
 			renamingCounter.put(v, 0);
-			Set<basicBlock> F = new HashSet<>(), W = new HashSet<>(defs.get(v));
+			Set<basicBlock> F = new LinkedHashSet<>(), W = new LinkedHashSet<>(defs.get(v));
 			while (!W.isEmpty()) {
 				basicBlock x = W.iterator().next();
 				W.remove(x);
