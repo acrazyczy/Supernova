@@ -15,6 +15,7 @@ import LLVMIR.TypeSystem.LLVMStructureType;
 import LLVMIR.basicBlock;
 import LLVMIR.Instruction.*;
 import LLVMIR.function;
+import Optimization.IR.Analyser.loopAnalyzer;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,7 +47,7 @@ public class instructionSelector implements pass {
 	}
 
 	private asmBlock blockMapping(basicBlock blk) {
-		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter));
+		if (!blkMap.containsKey(blk)) blkMap.put(blk, new asmBlock(++ blockCounter, blk.loopDepth));
 		return blkMap.get(blk);
 	}
 
@@ -62,6 +63,13 @@ public class instructionSelector implements pass {
 	}
 
 	private Map<register, Set<statement>> uses;
+
+	private int log(int x) {
+		int ret = 0;
+		for (;(x & 1) == 0;x >>= 1) ++ ret;
+		if (x != 1) ret = -1;
+		return ret;
+	}
 
 	private void buildAsmInst(statement stmt) {
 		if (stmt instanceof _move) {
@@ -217,6 +225,11 @@ public class instructionSelector implements pass {
 											currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bgeu, tailInst.rs1, tailInst.rs2, falseBlk);
 										merged = true;
 									}
+								} else if (tailInst instanceof ITypeInst) {
+									if (((ITypeInst) tailInst).testMergeability(cond)) {
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.beqz, tailInst.rs1, tailInst.rs2, falseBlk);
+										merged = true;
+									}
 								}
 								if (merged) {
 									if (preInst == null) currentBlock.headInst = currentBlock.tailInst;
@@ -265,8 +278,11 @@ public class instructionSelector implements pass {
 			entity idx = stmt_.idxes.iterator().next();
 			if (idx instanceof register) {
 				virtualReg offset = createNewVirtualRegister();
-				currentBlock.addInst(new liInst(currentBlock, offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
-				currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
+				int index = log(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8);
+				if (index == -1) {
+					currentBlock.addInst(new liInst(currentBlock, offset, new intImm(((LLVMPointerType) stmt_.pointer.type).pointeeType.size() / 8)));
+					currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.mul, offset, registerMapping((register) idx), offset));
+				} else currentBlock.addInst(new ITypeInst(currentBlock, ITypeInst.opType.slli, offset, registerMapping((register) idx), new intImm(index)));
 				currentBlock.addInst(new RTypeInst(currentBlock, RTypeInst.opType.add, rd, rs1, offset));
 			} else {
 				assert idx instanceof integerConstant;
@@ -481,13 +497,14 @@ public class instructionSelector implements pass {
 	}
 
 	private void buildAsmFunction(function func) {
+		new loopAnalyzer(func, false).run();
 		uses = new LinkedHashMap<>();
 		func.variablesAnalysis(null, null, null, uses, null);
 		asmFunction asmFunc = programAsmEntry.asmFunctions.get(func);
 		currentFunction = asmFunc;
 		func.argValues.forEach(arg -> asmFunc.parameters.add(registerMapping(arg)));
 		asmFunc.stkFrame = new stackFrame(asmFunc);
-		asmFunc.initBlock = new asmBlock(++ blockCounter);
+		asmFunc.initBlock = new asmBlock(++ blockCounter, 0);
 		asmFunc.initBlock.comment = "init block of " + func.functionName;
 		currentBlock = asmFunc.initBlock;
 		virtualReg returnAddress = createNewVirtualRegister();
@@ -510,7 +527,7 @@ public class instructionSelector implements pass {
 		}
 		currentBlock = null;
 		func.blocks.forEach(blk -> currentFunction.asmBlocks.add(blockMapping(blk)));
-		asmFunc.retBlock = new asmBlock(++ blockCounter);
+		asmFunc.retBlock = new asmBlock(++ blockCounter, 0);
 		asmFunc.retBlock.comment = "return block of " + func.functionName;
 		currentBlock = asmFunc.retBlock;
 		for (int i = 0;i < 12;++ i)

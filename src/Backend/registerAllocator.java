@@ -84,6 +84,7 @@ public class registerAllocator implements asmVisitor {
 
 		while (true) {
 			initialization();
+			spillCostComputation(asmFunc);
 			new livenessAnalyser(programAsmEntry).run();
 			build(asmFunc);
 			makeWorkList();
@@ -101,6 +102,22 @@ public class registerAllocator implements asmVisitor {
 
 		removeRedundantMvInst(asmFunc);
 		asmFunc.stkFrame.offsetsComputation();
+	}
+
+	private void spillCostComputation(asmBlock asmBlk) {
+		double loopCost = Math.pow(loopCoefficient, asmBlk.loopDepth);
+		for (inst i = asmBlk.headInst;i != null;i = i.suf) {
+			i.uses.forEach(use -> use.spillCost += loopCost);
+			i.defs.forEach(def -> def.spillCost += loopCost);
+		}
+	}
+
+	static double loopCoefficient = 10.0;
+
+	private void spillCostComputation(asmFunction asmFunc) {
+		spillCostComputation(asmFunc.initBlock);
+		asmFunc.asmBlocks.forEach(this::spillCostComputation);
+		spillCostComputation(asmFunc.retBlock);
 	}
 
 	private void removeRedundantMvInst(asmFunction asmFunc) {
@@ -301,13 +318,16 @@ public class registerAllocator implements asmVisitor {
 		freezeMoves(m);
 	}
 
-	/*private boolean generatedBySpill(virtualReg v) {
+	private boolean generatedBySpill(virtualReg v) {
 		return v.defs.size() == 1 && v.uses.size() == 1 && v.defs.iterator().next().suf == v.uses.iterator().next();
-	}*/
+	}
+
+	private double getSpillCostOfVirtualRegister(virtualReg v) {
+		return (generatedBySpill(v) ? Double.POSITIVE_INFINITY : v.spillCost) / v.deg;
+	}
 
 	private virtualReg selectVirtualRegisterToSpill() {
-		// return spillWorkList.stream().min(Comparator.comparing(this::getSpillCostOfVirtualRegister)).get();  # somehow it does not work
-		return spillWorkList.iterator().next();
+		return spillWorkList.stream().min(Comparator.comparing(this::getSpillCostOfVirtualRegister)).get();
 	}
 	
 	private void assignColors() {

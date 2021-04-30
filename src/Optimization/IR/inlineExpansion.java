@@ -8,6 +8,7 @@ import LLVMIR.Operand.register;
 import LLVMIR.Operand.undefinedValue;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
+import Optimization.IR.Analyser.callingAnalyser;
 
 import java.util.*;
 

@@ -12,6 +12,7 @@ import LLVMIR.Operand.integerConstant;
 import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
+import Optimization.IR.Analyser.dominanceAnalyser;
 
 import java.util.*;
 

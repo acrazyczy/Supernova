@@ -7,11 +7,13 @@ import LLVMIR.Operand.register;
 import java.util.*;
 
 public class basicBlock {
+	// The register may be incorrect during optimization, but it works. So let's just ignore this minor mistake.
 	public final Map<register, phi> phiCollections = new LinkedHashMap<>();
 	public final Map<phi, register> phiMapping = new LinkedHashMap<>();
 	public LinkedList<statement> stmts = new LinkedList<>();
 	public terminalStmt tailStmt = null;
 	public String name;
+	public int loopDepth;
 
 	public basicBlock() {}
 

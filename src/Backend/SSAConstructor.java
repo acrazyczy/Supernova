@@ -7,7 +7,7 @@ import LLVMIR.Operand.register;
 import LLVMIR.Operand.undefinedValue;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
-import Optimization.IR.dominanceAnalyser;
+import Optimization.IR.Analyser.dominanceAnalyser;
 
 import java.util.*;
 

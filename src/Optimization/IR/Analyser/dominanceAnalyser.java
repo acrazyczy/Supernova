@@ -1,4 +1,4 @@
-package Optimization.IR;
+package Optimization.IR.Analyser;
 
 import LLVMIR.basicBlock;
 
@@ -79,7 +79,7 @@ public class dominanceAnalyser {
 					break;
 				}
 				radj.get(top).stream().filter(pred -> !isVisited.contains(pred)).forEach(pred -> {
-					queue.add(pred); isVisited.add(pred);
+					queue.offer(pred); isVisited.add(pred);
 				});
 			}
 		}

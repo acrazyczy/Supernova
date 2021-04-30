@@ -14,8 +14,9 @@ public class asmBlock {
 	public inst headInst, tailInst;
 	public Set<asmBlock> predecessors, successors;
 	public Set<virtualReg> liveOut, liveIn;
+	public int loopDepth;
 
-	public asmBlock(int index) {
+	public asmBlock(int index, int loopDepth) {
 		this.index = index;
 		this.headInst = this.tailInst = null;
 		this.predecessors = new LinkedHashSet<>();

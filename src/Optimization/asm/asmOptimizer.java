@@ -11,6 +11,7 @@ public class asmOptimizer {
 		boolean flag;
 		do {
 			flag = new CFGSimplifier(programAsmEntry).run();
+			flag |= new peephole(programAsmEntry).run();
 		} while (flag);
 	}
 }

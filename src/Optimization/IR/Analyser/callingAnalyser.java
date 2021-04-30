@@ -1,4 +1,4 @@
-package Optimization.IR;
+package Optimization.IR.Analyser;
 
 import Backend.pass;
 import LLVMIR.IREntry;

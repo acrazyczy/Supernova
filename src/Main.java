@@ -102,7 +102,7 @@ public class Main {
 			parser.addErrorListener(new MxStarErrorListener());
 			ParseTree parseTreeRoot = parser.program();
 			ASTBuilder astBuilder = new ASTBuilder();
-			ASTRoot = (rootNode)astBuilder.visit(parseTreeRoot);
+			ASTRoot = (rootNode) astBuilder.visit(parseTreeRoot);
 			new symbolCollector(gScope).visit(ASTRoot);
 			new classGenerator(gScope).visit(ASTRoot);
 			IREntry programIREntry = new IREntry();

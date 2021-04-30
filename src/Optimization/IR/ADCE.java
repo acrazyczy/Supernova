@@ -8,6 +8,8 @@ import LLVMIR.Instruction.statement;
 import LLVMIR.Operand.register;
 import LLVMIR.basicBlock;
 import LLVMIR.function;
+import Optimization.IR.Analyser.dominanceAnalyser;
+import Optimization.IR.Analyser.sideEffectAnalyzer;
 
 import java.util.*;
 import java.util.stream.Collectors;

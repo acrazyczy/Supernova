@@ -5,10 +5,10 @@ import Assembly.asmBlock;
 
 public class ITypeInst extends inst {
 	public enum opType {
-		addi, slti, sltiu, andi, ori, xori
+		addi, slti, sltiu, andi, ori, xori, slli
 	}
 
-	private final opType type;
+	public final opType type;
 	private final Imm imm;
 
 	public ITypeInst(asmBlock belongTo, opType type, virtualReg rd, virtualReg rs1, Imm imm) {
