@@ -8,6 +8,7 @@ public class register extends entity {
 	public String name;
 	public register reachingDef; // can only be used in SSA Construction
 	public statement def = null;
+	public boolean isLocalVariable = false;
 
 	public register(LLVMSingleValueType type) {
 		super(type);
@@ -22,6 +23,12 @@ public class register extends entity {
 	public register(LLVMSingleValueType type, String name, function currentFunction) {
 		super(type);
 		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
+	}
+
+	public register(LLVMSingleValueType type, String name, function currentFunction, boolean isLocalVariable) {
+		super(type);
+		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
+		this.isLocalVariable = isLocalVariable;
 	}
 
 	@Override public String toString() {return name == null ? "" : "%" + name;}

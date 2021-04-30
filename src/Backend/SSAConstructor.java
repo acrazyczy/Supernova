@@ -45,7 +45,7 @@ public class SSAConstructor implements pass {
 		Set<register> vars_ = new LinkedHashSet<>(vars);
 		func.argValues.forEach(vars_::remove);
 		vars_.forEach(v -> func.blocks.iterator().next().push_front(new _move(new undefinedValue(v.type), v)));
-		vars.forEach(v -> {
+		vars.stream().filter(v -> !v.isLocalVariable).forEach(v -> {
 			renamingCounter.put(v, 0);
 			Set<basicBlock> F = new LinkedHashSet<>(), W = new LinkedHashSet<>(defs.get(v));
 			while (!W.isEmpty()) {

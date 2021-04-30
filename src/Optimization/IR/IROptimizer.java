@@ -23,7 +23,7 @@ public class IROptimizer {
 			flag |= isSSAForm && new ADCE(programIREntry).run();
 			flag |= new CFGSimplifier(programIREntry).run();
 			flag |= isSSAForm && new inlineExpansion(programIREntry, false).run();
-		} while (flag && cnt < 20);
+		} while (flag && cnt < 5);
 	}
 
 	public void run(boolean isSSAForm) {
