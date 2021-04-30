@@ -227,7 +227,7 @@ public class instructionSelector implements pass {
 									}
 								} else if (tailInst instanceof ITypeInst) {
 									if (((ITypeInst) tailInst).testMergeability(cond)) {
-										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.beqz, tailInst.rs1, tailInst.rs2, falseBlk);
+										currentBlock.tailInst = new brInst(currentBlock, brInst.opType.bnez, tailInst.rs1, tailInst.rs2, falseBlk);
 										merged = true;
 									}
 								}
