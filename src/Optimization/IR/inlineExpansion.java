@@ -15,7 +15,7 @@ public class inlineExpansion implements pass {
 	private final IREntry programIREntry;
 	private final boolean forceInlining;
 
-	private static final int bound = 64;
+	private static final int bound = 128;
 
 	public inlineExpansion(IREntry programIREntry, boolean forceInlining) {
 		this.programIREntry = programIREntry;

@@ -69,8 +69,7 @@ public class SSAConstructor implements pass {
 			argv_.reachingDef = argv.reachingDef;
 			argv.reachingDef = argv_;
 		}
-		List<basicBlock> order = dominanceProperty.getPreOrderOfTree();
-		order.forEach(blk -> {
+		dominanceProperty.getPreOrderOfTree().forEach(blk -> {
 			blk.stmts.forEach(i -> {
 				if (!(i instanceof phi))
 					i.uses().forEach(v -> {
