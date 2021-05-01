@@ -177,7 +177,8 @@ public class instructionSelector implements pass {
 			bitcast stmt_ = (bitcast) stmt;
 			virtualReg rd = registerMapping((register) stmt_.dest);
 			if (stmt_.value instanceof globalVariable) currentBlock.addInst(new laInst(currentBlock, rd, programAsmEntry.gblMapping.get(stmt_.value)));
-			else currentBlock.addInst(new mvInst(currentBlock, rd, registerMapping((register) stmt_.value)));
+			else if (stmt_.value instanceof register) currentBlock.addInst(new mvInst(currentBlock, rd, registerMapping((register) stmt_.value)));
+			else currentBlock.addInst(new mvInst(currentBlock, rd, zero));
 		} else if (stmt instanceof br) {
 			br stmt_ = (br) stmt;
 			asmBlock trueBlk = blkMap.get(stmt_.trueBranch);

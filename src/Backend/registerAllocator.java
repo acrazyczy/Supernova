@@ -25,6 +25,7 @@ public class registerAllocator implements asmVisitor {
 	private ArrayList<virtualReg> spilledNodes;     // nodes to spill
 	private Set<virtualReg> coalescedNodes;         // nodes which have been coalesced
 	private Set<virtualReg> coloredNodes;           // nodes which have been colored
+	private Set<virtualReg> stackSet;
 	private Stack<virtualReg> selectStack;          // nodes deleted from the graph
 
 	@SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
@@ -64,6 +65,7 @@ public class registerAllocator implements asmVisitor {
 		spilledNodes = new ArrayList<>();
 		coalescedNodes = new LinkedHashSet<>();
 		coloredNodes = new LinkedHashSet<>();
+		stackSet = new LinkedHashSet<>();
 		selectStack = new Stack<>();
 		coalescedMoves = new LinkedHashSet<>();
 		constrainedMoves = new LinkedHashSet<>();
@@ -178,7 +180,7 @@ public class registerAllocator implements asmVisitor {
 
 	private Set<virtualReg> adjacent(virtualReg n) {
 		Set<virtualReg> ret = new LinkedHashSet<>(n.adjList);
-		selectStack.forEach(ret::remove);
+		ret.removeAll(stackSet);
 		ret.removeAll(coalescedNodes);
 		return ret;
 	}
@@ -199,6 +201,7 @@ public class registerAllocator implements asmVisitor {
 		virtualReg n = simplifyWorkList.iterator().next();
 		simplifyWorkList.remove(n);
 		selectStack.push(n);
+		stackSet.add(n);
 		adjacent(n).forEach(this::decrementDegree);
 	}
 
@@ -333,6 +336,7 @@ public class registerAllocator implements asmVisitor {
 	private void assignColors() {
 		while (!selectStack.isEmpty()) {
 			virtualReg n = selectStack.pop();
+			stackSet.remove(n);
 			Set<physicalReg> okColors = new LinkedHashSet<>(physicalReg.allocatablePRegs.values());
 			n.adjList.forEach(w -> {
 				virtualReg w_ = getAlias(w);
