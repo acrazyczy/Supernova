@@ -51,8 +51,13 @@ public class dominanceAnalyser {
 			changed = false;
 			for (basicBlock v: RPO) {
 				if (v == root) continue;
-				Set<basicBlock> temp = new LinkedHashSet<>(RPO);
-				radj.get(v).forEach(u -> {if (dom.containsKey(u)) temp.retainAll(dom.get(u));});
+				Set<basicBlock> temp = null;
+				for (basicBlock u: radj.get(v)) {
+					if (dom.containsKey(u))
+						if (temp != null) temp.retainAll(dom.get(u));
+						else temp = new LinkedHashSet<>(dom.get(u));
+				}
+				if (temp == null) temp = new LinkedHashSet<>();
 				temp.add(v);
 				if (!temp.equals(dom.get(v))) {
 					dom.put(v, temp);

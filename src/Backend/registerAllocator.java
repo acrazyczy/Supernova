@@ -87,7 +87,7 @@ public class registerAllocator implements asmVisitor {
 		while (true) {
 			initialization();
 			spillCostComputation(asmFunc);
-			new livenessAnalyser(programAsmEntry).run();
+			new livenessAnalyser(asmFunc).run();
 			build(asmFunc);
 			makeWorkList();
 			do {

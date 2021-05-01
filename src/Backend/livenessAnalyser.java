@@ -7,40 +7,47 @@ import Assembly.asmFunction;
 
 import java.util.*;
 
-public class livenessAnalyser implements asmVisitor {
-	private final asmEntry programEntry;
+public class livenessAnalyser {
+	private final asmFunction asmFunc;
 
-	public livenessAnalyser(asmEntry programEntry) {
-		this.programEntry = programEntry;
+	public livenessAnalyser(asmFunction asmFunc) {
+		this.asmFunc = asmFunc;
 	}
 
-	private void livenessComputation(asmFunction asmFunc) {
-		ArrayList<asmBlock> dfsOrder = asmFunc.dfsOrderComputation();
+	public void run() {
+		Set<asmBlock> blocks = new LinkedHashSet<>(asmFunc.asmBlocks);
+		blocks.add(asmFunc.initBlock);
+		blocks.add(asmFunc.retBlock);
 		Map<asmBlock, Set<virtualReg>> blkUses = new LinkedHashMap<>(), blkDefs = new LinkedHashMap<>();
-		dfsOrder.forEach(blk -> {
-			blk.liveIn = new LinkedHashSet<>();blk.liveOut = new LinkedHashSet<>();
+		Set<asmBlock> isVisited = new LinkedHashSet<>();
+		Queue<asmBlock> workList = new ArrayDeque<>();
+		blocks.forEach(blk -> {
+			blk.liveIn = new LinkedHashSet<>();
+			blk.liveOut = new LinkedHashSet<>();
 			blkUses.put(blk, blk.uses());
 			blkDefs.put(blk, blk.defs());
-		});
-		boolean changed;
-		do {
-			changed = false;
-			for (int i = dfsOrder.size() - 1; i >= 0; --i) {
-				asmBlock blk = dfsOrder.get(i);
-				Set<virtualReg> oldLiveIn = new LinkedHashSet<>(blk.liveIn), oldLiveOut = new LinkedHashSet<>(blk.liveOut);
-				blk.liveIn = blkUses.get(blk);
-				blk.liveOut.removeAll(blkDefs.get(blk));
-				blk.liveIn.addAll(blk.liveOut);
-				blk.liveOut = new LinkedHashSet<>();
-				blk.successors.forEach(s -> blk.liveOut.addAll(s.liveIn));
-				changed |= !oldLiveIn.equals(blk.liveIn) || !oldLiveOut.equals(blk.liveOut);
+			if (blk.successors.isEmpty()) {
+				blk.liveIn = new LinkedHashSet<>(blkUses.get(blk));
+				isVisited.add(blk);
+				workList.addAll(blk.predecessors);
 			}
-		} while (changed);
-	}
-
-	@Override
-	public boolean run() {
-		programEntry.asmFunctions.values().stream().filter(asmFunc -> asmFunc.asmBlocks != null).forEach(this::livenessComputation);
-		return true;
+		});
+		while (!workList.isEmpty()) {
+			asmBlock blk = workList.poll();
+			if (!isVisited.contains(blk)) {
+				isVisited.add(blk);
+				Set<virtualReg> conj = new LinkedHashSet<>();
+				blk.successors.forEach(sucBlk -> conj.addAll(sucBlk.liveIn));
+				blk.liveOut = conj;
+				Set<virtualReg> newLiveIn = new LinkedHashSet<>(conj);
+				newLiveIn.removeAll(blkDefs.get(blk));
+				newLiveIn.addAll(blkUses.get(blk));
+				if (!blk.liveIn.equals(newLiveIn)) {
+					blk.liveIn = newLiveIn;
+					isVisited.removeAll(blk.predecessors);
+				}
+				workList.addAll(blk.predecessors);
+			}
+		}
 	}
 }
