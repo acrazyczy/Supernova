@@ -357,11 +357,13 @@ public class IRBuilder implements ASTVisitor {
 		it.lhs.accept(this);
 		basicBlock lhs = currentBlock;
 		currentBlock = rhs;
+		it.rhs.trueBranch = it.trueBranch;
+		it.rhs.falseBranch = it.falseBranch;
 		it.rhs.accept(this);
 		if (it.rhs instanceof logicExprNode && ((logicExprNode) it.rhs).op == it.op) {
 			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
 			it.val = it.rhs.val;
-		} else {
+		} else if (it.trueBranch == null) {
 			shortCircuitBlock = new basicBlock(it.op == logicExprNode.opType.And ? "and.false" : "or.true", currentFunction);
 			currentFunction.blocks.add(shortCircuitBlock);
 			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
@@ -377,10 +379,11 @@ public class IRBuilder implements ASTVisitor {
 			end.push_back(new br(dest));
 			currentBlock = dest;
 			it.val = value;
-		}
-		if (it.trueBranch != null) {
-			assert it.falseBranch != null;
-			currentBlock.push_back(new br(it.val, it.trueBranch, it.falseBranch));
+		} else {
+			shortCircuitBlock = it.op == logicExprNode.opType.And ? it.falseBranch : it.trueBranch;
+			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
+			basicBlock end = it.op == logicExprNode.opType.And ? it.trueBranch : it.falseBranch;
+			currentBlock.push_back(it.op == logicExprNode.opType.And ? new br(it.rhs.val, end, shortCircuitBlock) : new br(it.rhs.val, shortCircuitBlock, end));
 		}
 	}
 
@@ -576,11 +579,12 @@ public class IRBuilder implements ASTVisitor {
 
 	@Override
 	public void visit(ifStmtNode it) {
-		it.cond.accept(this);
 		basicBlock trueBranch = new basicBlock("if.trueBranch", currentFunction),
 			falseBranch = new basicBlock("if.falseBranch", currentFunction),
 			destination = new basicBlock("if.dest", currentFunction);
-		currentBlock.push_back(new br(it.cond.val, trueBranch, falseBranch));
+		it.cond.trueBranch = trueBranch;
+		it.cond.falseBranch = falseBranch;
+		it.cond.accept(this);
 
 		currentFunction.blocks.add(trueBranch);
 		currentBlock = trueBranch;
