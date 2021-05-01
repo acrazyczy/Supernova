@@ -45,14 +45,14 @@ public class dominanceAnalyser {
 
 	private void domComputation(List<basicBlock> RPO) {
 		dom = new LinkedHashMap<>();
-		RPO.forEach(v -> dom.put(v, v == root ? new LinkedHashSet<>(Collections.singleton(v)) : new LinkedHashSet<>(RPO)));
+		dom.put(root, new LinkedHashSet<>(Collections.singleton(root)));
 		boolean changed;
 		do {
 			changed = false;
 			for (basicBlock v: RPO) {
 				if (v == root) continue;
 				Set<basicBlock> temp = new LinkedHashSet<>(RPO);
-				radj.get(v).forEach(u -> temp.retainAll(dom.get(u)));
+				radj.get(v).forEach(u -> {if (dom.containsKey(u)) temp.retainAll(dom.get(u));});
 				temp.add(v);
 				if (!temp.equals(dom.get(v))) {
 					dom.put(v, temp);
