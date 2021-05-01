@@ -45,17 +45,19 @@ public class SSAConstructor implements pass {
 		Set<register> vars_ = new LinkedHashSet<>(vars);
 		func.argValues.forEach(vars_::remove);
 		vars_.forEach(v -> func.blocks.iterator().next().push_front(new _move(new undefinedValue(v.type), v)));
-		vars.stream().filter(v -> !v.isLocalVariable).forEach(v -> {
+		vars.forEach(v -> {
 			renamingCounter.put(v, 0);
-			Set<basicBlock> F = new LinkedHashSet<>(), W = new LinkedHashSet<>(defs.get(v));
-			while (!W.isEmpty()) {
-				basicBlock x = W.iterator().next();
-				W.remove(x);
-				dominanceProperty.DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
-					y.addPhiFunction(v, new LinkedList<>(dominanceProperty.radj.get(y)));
-					F.add(y);
-					if (!defs.get(v).contains(y)) W.add(y);
-				});
+			if (!v.isTemporaryVariable) {
+				Set<basicBlock> F = new LinkedHashSet<>(), W = new LinkedHashSet<>(defs.get(v));
+				while (!W.isEmpty()) {
+					basicBlock x = W.iterator().next();
+					W.remove(x);
+					dominanceProperty.DF.get(x).stream().filter(y -> !F.contains(y)).forEach(y -> {
+						if (v.phiBlock == null || v.phiBlock == y) y.addPhiFunction(v, new LinkedList<>(dominanceProperty.radj.get(y)));
+						F.add(y);
+						if (!defs.get(v).contains(y)) W.add(y);
+					});
+				}
 			}
 		});
 	}

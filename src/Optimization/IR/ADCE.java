@@ -32,6 +32,7 @@ public class ADCE implements pass {
 			else blk.successors().forEach(sucBlk -> dominanceProperty.addEdge(sucBlk, blk));
 		});
 
+
 		boolean changed = false;
 		if (dominanceProperty.dominanceAnalysis(true)) {
 			Map<register, Set<basicBlock>> def = new LinkedHashMap<>();
@@ -84,13 +85,14 @@ public class ADCE implements pass {
 				changed |= stmts.stream().anyMatch(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt));
 				stmts.stream().filter(stmt -> (!isUnconditionalJump(stmt) || stmt.belongTo.stmts.size() == 1) && !live.contains(stmt)).forEach(stmt -> blk.removeInstruction(stmt, true));
 			}
+			Map<basicBlock, basicBlock> jumpTable = new LinkedHashMap<>();
 			func.blocks.stream()
 				.filter(blk -> !blk.stmts.isEmpty())
 				.collect(Collectors.toList()).forEach(blk -> {
 				if (blk.tailStmt instanceof br) {
 					br tailStmt = (br) blk.tailStmt;
-					tailStmt.trueBranch = jumpReplacement(tailStmt.trueBranch, blk, blk, new LinkedHashSet<>(), dominanceProperty.radj);
-					if (tailStmt.cond != null) tailStmt.falseBranch = jumpReplacement(tailStmt.falseBranch, blk, blk, new LinkedHashSet<>(), dominanceProperty.radj);
+					tailStmt.trueBranch = jumpReplacement(tailStmt.trueBranch, blk, blk, jumpTable, dominanceProperty.radj);
+					if (tailStmt.cond != null) tailStmt.falseBranch = jumpReplacement(tailStmt.falseBranch, blk, blk, jumpTable, dominanceProperty.radj);
 				}
 			});
 			new LinkedHashSet<>(func.blocks).stream().filter(blk -> blk.stmts.isEmpty()).forEach(func.blocks::remove);
@@ -100,14 +102,17 @@ public class ADCE implements pass {
 
 	private boolean isUnconditionalJump(statement stmt) {return stmt instanceof br && ((br) stmt).cond == null;}
 
-	private basicBlock jumpReplacement(basicBlock blk, basicBlock preBlk, basicBlock fromBlk, Set<basicBlock> isVisited, Map<basicBlock, Set<basicBlock>> successors) {
-		if (isVisited.contains(blk)) return null;
-		isVisited.add(blk);
+	private basicBlock jumpReplacement(basicBlock blk, basicBlock preBlk, basicBlock fromBlk, Map<basicBlock, basicBlock> jumpTable, Map<basicBlock, Set<basicBlock>> successors) {
+		if (jumpTable.containsKey(blk) && jumpTable.get(blk) == null) return null;
 		if (!blk.stmts.isEmpty()) {
 			blk.replacePredecessor(preBlk, fromBlk);
 			return blk;
 		}
-		return successors.get(blk).stream().map(sucBlk -> jumpReplacement(sucBlk, blk, fromBlk, isVisited, successors)).reduce(null, (a, b) -> b != null ? b : a);
+		if (jumpTable.containsKey(blk)) return jumpTable.get(blk);
+		jumpTable.put(blk, null);
+		basicBlock ret = successors.get(blk).stream().map(sucBlk -> jumpReplacement(sucBlk, blk, fromBlk, jumpTable, successors)).reduce(null, (a, b) -> b != null ? b : a);
+		jumpTable.put(blk, ret);
+		return ret;
 	}
 
 	@Override

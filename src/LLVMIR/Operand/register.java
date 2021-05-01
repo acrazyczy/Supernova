@@ -2,13 +2,15 @@ package LLVMIR.Operand;
 
 import LLVMIR.Instruction.statement;
 import LLVMIR.TypeSystem.LLVMSingleValueType;
+import LLVMIR.basicBlock;
 import LLVMIR.function;
 
 public class register extends entity {
 	public String name;
 	public register reachingDef; // can only be used in SSA Construction
 	public statement def = null;
-	public boolean isLocalVariable = false;
+	public boolean isTemporaryVariable = false;
+	public basicBlock phiBlock = null;
 
 	public register(LLVMSingleValueType type) {
 		super(type);
@@ -25,10 +27,16 @@ public class register extends entity {
 		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
 	}
 
-	public register(LLVMSingleValueType type, String name, function currentFunction, boolean isLocalVariable) {
+	public register(LLVMSingleValueType type, String name, function currentFunction, boolean isTemporaryVariable) {
 		super(type);
 		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
-		this.isLocalVariable = isLocalVariable;
+		this.isTemporaryVariable = isTemporaryVariable;
+	}
+
+	public register(LLVMSingleValueType type, String name, function currentFunction, basicBlock phiBlock) {
+		super(type);
+		this.name = name + "." + currentFunction.getRegisterNameIndex(name);
+		this.phiBlock = phiBlock;
 	}
 
 	@Override public String toString() {return name == null ? "" : "%" + name;}

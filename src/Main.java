@@ -44,7 +44,7 @@ public class Main {
 		LLVMOs = new FileOutputStream("output.ll");
 		asmOs = new FileOutputStream("output.s");
 		LLVMGeneratingFlag = false;
-		assemblyGeneratingFlag = true;
+		assemblyGeneratingFlag = false;
 		optimizationFlag = false;
 		ssaDestructFlag = false;
 		int doCompilation = 0;

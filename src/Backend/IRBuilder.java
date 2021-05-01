@@ -37,8 +37,8 @@ public class IRBuilder implements ASTVisitor {
 		classType type = (classType) it.resultType;
 		LLVMAggregateType baseType = (LLVMAggregateType) gScope.getLLVMTypeFromType(type);
 		entity classSize = new integerConstant(32, baseType.size() >> 3);
-		register value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_classMallocPtr", currentFunction);
-		it.val = new register(new LLVMPointerType(baseType), "_classPtr", currentFunction);
+		register value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_classMallocPtr", currentFunction, true);
+		it.val = new register(new LLVMPointerType(baseType), "_classPtr", currentFunction, true);
 		function mallocFunc = gScope.getMethodFunction("_malloc", true);
 		currentBlock.push_back(new call(mallocFunc, new ArrayList<>(Collections.singletonList(classSize)) , value));
 		currentBlock.push_back(new bitcast(value, it.val));
@@ -63,9 +63,9 @@ public class IRBuilder implements ASTVisitor {
 			idxes.add(new integerConstant(32, structType.memberVariablesIndex.get(((varExprNode) it.rhs).varName)));
 			Type memberType = structType.memberVariables.get(((varExprNode) it.rhs).varName);
 			LLVMSingleValueType memberLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, memberType);
-			entity ptr = new register(new LLVMPointerType(memberLLVMType), "_memberAccessPtr", currentFunction);
+			entity ptr = new register(new LLVMPointerType(memberLLVMType), "_memberAccessPtr", currentFunction, true);
 			currentBlock.push_back(new getelementptr(it.lhs.val, idxes, ptr));
-			value = new register(memberLLVMType, "_memberValue", currentFunction);
+			value = new register(memberLLVMType, "_memberValue", currentFunction, true);
 			currentBlock.push_back(new load(ptr, value));
 			it.ptr = ptr;
 		}
@@ -81,10 +81,10 @@ public class IRBuilder implements ASTVisitor {
 		function func = it.func;
 		if (it.func.functionName.equals("builtin.array.size")) {
 			assert it.thisEntity != null && it.funcName.equals("size");
-			register arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType()), "_arraySizePtr", currentFunction);
+			register arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType()), "_arraySizePtr", currentFunction, false);
 			currentBlock.push_back(new bitcast(it.thisEntity, arraySizePtr));
 			currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, -1))), arraySizePtr));
-			register value = new register(new LLVMIntegerType(), "_arraySize", currentFunction);
+			register value = new register(new LLVMIntegerType(), "_arraySize", currentFunction, true);
 			currentBlock.push_back(new load(arraySizePtr, value));
 			it.val = value;
 		} else {
@@ -98,7 +98,7 @@ public class IRBuilder implements ASTVisitor {
 			});
 			if (func.returnType == null) currentBlock.push_back(new call(func, parameters));
 			else {
-				register value = new register(func.returnType, "_funcReturnValue", currentFunction);
+				register value = new register(func.returnType, "_funcReturnValue", currentFunction, true);
 				currentBlock.push_back(new call(func, parameters, value));
 				it.val = value;
 			}
@@ -133,11 +133,11 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock = initBlock;
 		exprStmtNode idxNode = idxNodes.get(currentDim);
 		idxNode.accept(this);
-		register ptr = new register(currentType, "_subArrayPtr", currentFunction);
-		register arraySize = new register(new LLVMIntegerType(), "_arraySize", currentFunction),
-			mallocSize = new register(new LLVMIntegerType(), "_arrayMallocSize", currentFunction),
-			mallocPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayMallocPtr", currentFunction),
-			arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType()), "_arraySizePtr", currentFunction);
+		register ptr = new register(currentType, "_subArrayPtr", currentFunction, true);
+		register arraySize = new register(new LLVMIntegerType(), "_arraySize", currentFunction, false),
+			mallocSize = new register(new LLVMIntegerType(), "_arrayMallocSize", currentFunction, true),
+			mallocPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayMallocPtr", currentFunction, true),
+			arraySizePtr = new register(new LLVMPointerType(new LLVMIntegerType()), "_arraySizePtr", currentFunction, false);
 		currentBlock.push_back(new _move(new integerConstant(32, currentType.pointeeType.size() >> 3), arraySize));
 		currentBlock.push_back(new binary(binary.instCode.mul, idxNode.val, arraySize, arraySize));
 		currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 4), arraySize, mallocSize));
@@ -148,7 +148,7 @@ public class IRBuilder implements ASTVisitor {
 		currentBlock.push_back(new getelementptr(arraySizePtr, new ArrayList<>(Collections.singletonList(new integerConstant(32, 1))), arraySizePtr));
 		currentBlock.push_back(new bitcast(arraySizePtr, ptr));
 		if (currentDim != idxNodes.size() - 1) {
-			register arrayShiftPtr = new register(currentType, "_arrayShiftPtr", currentFunction), itr = new register(new LLVMIntegerType(), "_i", currentFunction);
+			register arrayShiftPtr = new register(currentType, "_arrayShiftPtr", currentFunction, false), itr = new register(new LLVMIntegerType(), "_i", currentFunction, false);
 			currentBlock.push_back(new _move(ptr, arrayShiftPtr));
 			currentBlock.push_back(new _move(new integerConstant(32, 0), itr));
 			basicBlock condBlock = new basicBlock("_new.loop.cond", currentFunction);
@@ -158,7 +158,7 @@ public class IRBuilder implements ASTVisitor {
 			basicBlock bodyBlock = new basicBlock("_new.loop.body", currentFunction),
 				destBlock = new basicBlock("_new.loop.dest", currentFunction),
 				incrBlock = new basicBlock("_new.loop.incr", currentFunction);
-			register cond = new register(new LLVMIntegerType(8, true), "_cond", currentFunction);
+			register cond = new register(new LLVMIntegerType(8, true), "_cond", currentFunction, true);
 			currentBlock.push_back(new icmp(icmp.condCode.slt, itr, idxNode.val, cond));
 			currentBlock.push_back(new br(cond, bodyBlock, destBlock));
 			currentFunction.blocks.add(bodyBlock);
@@ -202,7 +202,7 @@ public class IRBuilder implements ASTVisitor {
 						globalStrMap.put(str, gStr);
 						programIREntry.globals.add(gStr);
 					}
-					register strPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_strPtr", currentFunction);
+					register strPtr = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_strPtr", currentFunction, true);
 					currentBlock.push_back(new getelementptr(gStr,
 						new ArrayList<>(Arrays.asList(new integerConstant(32, 0), new integerConstant(32, 0))),
 						strPtr
@@ -237,7 +237,7 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(binaryExprNode it) {
 		it.lhs.accept(this);
 		it.rhs.accept(this);
-		register value = new register(it.lhs.val.type, "", currentFunction);
+		register value = new register(it.lhs.val.type, "", currentFunction, true);
 		if (it.lhs.resultType.is_string) {
 			assert it.rhs.resultType.is_string;
 			assert it.op == binaryExprNode.opType.Plus;
@@ -320,7 +320,7 @@ public class IRBuilder implements ASTVisitor {
 			it.val = it.expr.val;
 		}
 		else {
-			register value = new register(it.op == unaryExprNode.opType.LogicNot ? new LLVMIntegerType(8, true) : new LLVMIntegerType(), "", currentFunction);
+			register value = new register(it.op == unaryExprNode.opType.LogicNot ? new LLVMIntegerType(8, true) : new LLVMIntegerType(), "", currentFunction, true);
 			if (it.op == unaryExprNode.opType.Plus)
 				currentBlock.push_back(new binary(binary.instCode.add, new integerConstant(32, 0), it.expr.val, value));
 			else if (it.op == unaryExprNode.opType.Minus)
@@ -362,12 +362,12 @@ public class IRBuilder implements ASTVisitor {
 			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
 			it.val = it.rhs.val;
 		} else {
-			register value = new register(new LLVMIntegerType(8, true), it.op == logicExprNode.opType.And ? "and.res" : "or.res", currentFunction);
 			shortCircuitBlock = new basicBlock(it.op == logicExprNode.opType.And ? "and.false" : "or.true", currentFunction);
 			currentFunction.blocks.add(shortCircuitBlock);
 			lhs.push_back(it.op == logicExprNode.opType.And ? new br(it.lhs.val, rhs, shortCircuitBlock) : new br(it.lhs.val, shortCircuitBlock, rhs));
 			basicBlock end = new basicBlock(it.op == logicExprNode.opType.And ? "and.true" : "or.false", currentFunction),
 				dest = new basicBlock(it.op == logicExprNode.opType.And ? "and.dest" : "or.dest", currentFunction);
+			register value = new register(new LLVMIntegerType(8, true), it.op == logicExprNode.opType.And ? "and.res" : "or.res", currentFunction, dest);
 			currentFunction.blocks.add(end);
 			currentFunction.blocks.add(dest);
 			currentBlock.push_back(it.op == logicExprNode.opType.And ? new br(it.rhs.val, end, shortCircuitBlock) : new br(it.rhs.val, shortCircuitBlock, end));
@@ -401,7 +401,7 @@ public class IRBuilder implements ASTVisitor {
 			value = new booleanConstant(it.value.equals("true") ? 1 : 0);
 		} else {
 			assert it.type.equals("string");
-			value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_string", currentFunction);
+			value = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_string", currentFunction, true);
 			globalVariable gStr;
 			if (globalStrMap.containsKey(it.value)) gStr = globalStrMap.get(it.value);
 			else {
@@ -441,20 +441,20 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(varExprNode it) {
 		if (it.varEntity == null) {
 			LLVMSingleValueType varLLVMType = typeCalculator.calcLLVMSingleValueType(gScope, it.resultType);
-			register varPtr = new register(new LLVMPointerType(varLLVMType), "_varPtr", currentFunction);
+			register varPtr = new register(new LLVMPointerType(varLLVMType), "_varPtr", currentFunction, true);
 			currentBlock.push_back(new getelementptr(currentFunction.argValues.iterator().next(),
 				new ArrayList<>(Arrays.asList(
 					new integerConstant(32, 0),
 					new integerConstant(32, currentClass.memberVariablesIndex.get(it.varName))
 				)), varPtr));
-			register value = new register(varLLVMType, "", currentFunction);
+			register value = new register(varLLVMType, "", currentFunction, true);
 			currentBlock.push_back(new load(varPtr, value));
 			it.val = value;
 			it.ptr = varPtr;
 		} else if (it.varEntity instanceof globalVariable) {
 			assert it.varEntity.type instanceof LLVMPointerType;
 			LLVMSingleValueType varLLVMType = (LLVMSingleValueType) ((LLVMPointerType) it.varEntity.type).pointeeType;
-			register value = new register(varLLVMType, "", currentFunction);
+			register value = new register(varLLVMType, "", currentFunction, true);
 			currentBlock.push_back(new load(it.varEntity, value));
 			it.val = value;
 			it.ptr = it.varEntity;
@@ -525,17 +525,17 @@ public class IRBuilder implements ASTVisitor {
 		it.rhs.accept(this);
 		if (it.lhs.val instanceof nullPointerConstant) it.lhs.val.type = it.rhs.val.type;
 		if (it.rhs.val instanceof nullPointerConstant) it.rhs.val.type = it.lhs.val.type;
-		register value = new register(new LLVMIntegerType(8, true), "", currentFunction);
+		register value = new register(new LLVMIntegerType(8, true), "", currentFunction, true);
 		if (it.lhs.resultType == null && it.rhs.resultType == null)
 			currentBlock.push_back(new _move(new booleanConstant(it.op == cmpExprNode.opType.Equ ? 1 : 0), value));
 		else if (it.lhs.resultType instanceof arrayType || it.rhs.resultType instanceof arrayType) {
 			entity lhsEntity, rhsEntity;
 			if (((LLVMPointerType) it.lhs.val.type).pointeeType.size() != 1) {
-				lhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayPtr", currentFunction);
+				lhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayPtr", currentFunction, true);
 				currentBlock.push_back(new bitcast(it.lhs.val, lhsEntity));
 			}
 			if (((LLVMPointerType) it.rhs.val.type).pointeeType.size() != 1) {
-				rhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayPtr", currentFunction);
+				rhsEntity = new register(new LLVMPointerType(new LLVMIntegerType(8)), "_arrayPtr", currentFunction, true);
 				currentBlock.push_back(new bitcast(it.rhs.val, rhsEntity));
 			}
 			currentBlock.push_back(new icmp(
@@ -600,7 +600,7 @@ public class IRBuilder implements ASTVisitor {
 		currentFunction = programIREntry.functions.iterator().next();
 		currentBlock = currentFunction.blocks.iterator().next();
 		it.units.forEach(unit -> {if (unit.varDef != null) unit.accept(this);});
-		register retVal = new register(new LLVMIntegerType(), "_retVal", currentFunction);
+		register retVal = new register(new LLVMIntegerType(), "_retVal", currentFunction, true);
 		currentBlock.push_back(new call(gScope.getMethodFunction("_g.main", true), new ArrayList<>(), retVal));
 		currentBlock.push_back(new ret(retVal));
 		currentFunction = null;
@@ -611,8 +611,8 @@ public class IRBuilder implements ASTVisitor {
 	public void visit(subscriptionExprNode it) {
 		it.lhs.accept(this);
 		it.rhs.accept(this);
-		register value = new register((LLVMSingleValueType) ((LLVMPointerType) it.lhs.val.type).pointeeType, "", currentFunction);
-		register ptr = new register(it.lhs.val.type, "_valPtr", currentFunction);
+		register value = new register((LLVMSingleValueType) ((LLVMPointerType) it.lhs.val.type).pointeeType, "", currentFunction, true);
+		register ptr = new register(it.lhs.val.type, "_valPtr", currentFunction, true);
 		currentBlock.push_back(new getelementptr(it.lhs.val, new ArrayList<>(Collections.singletonList(it.rhs.val)) , ptr));
 		it.ptr = ptr;
 		currentBlock.push_back(new load(ptr, value));
